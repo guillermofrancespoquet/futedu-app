@@ -5,7 +5,7 @@ Bioimpedance tracker for the **FUTEDU Academy** (youth football academy). Single
 ## Files
 - `index.html`: the whole app (HTML, CSS, JS). Data lives in Supabase; the page only holds the public project URL and publishable key.
 - `schema.sql`: tables and Row Level Security (run once in the Supabase SQL Editor when creating a project).
-- `manifest.webmanifest`, `favicon.ico`, `icons/`: app icons (FUTEDU shield) for browsers and mobile home screens.
+- `manifest.webmanifest`, `sw.js`, `favicon.ico`, `icons/`: app icons (FUTEDU shield) and the install setup. `sw.js` only lets browsers offer "Install app"; it must never cache data.
 - `README.md`: setup and feature list.
 
 ## Privacy (minors' health data)
