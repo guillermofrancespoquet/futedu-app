@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>FUTEDU — Bioimpedance</title>
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -85,6 +85,8 @@
     height:38px; padding:0 12px; border:1px solid var(--line); border-radius:var(--r-in);
     background:var(--card); font-size:14px; color:var(--ink); width:100%;
   }
+  /* fixed scale on phones: no zoom on focus (inputs are 16 px), no double-tap zoom, no text inflation */
+  html { -webkit-text-size-adjust:100%; text-size-adjust:100%; touch-action:manipulation; }
   input:focus, select:focus { outline:none; border-color:var(--orange); box-shadow:0 0 0 3px rgba(255,84,5,.15); }
 
   /* ---------- shell ---------- */
@@ -399,7 +401,24 @@
   .an-check input { width:auto; height:auto; }
   .an-round { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-2); margin:-4px 0 12px; }
   .an-round-btns { display:flex; gap:8px; }
-  .an-measure { margin-left:6px; }
+  .an-status { display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
+  .an-table td, .an-table th { white-space:nowrap; }
+  .an-table .an-c-name { white-space:normal; }
+  @media (max-width: 700px) {
+    #anTable.card { padding:6px; }
+    .hist-full table.an-table, .an-table tbody { display:block; width:100%; min-width:0; }
+    .an-table .attn-name { min-width:0; }
+    .an-table tr:first-child { display:none; }
+    .an-table tr.an-row { display:grid; grid-template-columns:repeat(6, minmax(0, 1fr)); gap:10px 8px; padding:12px 10px; border-bottom:1px solid var(--line); }
+    .an-table tr.an-row:last-child { border-bottom:none; }
+    .an-table td { display:block; padding:0; border:none; background:none; }
+    .an-table .an-c-name { grid-column:1 / 4; font-size:15px; font-weight:600; align-self:center; }
+    .an-table .an-c-status { grid-column:4 / 7; justify-self:end; text-align:right; }
+    .an-table td[data-label] { grid-column:span 2; }
+    .an-table td[data-label] { font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; }
+    .an-table td[data-label]::before { content:attr(data-label); display:block; font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-3); margin-bottom:1px; }
+    .an-table tr.an-row:hover td { background:none; }
+  }
   .as-head { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
   .as-player { display:flex; align-items:center; gap:10px; }
   .as-player .save-note { margin:0; }
@@ -410,6 +429,9 @@
   .as-pv strong { font-size:18px; font-variant-numeric:tabular-nums; }
   .as-pv em { font-style:normal; font-size:12px; font-weight:600; color:var(--ink-3); }
   .as-help { margin:12px 0 4px; }
+  .as-help summary { cursor:pointer; font-size:12px; font-weight:600; color:var(--ink-3); }
+  .as-help .save-note { margin-top:6px; line-height:1.5; }
+  .an-field input::placeholder { font-size:12px; }
   .as-group { margin-top:14px; }
   .as-gh { display:grid; grid-template-columns:180px repeat(3, 84px) 1fr; gap:8px; align-items:center; margin-bottom:6px; }
   .as-gh h4 { font-size:13px; }
@@ -435,8 +457,26 @@
   .md blockquote { margin:10px 0; padding:8px 14px; border-left:3px solid var(--orange); background:var(--card-2); border-radius:0 10px 10px 0; }
   .md .md-table { overflow-x:auto; margin:10px 0; } .md table { border-collapse:collapse; font-size:13px; width:100%; } .md th, .md td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top; } .md th { font-size:12px; color:var(--ink-3); }
   .md-box { max-width:820px; }
+  @media (max-width: 700px) {
+    .modal-overlay.imp-overlay { padding:0; }
+    .modal-box.imp-box { margin:0; min-height:100%; border-radius:0; max-width:none; padding:16px 14px; }
+    .as-preview { gap:6px 12px; padding:8px 10px; top:-1px; }
+    .as-pv { flex:1 1 60px; min-width:60px; }
+    .as-pv:first-child { flex-basis:100%; flex-direction:row; align-items:center; gap:10px; }
+    .as-pv:first-child .progress { flex:1; }
+    .as-pv strong { font-size:16px; }
+    .as-gh { grid-template-columns:1fr; }
+    .as-cols { display:none; }
+    .an-field { grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px 8px; margin-bottom:12px; }
+    .an-field .an-lbl { grid-column:1 / -1; display:flex; align-items:center; gap:6px; }
+    .an-field .an-used { grid-column:1 / -1; }
+    .an-field .an-used:empty { display:none; }
+    .as-foot { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:6px -14px -16px; padding:10px 14px 12px; border-top:1px solid var(--line); }
+    .as-foot .save-note { grid-column:1 / -1; margin:0; }
+    .as-foot .btn { height:40px; }
+    .as-foot .modal-ok[data-next="1"] { grid-column:1 / -1; order:-1; }
+  }
   .an-imp-ass { border-top:1px solid var(--line); padding-top:10px; margin-top:10px; }
-  @media (max-width: 700px) { .an-field, .as-gh { grid-template-columns:1fr repeat(3, 1fr); } .an-used { grid-column:1 / -1; } .as-gh h4 { grid-column:1; } }
 
   /* ---------- polish ---------- */
   @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
@@ -518,6 +558,8 @@
     .kpi .k-value { font-size:24px; }
     .trend-row { grid-template-columns:90px 1fr 46px; }
   }
+  /* phones: 16 px fields so the browser never zooms in on focus */
+  @media (max-width: 860px) { input, select, textarea, .quick input, .an-field input, .search input, .modal-overlay input, .modal-overlay select, .imp-box input, .imp-box select { font-size:16px; } }
 </style>
 </head>
 <body>
@@ -1244,6 +1286,7 @@ document.getElementById('scrim').addEventListener('click', closeMenu);
 window.addEventListener('hashchange', () => { if (!document.getElementById('app').classList.contains('hidden')) navigate(decodeURIComponent(location.hash.replace('#', '')), true); });
 
 // ---- summary filters ----
+if (window.matchMedia('(hover: none)').matches) document.getElementById('searchInput').placeholder = 'Search players';   // the "/" shortcut is for keyboards
 document.getElementById('searchInput').addEventListener('input', e => { ui.search = e.target.value; renderSummary(); });
 document.getElementById('tagSel').addEventListener('change', e => { ui.tag = e.target.value; renderSummary(); });
 document.getElementById('sortSel').addEventListener('change', e => { ui.sort = e.target.value; renderSummary(); });
@@ -2546,14 +2589,15 @@ function renderAnthroList() {
     <div class="kpi"><div class="k-label">Group mean · sum of 6 skinfolds</div><div class="k-value">${group.length ? avgOf('sum6').toFixed(1) : '—'}<small>${group.length ? ' mm' : ''}</small></div><div class="k-sub">${group.length} complete assessments</div></div>
     <div class="kpi"><div class="k-label">Group mean · fat (Yuhasz)</div><div class="k-value">${group.length ? avgOf('yuhaszPct').toFixed(1) : '—'}<small>${group.length ? ' %' : ''}</small></div></div>
     <div class="kpi"><div class="k-label">Group mean · muscle (Lee)</div><div class="k-value">${group.length ? avgOf('musclePct').toFixed(1) : '—'}<small>${group.length ? ' %' : ''}</small></div></div>`;
-  document.getElementById('anTable').innerHTML = `<table><tr><th>Player</th><th>This round</th><th>Age</th><th>Last assessment</th><th>Σ6 (mm)</th><th>Fat % (Yuhasz)</th><th>Muscle % (Lee)</th><th>BMI</th></tr>
+  document.getElementById('anTable').innerHTML = `<table class="an-table"><tr><th>Player</th><th>This round</th><th>Age</th><th>Last assessment</th><th>Σ6 (mm)</th><th>Fat % (Yuhasz)</th><th>Muscle % (Lee)</th><th>BMI</th></tr>
     ${rows.map(p => {
       const list = anList(p.id), last = list[list.length - 1], f = last ? anFull(p.id, last) : null, age = anAgeText(p.id);
       const pf = anthroProfiles[p.id] || {}, need = !(pf.dob && pf.sex && pf.ethnicity && pf.height && pf.sitting && pf.span);
-      return `<tr class="an-row" data-open="${p.id}"><td><span class="attn-name">${escapeHtml(p.name)}</span>${need ? ' <span class="tag-chip">profile needed</span>' : ''}</td>
-        <td>${anDoneThisRound(p.id) ? '<span class="chip flag-good">Done</span>' : `<span class="chip flag-watch">Pending</span> <button class="btn sm an-measure" data-new="${p.id}">Measure</button>`}</td>
-        <td>${age != null ? age.toFixed(1) : '—'}</td><td>${last ? escapeHtml(last.date) : '<span class="muted">none</span>'}</td>
-        <td>${f && f.R ? f.R.sum6.toFixed(1) : '—'}</td><td>${f && f.R ? f.R.yuhaszPct.toFixed(1) : '—'}</td><td>${f && f.R ? f.R.musclePct.toFixed(1) : '—'}</td><td>${f && f.R ? f.R.bmi.toFixed(1) : '—'}</td></tr>`;
+      const cell = (label, v) => `<td data-label="${label}">${v}</td>`;
+      return `<tr class="an-row" data-open="${p.id}"><td class="an-c-name"><span class="attn-name">${escapeHtml(p.name)}</span>${need ? ' <span class="tag-chip">profile needed</span>' : ''}</td>
+        <td class="an-c-status"><span class="an-status">${anDoneThisRound(p.id) ? '<span class="chip flag-good">Done</span>' : `<span class="chip flag-watch">Pending</span><button class="btn sm an-measure" data-new="${p.id}">Measure</button>`}</span></td>
+        ${cell('Age', age != null ? age.toFixed(1) : '—')}${cell('Last', last ? escapeHtml(last.date) : '<span class="muted">none</span>')}
+        ${cell('Σ6 mm', f && f.R ? f.R.sum6.toFixed(1) : '—')}${cell('Fat %', f && f.R ? f.R.yuhaszPct.toFixed(1) : '—')}${cell('Muscle %', f && f.R ? f.R.musclePct.toFixed(1) : '—')}${cell('BMI', f && f.R ? f.R.bmi.toFixed(1) : '—')}</tr>`;
     }).join('')}</table>`;
   document.querySelectorAll('#anTable [data-open]').forEach(r => r.addEventListener('click', () => navigate('anthro/' + r.dataset.open)));
   document.querySelectorAll('#anTable [data-new]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); anAssessmentForm(b.dataset.new, null); }));
@@ -2663,8 +2707,8 @@ function anAssessmentForm(pid, a, opts) {
       <div class="imp-grid" style="grid-template-columns:repeat(3,1fr);margin-top:8px;">${fixedAll.map(([k, l, u]) => `<div><label>${l} (${u})</label><input type="number" step="any" inputmode="decimal" id="asFx_${k}" value="${fixedNow[k] != null ? fixedNow[k] : ''}"></div>`).join('')}</div>
       <label class="an-check"><input type="checkbox" id="asFxProfile" ${fixedAll.some(([k]) => (anthroProfiles[pid] || {})[k] == null) ? 'checked' : ''}> Also save these as the player's fixed values</label>
       <div class="save-note">They come from the player's profile; change them only if they were measured again.</div></details>
-    <div class="save-note as-help">Type the first reading and press <strong>Enter</strong> to jump to the next measure. The 2nd and 3rd readings are optional: with three the mean is used, otherwise the first one. A warning shows when the first two differ by more than 1 % (body mass, girths) or 5 % (skinfolds).</div>
-    ${groups.map(([title, items]) => `<div class="as-group"><div class="as-gh"><h4>${title}</h4><span class="as-cols"><span>1st</span><span>2nd</span><span>3rd</span></span></div>${items.map(([k, lbl, unit]) => `<div class="an-field" data-k="${k}"><span class="an-lbl">${lbl} <small>${unit}</small>${prevV[k] != null ? `<span class="as-prev">${Math.round(prevV[k] * 100) / 100}</span>` : ''}</span>${[0, 1, 2].map(i => `<input type="number" step="any" inputmode="decimal" data-i="${i}" aria-label="${escapeHtml(lbl)} reading ${i + 1}" placeholder="${i === 0 ? '' : 'opt.'}" value="${val(k, i)}">`).join('')}<span class="an-used" aria-live="polite"></span></div>`).join('')}</div>`).join('')}
+    <details class="as-help"><summary>How the readings are used</summary><div class="save-note">Type the first reading and press <strong>Enter</strong> to jump to the next measure. The 2nd and 3rd readings are optional: with three the mean is used, otherwise the first one. A warning shows when the first two differ by more than 1 % (body mass, girths) or 5 % (skinfolds).</div></details>
+    ${groups.map(([title, items]) => `<div class="as-group"><div class="as-gh"><h4>${title}</h4><span class="as-cols"><span>1st</span><span>2nd</span><span>3rd</span></span></div>${items.map(([k, lbl, unit]) => `<div class="an-field" data-k="${k}"><span class="an-lbl">${lbl} <small>${unit}</small>${prevV[k] != null ? `<span class="as-prev">${Math.round(prevV[k] * 100) / 100}</span>` : ''}</span>${[0, 1, 2].map(i => `<input type="number" step="any" inputmode="decimal" data-i="${i}" aria-label="${escapeHtml(lbl)} reading ${i + 1}" placeholder="${['1st', '2nd', '3rd'][i]}" value="${val(k, i)}">`).join('')}<span class="an-used" aria-live="polite"></span></div>`).join('')}</div>`).join('')}
     <div class="imp-foot as-foot"><span class="save-note" id="asNote"></span><button class="btn modal-cancel">Cancel</button><button class="btn${a || !hasNext ? ' primary' : ''} modal-ok" data-next="0">Save</button>${!a && hasNext ? '<button class="btn primary modal-ok" data-next="1">Save and next pending player</button>' : ''}</div>`);
   const prof = anthroProfiles[pid] || {};
   const readRaw = () => {
