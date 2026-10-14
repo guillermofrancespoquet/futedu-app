@@ -266,11 +266,6 @@
     body { background:#fff; }
     .login-wrap, .shell, .modal-overlay, .toasts, .toast, .loadbar { display:none !important; }
     #printArea { display:block !important; color:#1c1c1e; font-size:12px; }
-    #printArea .p-head { display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid var(--orange); padding-bottom:10px; margin-bottom:16px; }
-    #printArea .p-head img { width:150px; }
-    #printArea h1 { font-size:22px; margin-bottom:2px; }
-    #printArea h2 { font-size:14px; margin:18px 0 8px; }
-    #printArea .p-sub { color:#6a6a6e; font-size:11px; }
     #printArea table { width:100%; border-collapse:collapse; }
     #printArea th { text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.5px; color:#6a6a6e; padding:0 8px 6px 0; border-bottom:1px solid #ccc; }
     #printArea td { padding:6px 8px 6px 0; border-bottom:1px solid #e3e3e6; }
@@ -297,8 +292,20 @@
     #printArea .fr-sec td { padding:var(--td) 8px var(--td) 0; border-bottom:1px solid #e3e3e6; font-size:11px; }
     #printArea .fr-sec tr:last-child td { border-bottom:none; }
     #printArea .fr-ok { color:#1e8c4a; font-weight:700; font-size:11.5px; padding:8px 0 4px; }
+    #printArea .fr-kpi small { display:block; margin-top:5px; font-size:8.5px; color:#7a7a7e; letter-spacing:0; text-transform:none; }
+    #printArea .fr-pill { display:inline-block; font-size:9px; font-weight:700; padding:2px 9px; border-radius:20px; letter-spacing:.2px; white-space:nowrap; }
+    #printArea .fr-pill.good { background:#e3f4ea; color:#1e8c4a; }
+    #printArea .fr-pill.bad { background:#fbe4e1; color:#c0392b; }
+    #printArea .fr-pill.watch { background:#ffeadb; color:#b84300; }
+    #printArea .fr-sec td.num { font-weight:700; }
+    #printArea .fr-sec td.muted, #printArea .fr-sec td.sm { color:#7a7a7e; }
+    #printArea .fr-sec .ch-val { stroke:#f4f4f6; }
+    #printArea .fr-sec .p-charts { gap:14px; }
+    #printArea .fr-sec .p-charts h3 { font-size:10.5px; color:#4a4a4e; }
+    #printArea .fr-note { border-left:3px solid #3a8fd1; padding:5px 12px; margin-bottom:6px; background:#eaf3fa; border-radius:0 8px 8px 0; font-size:10.5px; line-height:1.5; }
+    #printArea .fr-disc { margin-top:auto; padding-top:var(--g); font-size:9px; line-height:1.55; color:#8a8a90; }
+    #printArea .fr-disc + .fr-foot { margin-top:8px; }
     #printArea .fr-foot { display:flex; justify-content:space-between; margin-top:auto; padding-top:var(--g); font-size:8.5px; letter-spacing:1px; text-transform:uppercase; color:#9a9aa0; }
-    #printArea .p-foot { margin-top:22px; padding-top:8px; border-top:1px solid #ccc; font-size:10px; color:#6a6a6e; line-height:1.5; }
     #printArea svg { width:100%; height:auto; }
     #printArea * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   }
@@ -2274,35 +2281,66 @@ async function roundReportFlow(preRoundId) {
 document.querySelectorAll('.js-round-report').forEach(b => b.addEventListener('click', () => roundReportFlow()));
 
 // ---- printable report (browser print dialog -> Save as PDF) ----
+// Spacing for the player report: the more rounds in the history table, the tighter it gets, so it stays on one A4 page.
+const P_ROOMY = { g: 12, sp: 12, spx: 18, td: 5.5, bp: 20 }, P_TIGHT = { g: 6, sp: 8, spx: 14, td: 3.5, bp: 12 };
+const P_LOAD_ROOMY = 12, P_LOAD_TIGHT = 18.5;   // measured: roomy fits up to load ~13.5, tight up to ~20. load = latest-measurement rows + history rows + notes (3 for the card + 1.5 each)
+function playerSpacing(load) {
+  const f = Math.min(1, Math.max(0, (load - P_LOAD_ROOMY) / (P_LOAD_TIGHT - P_LOAD_ROOMY)));
+  const mix = k => Math.round((P_ROOMY[k] + (P_TIGHT[k] - P_ROOMY[k]) * f) * 10) / 10;
+  return { g: mix('g'), sp: mix('sp'), spx: mix('spx'), td: mix('td'), bp: mix('bp') };
+}
 async function printReport(id) {
   const p = roster.find(x => x.id === id);
   const ser = seriesFor(id);
   if (!ser.length) { await customConfirm('This player has no measurements yet.'); return; }
   const withNotes = hasNotes(id) ? await customConfirm('Include the health notes in the report? They are sensitive: leave them out if the report is going to anyone other than the family or the staff who need them.') : false;
-  const last = ser[ser.length - 1], r = last.r, c = classify(r);
-  const st = f => f === 'bad' ? 'Above target' : f === 'watch' ? 'Keep an eye on' : f === 'good' ? 'Within range' : '';
-  const row = (label, val, ref, flag) => val == null ? '' : `<tr><td>${label}</td><td><strong>${val}</strong></td><td>${ref}</td><td>${st(flag)}</td></tr>`;
-  const t = thresholds;
-  const smPct = r.skeletal_muscle_mass_kg != null && r.weight_kg ? (r.skeletal_muscle_mass_kg / r.weight_kg * 100).toFixed(1) : null;
-  document.getElementById('printArea').innerHTML = `
-    <div class="p-head"><div><h1>${escapeHtml(p.name)}</h1><div class="p-sub">Bioimpedance report · ${escapeHtml(last.label)}${last.date ? ' · measured ' + escapeHtml(last.date) : ''}${p.tags.length ? ' · ' + p.tags.map(escapeHtml).join(', ') : ''}</div></div><img src="${LOGO_SRC}" alt="FUTEDU Team"></div>
-    <h2>Latest measurement</h2>
-    <table><tr><th>Measure</th><th>Result</th><th>Reference used</th><th>Reading</th></tr>
-      ${row('Body fat', fmtN(r.body_fat_percent, '%'), '≤ ' + t.bodyFat + '%', c.bodyFat)}
-      ${row('Subcutaneous fat', fmtN(r.subcutaneous_fat_percent, '%'), '< ' + t.subFat + '%', c.subFat)}
-      ${row('Hydration', fmtN(r.total_body_water_percent, '%'), '≥ ' + t.hydMin + '%', c.hydration)}
-      ${row('BMI', fmtN(r.bmi), t.bmiMin + '–' + t.bmiMax, c.bmi)}
-      ${row('Fat-free mass', fmtN(r.fat_free_mass_kg, ' kg'), t.ffmMin != null ? '≥ ' + t.ffmMin + ' kg' : '—', c.ffm)}
-      ${row('Visceral fat', fmtN(r.visceral_fat), '< 10', c.visceralFat)}
-      ${row('Skeletal muscle', smPct != null ? smPct + '% (' + r.skeletal_muscle_mass_kg + ' kg)' : fmtN(r.skeletal_muscle_mass_kg, ' kg'), t.smMin != null ? '≥ ' + t.smMin + '%' : '—', c.smPercent)}
-      ${row('Weight', fmtN(r.weight_kg, ' kg'), '—', '')}
-    </table>
-    <h2>Evolution</h2>${chartsHtml(id, 'p-charts')}
-    <h2>All measurements</h2>${historyTable(id)}
-    ${withNotes ? `<h2>Health notes</h2>${notesFor(id).map(n => `<div class="p-note">${n.noted_on ? '<strong>' + escapeHtml(n.noted_on) + '</strong> · ' : ''}${escapeHtml(n.note)}</div>`).join('')}` : ''}
-    <div class="p-foot">FUTEDU Academy · Nutrition. Confidential: contains health data of a minor; share it only with the player's family or the staff who need it. Bioimpedance values are estimates and the reference values are internal targets for the group, not a medical diagnosis. For any health concern, consult a doctor.</div>`;
-  setTimeout(() => window.print(), 80);
+  printHtml(playerReportHtml(id, withNotes), 'futedu-' + slugify(p.name) + '-report');
 }
+function playerReportHtml(id, withNotes, spOverride) {
+  const p = roster.find(x => x.id === id);
+  const ser = seriesFor(id);
+  const last = ser[ser.length - 1], prev = ser[ser.length - 2], r = last.r, c = classify(r) || {}, t = thresholds;
+  const pill = f => f === 'bad' ? '<span class="fr-pill bad">Above target</span>' : f === 'watch' ? '<span class="fr-pill watch">Keep an eye on</span>' : f === 'good' ? '<span class="fr-pill good">Within range</span>' : '';
+  const smPct = r.skeletal_muscle_mass_kg != null && r.weight_kg ? (r.skeletal_muscle_mass_kg / r.weight_kg * 100).toFixed(1) : null;
+  // rows without a value are left out, so the table only shows what was measured
+  const row = (label, val, ref, flag, raw) => raw == null ? '' : `<tr><td>${label}</td><td class="num">${val}</td><td class="muted">${ref}</td><td>${pill(flag)}</td></tr>`;
+  const kpi = (label, key, unit) => {
+    const v = r[key];
+    const d = v != null && prev && prev.r[key] != null ? `<small>${signed(v - prev.r[key], unit)} vs ${escapeHtml(prev.label)}</small>` : '<small>&nbsp;</small>';
+    return `<div class="fr-kpi"><b>${v != null ? v : '—'}${v != null ? `<i style="font-style:normal;font-size:11px;color:#8a8a90;font-weight:600;">${unit}</i>` : ''}</b><span>${label}</span>${d}</div>`;
+  };
+  const notes = withNotes ? notesFor(id) : [];
+  const histAll = ser.slice().reverse(), hist = histAll.slice(0, notes.length ? 6 : 8);
+  const rowCount = ['weight_kg', 'body_fat_percent', 'subcutaneous_fat_percent', 'total_body_water_percent', 'bmi', 'fat_free_mass_kg', 'visceral_fat', 'skeletal_muscle_mass_kg'].filter(k => r[k] != null).length;
+  const sp = spOverride || playerSpacing(rowCount + hist.length + (notes.length ? 3 + notes.length * 1.5 : 0));
+  return `<div class="fr" style="--g:${sp.g}px;--sp:${sp.sp}px;--spx:${sp.spx}px;--td:${sp.td}px;--bp:${sp.bp}px">
+    <div class="fr-band"><img src="${LOGO_SRC}" alt="FUTEDU Team">
+      <div class="fr-kicker">FUTEDU Academy · Nutrition Department</div>
+      <h1>${escapeHtml(p.name)}</h1>
+      <div class="fr-sub">Bioimpedance report · ${escapeHtml(last.label)}${last.date ? ' · measured ' + escapeHtml(longDateSafe(last.date)) : ''}${p.tags.length ? ' · ' + p.tags.map(escapeHtml).join(', ') : ''} · Report generated ${longDate(todayStr())}</div></div>
+    <div class="fr-kpis">${kpi('Weight', 'weight_kg', ' kg')}${kpi('Body fat', 'body_fat_percent', '%')}${kpi('Fat-free mass', 'fat_free_mass_kg', ' kg')}${kpi('Hydration', 'total_body_water_percent', '%')}</div>
+    <div class="fr-sec"><h2>Latest measurement</h2><div class="fr-target">${escapeHtml(last.label)}${last.date ? ' · ' + escapeHtml(longDateSafe(last.date)) : ''}</div>
+      <table><tr><th>Measure</th><th>Result</th><th>Reference used</th><th>Reading</th></tr>
+        ${row('Weight', fmtN(r.weight_kg, ' kg'), '—', '', r.weight_kg)}
+        ${row('Body fat', fmtN(r.body_fat_percent, '%'), '≤ ' + t.bodyFat + '%', c.bodyFat, r.body_fat_percent)}
+        ${row('Subcutaneous fat', fmtN(r.subcutaneous_fat_percent, '%'), '< ' + t.subFat + '%', c.subFat, r.subcutaneous_fat_percent)}
+        ${row('Hydration', fmtN(r.total_body_water_percent, '%'), '≥ ' + t.hydMin + '%', c.hydration, r.total_body_water_percent)}
+        ${row('BMI', fmtN(r.bmi), t.bmiMin + '–' + t.bmiMax, c.bmi, r.bmi)}
+        ${row('Fat-free mass', fmtN(r.fat_free_mass_kg, ' kg'), t.ffmMin != null ? '≥ ' + t.ffmMin + ' kg' : '—', c.ffm, r.fat_free_mass_kg)}
+        ${row('Visceral fat', fmtN(r.visceral_fat), '< 10', c.visceralFat, r.visceral_fat)}
+        ${row('Skeletal muscle', smPct != null ? smPct + '% (' + r.skeletal_muscle_mass_kg + ' kg)' : fmtN(r.skeletal_muscle_mass_kg, ' kg'), t.smMin != null ? '≥ ' + t.smMin + '%' : '—', c.smPercent, r.skeletal_muscle_mass_kg)}
+      </table></div>
+    <div class="fr-sec"><h2>Evolution</h2><div class="fr-target">Body fat, fat-free mass and hydration by round</div>${chartsHtml(id, 'p-charts')}</div>
+    <div class="fr-sec"><h2>All measurements</h2><div class="fr-target">${histAll.length > hist.length ? 'Latest ' + hist.length + ' of ' + histAll.length + ' rounds' : histAll.length + ' round' + (histAll.length === 1 ? '' : 's')}</div>
+      <table><tr><th>Round</th><th>Date</th><th>Weight</th><th>Body fat</th><th>Subcut.</th><th>Hydration</th><th>BMI</th><th>FFM</th><th>Visc.</th></tr>
+        ${hist.map(x => `<tr><td>${escapeHtml(x.label)}</td><td class="sm">${escapeHtml(x.date || '—')}</td><td>${fmtN(x.r.weight_kg, ' kg')}</td><td>${fmtN(x.r.body_fat_percent, '%')}</td><td>${fmtN(x.r.subcutaneous_fat_percent, '%')}</td><td>${fmtN(x.r.total_body_water_percent, '%')}</td><td>${fmtN(x.r.bmi)}</td><td>${fmtN(x.r.fat_free_mass_kg, ' kg')}</td><td>${fmtN(x.r.visceral_fat)}</td></tr>`).join('')}
+      </table></div>
+    ${notes.length ? `<div class="fr-sec"><h2>Health notes</h2><div class="fr-target">Confidential</div>${notes.map(n => `<div class="fr-note">${n.noted_on ? '<strong>' + escapeHtml(n.noted_on) + '</strong> · ' : ''}${escapeHtml(n.note)}</div>`).join('')}</div>` : ''}
+    <div class="fr-disc">Confidential: contains health data of a minor; share it only with the player's family or the staff who need it. Bioimpedance values are estimates and the reference values are internal targets for the group, not a medical diagnosis. For any health concern, consult a doctor.</div>
+    <div class="fr-foot"><span>FUTEDU Academy — Player report</span><span>Nutrition Department</span></div>
+  </div>`;
+}
+function longDateSafe(iso) { return /^\d{4}-\d{2}-\d{2}$/.test(iso || '') ? longDate(iso) : (iso || ''); }
 
 async function saveManualEntry(id) {
   const val = (elId) => {
