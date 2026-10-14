@@ -19,5 +19,12 @@ Bioimpedance tracker for the **FUTEDU Academy** (youth football academy). Single
 - Keep it a single dependency-free file where possible; external libraries are loaded from a CDN only when needed (Supabase client, Tesseract.js, PDF.js).
 - Test changes with a mocked Supabase client in a headless browser before opening a PR (there is no real backend in the sandbox).
 
+## Planned work (short term)
+- **Anthropometry module, target: December 2026.** The owner will provide an HTML anthropometry calculator to adapt; it is not in the repo yet. Scope agreed so far:
+  - Inputs per player and assessment: date of birth, age, weight, height, sitting height and arm span, plus **6 skinfolds and 4 girths only**. Conclusions are derived from those values.
+  - Same conventions as the bioimpedance part: data in Supabase (use the `settings` table or a new approach that needs no schema migration, to be decided when the calculator arrives), photo/PDF/CSV import if useful, a printable one-page report per player and a round/team report in the same FUTEDU style, light and dark themes.
+  - Date of birth is personal data of minors: it lives only in Supabase, never in the repo or in examples.
+  - Ask the owner for the calculator and for which conclusions/formulas to keep before designing anything; keep the wording neutral and non-diagnostic, like the rest of the app.
+
 ## Git
 - **Never push to `main`** (it is live). Work on a branch and open a PR; the owner reviews and merges it.
