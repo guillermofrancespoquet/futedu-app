@@ -15,6 +15,7 @@ Bioimpedance tracker for the **FUTEDU Academy** (youth football academy). Single
 
 ## Conventions
 - Brand: black/dark grey, orange `#ff5405`, white; light grey background; rounded iOS-like cards, buttons as rounded squares; font stack: system / Helvetica Neue. All UI text in **English**.
+- Colors come from the CSS variables in `:root` (light) and the dark overrides; never hard-code colors in CSS or generated HTML, so both themes and the always-light print report keep working. Check new UI in both themes.
 - Keep it a single dependency-free file where possible; external libraries are loaded from a CDN only when needed (Supabase client, Tesseract.js, PDF.js).
 - Test changes with a mocked Supabase client in a headless browser before opening a PR (there is no real backend in the sandbox).
 

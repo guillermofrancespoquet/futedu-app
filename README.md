@@ -20,6 +20,7 @@ Publish this folder from a **separate public repository that contains only these
 - **Import report**: photos/screenshots (JPG, PNG, WebP) and PDFs of Arboleaf reports (summary screen or full "Body Composition Analysis" report). Text is read on the device with OCR (Tesseract.js and PDF.js are loaded from a CDN the first time; files are never uploaded), values are cross-checked, and you review and correct everything before saving.
 - **Settings**: thresholds, rounds (archive), **CSV import** (with preview), CSV/JSON export.
 - **Check-ins** are shared across devices (stored in the `settings` table, key `checkins`) and cleared when a round is archived.
+- **Light, dark or automatic theme** (toggle in the side menu; remembered on the device; printed reports are always light), toast notifications, drag-and-drop import anywhere, and a `/` shortcut to search players.
 - Responsive layout with a mobile drawer menu.
 
 ## Notes on data storage
