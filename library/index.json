@@ -1,0 +1,141 @@
+{
+  "recipes": [
+    {
+      "slug": "banana-oat-brownies",
+      "title": "Fudgy Banana-Oat Brownies: Recovery Treat, No Refined Sugar",
+      "files": [
+        {
+          "name": "futedu-banana-oat-brownies.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card",
+          "path": "library/recipes/banana-oat-brownies/futedu-banana-oat-brownies.pdf"
+        },
+        {
+          "name": "futedu-banana-oat-brownies-workshop-session.md",
+          "kind": "session",
+          "kindLabel": "Session guide",
+          "label": "Session guide",
+          "path": "library/recipes/banana-oat-brownies/futedu-banana-oat-brownies-workshop-session.md"
+        },
+        {
+          "name": "futedu-brownies-label-detective.pdf",
+          "kind": "handout",
+          "kindLabel": "Printable handout",
+          "label": "Brownies label detective",
+          "path": "library/recipes/banana-oat-brownies/futedu-brownies-label-detective.pdf"
+        }
+      ]
+    },
+    {
+      "slug": "energy-balls",
+      "title": "No-Bake Peanut Butter & Cocoa Energy Balls: Pre-Training Fuel",
+      "files": [
+        {
+          "name": "futedu-energy-balls.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card",
+          "path": "library/recipes/energy-balls/futedu-energy-balls.pdf"
+        },
+        {
+          "name": "futedu-energy-balls-workshop-session.md",
+          "kind": "session",
+          "kindLabel": "Session guide",
+          "label": "Session guide",
+          "path": "library/recipes/energy-balls/futedu-energy-balls-workshop-session.md"
+        },
+        {
+          "name": "futedu-energy-balls-swap-menu.pdf",
+          "kind": "handout",
+          "kindLabel": "Printable handout",
+          "label": "Swap menu",
+          "path": "library/recipes/energy-balls/futedu-energy-balls-swap-menu.pdf"
+        }
+      ]
+    },
+    {
+      "slug": "granola",
+      "title": "Granola: Batch Snack, Energy",
+      "files": [
+        {
+          "name": "futedu-granola.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card",
+          "path": "library/recipes/granola/futedu-granola.pdf"
+        },
+        {
+          "name": "futedu-granola-workshop-session.md",
+          "kind": "session",
+          "kindLabel": "Session guide",
+          "label": "Session guide",
+          "path": "library/recipes/granola/futedu-granola-workshop-session.md"
+        },
+        {
+          "name": "futedu-granola-scenario-cards.pdf",
+          "kind": "handout",
+          "kindLabel": "Printable handout",
+          "label": "Scenario cards",
+          "path": "library/recipes/granola/futedu-granola-scenario-cards.pdf"
+        },
+        {
+          "name": "futedu-granola-scenario-facilitator-key.pdf",
+          "kind": "key",
+          "kindLabel": "Facilitator key",
+          "label": "Scenario facilitator key",
+          "path": "library/recipes/granola/futedu-granola-scenario-facilitator-key.pdf"
+        }
+      ]
+    },
+    {
+      "slug": "overnight-oats",
+      "title": "Overnight Oats: Pre-Workout Breakfast (2 variations)",
+      "files": [
+        {
+          "name": "futedu-overnight-oats-card-blackberry-walnut.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card: blackberry walnut",
+          "path": "library/recipes/overnight-oats/futedu-overnight-oats-card-blackberry-walnut.pdf"
+        },
+        {
+          "name": "futedu-overnight-oats-card-blueberry-almond-pb.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card: blueberry almond pb",
+          "path": "library/recipes/overnight-oats/futedu-overnight-oats-card-blueberry-almond-pb.pdf"
+        },
+        {
+          "name": "futedu-overnight-oats-workshop-session.md",
+          "kind": "session",
+          "kindLabel": "Session guide",
+          "label": "Session guide",
+          "path": "library/recipes/overnight-oats/futedu-overnight-oats-workshop-session.md"
+        }
+      ]
+    },
+    {
+      "slug": "smoky-chickpea-sweet-potato-bowl",
+      "title": "Smoky chickpea sweet potato bowl",
+      "files": [
+        {
+          "name": "futedu-smoky-chickpea-sweet-potato-bowl.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card",
+          "path": "library/recipes/smoky-chickpea-sweet-potato-bowl/futedu-smoky-chickpea-sweet-potato-bowl.pdf"
+        }
+      ]
+    }
+  ],
+  "sessions": [
+    {
+      "name": "futedu-nutrition-kickoff-session.md",
+      "kind": "session",
+      "kindLabel": "Session guide",
+      "label": "FUTEDU – Nutrition Kickoff Session (60 min)",
+      "path": "library/sessions/futedu-nutrition-kickoff-session.md"
+    }
+  ]
+}

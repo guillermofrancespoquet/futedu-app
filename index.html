@@ -418,6 +418,23 @@
   .an-lbl small { font-weight:500; color:var(--ink-3); }
   .as-prev { display:inline-block; margin-left:6px; font-size:11.5px; font-weight:600; color:var(--ink-3); background:var(--fill); border-radius:6px; padding:1px 6px; }
   .as-foot { position:sticky; bottom:0; padding:10px 0 2px; background:var(--card); }
+  .rc-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:14px; }
+  .rc-card h2 { margin-bottom:2px; }
+  .rc-sub { font-size:12.5px; color:var(--ink-3); margin-bottom:12px; }
+  .rc-sec { font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3); margin:14px 0 6px; }
+  .rc-file { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-top:1px solid var(--line); font-size:13.5px; }
+  .rc-sec + .rc-file, .rc-card > .rc-file:first-child { border-top:none; }
+  .rc-file .rc-name { font-weight:600; }
+  .rc-file .rc-btns { display:flex; gap:6px; flex-shrink:0; }
+  .rc-empty { font-size:12.5px; color:var(--ink-3); padding:6px 0; }
+  .rc-head-sec { font-size:13px; font-weight:700; margin:22px 0 10px; color:var(--ink-2); }
+  .md { font-size:14px; line-height:1.65; color:var(--ink-2); }
+  .md h1 { font-size:20px; margin:0 0 4px; color:var(--ink); } .md h2 { font-size:17px; margin:22px 0 6px; color:var(--ink); } .md h3 { font-size:15px; margin:16px 0 4px; color:var(--ink); } .md h4 { font-size:14px; margin:12px 0 4px; color:var(--ink); }
+  .md p { margin:8px 0; } .md ul, .md ol { margin:8px 0 8px 22px; } .md li { margin:3px 0; } .md strong { color:var(--ink); }
+  .md hr { border:none; border-top:1px solid var(--line); margin:16px 0; }
+  .md blockquote { margin:10px 0; padding:8px 14px; border-left:3px solid var(--orange); background:var(--card-2); border-radius:0 10px 10px 0; }
+  .md .md-table { overflow-x:auto; margin:10px 0; } .md table { border-collapse:collapse; font-size:13px; width:100%; } .md th, .md td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top; } .md th { font-size:12px; color:var(--ink-3); }
+  .md-box { max-width:820px; }
   .an-imp-ass { border-top:1px solid var(--line); padding-top:10px; margin-top:10px; }
   @media (max-width: 700px) { .an-field, .as-gh { grid-template-columns:1fr repeat(3, 1fr); } .an-used { grid-column:1 / -1; } .as-gh h4 { grid-column:1; } }
 
@@ -675,9 +692,8 @@
       <!-- RECIPES -->
       <section id="view-recipes" class="view hidden">
         <div class="page-head"><div><h1>Recipes</h1><div class="sub">Workshop recipes, session guides and printable handouts.</div></div></div>
-        <div class="card">
-          <div class="empty-state"><strong>Coming soon</strong>The recipe library is being set up step by step. Recipe cards, session plans and handouts will appear here.</div>
-        </div>
+        <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><input type="search" id="rcSearch" placeholder="Search recipes" aria-label="Search recipes"></div></div>
+        <div id="rcBody"></div>
       </section>
 
       <!-- SETTINGS -->
@@ -1116,6 +1132,83 @@ async function toggleCheckin(id) {
 }
 
 // ---- navigation ----
+// ---- recipes library: files published from the private futedu repo into library/ (generated, never edited here) ----
+let rcData = null;
+async function loadLibrary() {
+  if (rcData) return rcData;
+  try { const r = await fetch('library/index.json', { cache: 'no-cache' }); if (!r.ok) throw new Error('HTTP ' + r.status); rcData = await r.json(); }
+  catch (e) { rcData = { recipes: [], sessions: [], error: e.message || String(e) }; }
+  return rcData;
+}
+function mdInline(t) {
+  return escapeHtml(t).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/(^|[\s(])\*(?!\s)(.+?)\*(?=[\s).,;:!?]|$)/g, '$1<em>$2</em>').replace(/`(.+?)`/g, '<code>$1</code>');
+}
+// small Markdown renderer for the session guides: headings, lists, tables, quotes, rules, bold/italic
+function mdToHtml(src) {
+  const lines = src.replace(/\r/g, '').split('\n'), out = [];
+  let i = 0, list = null, para = [];
+  const flushPara = () => { if (para.length) { out.push('<p>' + para.map(mdInline).join('<br>') + '</p>'); para = []; } };
+  const closeList = () => { if (list) { out.push('</' + list + '>'); list = null; } };
+  while (i < lines.length) {
+    const ln = lines[i];
+    let m;
+    if (!ln.trim()) { flushPara(); closeList(); i++; continue; }
+    if ((m = ln.match(/^(#{1,4})\s+(.*)/))) { flushPara(); closeList(); out.push(`<h${m[1].length}>${mdInline(m[2])}</h${m[1].length}>`); i++; continue; }
+    if (/^\s*(---+|\*\*\*+)\s*$/.test(ln)) { flushPara(); closeList(); out.push('<hr>'); i++; continue; }
+    if (/^\s*\|/.test(ln) && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1] || '')) {
+      flushPara(); closeList();
+      const cells = r => r.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+      const head = cells(ln); i += 2; const rows = [];
+      while (i < lines.length && /^\s*\|/.test(lines[i])) { rows.push(cells(lines[i])); i++; }
+      out.push('<div class="md-table"><table><tr>' + head.map(c => '<th>' + mdInline(c) + '</th>').join('') + '</tr>' + rows.map(r => '<tr>' + r.map(c => '<td>' + mdInline(c) + '</td>').join('') + '</tr>').join('') + '</table></div>');
+      continue;
+    }
+    if ((m = ln.match(/^>\s?(.*)/))) { flushPara(); closeList(); const q = []; while (i < lines.length && (m = lines[i].match(/^>\s?(.*)/))) { q.push(m[1]); i++; } out.push('<blockquote>' + q.map(mdInline).join('<br>') + '</blockquote>'); continue; }
+    if ((m = ln.match(/^\s*([-*]|\d+\.)\s+(.*)/))) {
+      flushPara(); const kind = /\d/.test(m[1]) ? 'ol' : 'ul';
+      if (list !== kind) { closeList(); out.push('<' + kind + '>'); list = kind; }
+      out.push('<li>' + mdInline(m[2]) + '</li>'); i++; continue;
+    }
+    closeList(); para.push(ln.trim()); i++;
+  }
+  flushPara(); closeList();
+  return out.join('\n');
+}
+async function openGuide(path, title) {
+  const o = anOverlay('<div class="md-loading save-note">Loading…</div>');
+  o.querySelector('.modal-box').classList.add('md-box');
+  try {
+    const r = await fetch(path, { cache: 'no-cache' }); if (!r.ok) throw new Error('HTTP ' + r.status);
+    o.querySelector('.modal-box').innerHTML = `<div class="md">${mdToHtml(await r.text())}</div><div class="imp-foot"><a class="btn" href="${escapeHtml(path)}" download>Download .md</a><button class="btn primary modal-cancel">Close</button></div>`;
+    o.querySelector('.modal-cancel').addEventListener('click', () => o.remove());
+  } catch (e) { o.querySelector('.modal-box').innerHTML = `<div class="note">Could not load the guide: ${escapeHtml(e.message || String(e))}</div><div class="imp-foot"><button class="btn modal-cancel">Close</button></div>`; o.querySelector('.modal-cancel').addEventListener('click', () => o.remove()); }
+  o.addEventListener('click', e => { if (e.target === o) o.remove(); });
+}
+async function renderRecipes() {
+  const body = document.getElementById('rcBody');
+  const lib = await loadLibrary();
+  if (lib.error) { body.innerHTML = `<div class="card"><div class="empty-state"><strong>The recipe library could not be loaded</strong>${escapeHtml(lib.error)}</div></div>`; return; }
+  const q = (document.getElementById('rcSearch').value || '').trim().toLowerCase();
+  const split = t => { const i = t.indexOf(':'); return i > 0 ? [t.slice(0, i), t.slice(i + 1).trim()] : [t, '']; };
+  const fileRow = f => {
+    const isMd = f.name.endsWith('.md');
+    return `<div class="rc-file"><span class="rc-name">${escapeHtml(f.label)}</span><span class="rc-btns">${isMd ? `<button class="btn sm" data-guide="${escapeHtml(f.path)}">Read</button>` : `<a class="btn sm" href="${escapeHtml(f.path)}" target="_blank" rel="noopener">Open</a><a class="btn sm" href="${escapeHtml(f.path)}" download>Download</a>`}</span></div>`;
+  };
+  const groups = [['card', 'Recipe card'], ['session', 'Session guide'], ['handout', 'Printable handouts'], ['key', 'Facilitator keys'], ['doc', 'Documents'], ['other', 'Other files']];
+  const recipes = lib.recipes.filter(r => !q || r.title.toLowerCase().includes(q) || r.slug.includes(q));
+  const cards = recipes.map(r => {
+    const [t, sub] = split(r.title);
+    const secs = groups.map(([k, label]) => { const fs = r.files.filter(f => f.kind === k); return fs.length ? `<div class="rc-sec">${label}</div>${fs.map(fileRow).join('')}` : ''; }).join('');
+    const noCard = !r.files.some(f => f.kind === 'card');
+    return `<div class="card rc-card"><h2>${escapeHtml(t)}</h2><div class="rc-sub">${escapeHtml(sub)}</div>${secs || '<div class="rc-empty">No files yet.</div>'}${noCard ? '<div class="rc-sec">Recipe card</div><div class="rc-empty">Not published yet.</div>' : ''}</div>`;
+  }).join('');
+  const sessions = lib.sessions.filter(s => !q || s.label.toLowerCase().includes(q));
+  body.innerHTML = (sessions.length ? `<div class="rc-head-sec">General sessions</div><div class="rc-grid"><div class="card rc-card">${sessions.map(fileRow).join('')}</div></div>` : '') +
+    `<div class="rc-head-sec">Recipes</div>` + (cards ? `<div class="rc-grid">${cards}</div>` : '<div class="card"><div class="empty-state"><strong>No recipes found</strong>Try another search.</div></div>');
+  body.querySelectorAll('[data-guide]').forEach(b => b.addEventListener('click', () => openGuide(b.dataset.guide)));
+}
+document.getElementById('rcSearch').addEventListener('input', renderRecipes);
+
 const VIEWS = ['dashboard', 'summary', 'compare', 'anthro', 'anthrop', 'recipes', 'player', 'settings'];
 function navigate(route, silent) {
   let [view, param] = String(route || '').split('/');
@@ -1132,6 +1225,7 @@ function navigate(route, silent) {
   if (view === 'player') renderProfile();
   if (view === 'compare') renderCompare();
   if (view === 'anthro') renderAnthroList();
+  if (view === 'recipes') renderRecipes();
   if (view === 'anthrop') renderAnthroPlayer();
   closeMenu();
   window.scrollTo(0, 0);
