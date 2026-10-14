@@ -315,6 +315,12 @@
     #printArea .fr-note { border-left:3px solid #3a8fd1; padding:5px 12px; margin-bottom:6px; background:#eaf3fa; border-radius:0 8px 8px 0; font-size:10.5px; line-height:1.5; }
     #printArea .fr-disc { margin-top:auto; padding-top:var(--g); font-size:9px; line-height:1.55; color:#8a8a90; }
     #printArea .fr-disc + .fr-foot { margin-top:8px; }
+    #printArea .fr-cols { display:grid; grid-template-columns:1fr 1fr; gap:var(--g); }
+    #printArea .fr-cols .fr-sec { margin-bottom:var(--g); }
+    #printArea .fr-an .fr-sec td, #printArea .fr-an .fr-sec th { font-size:9.5px; }
+    #printArea .fr-an .fr-sec th { font-size:8px; }
+    #printArea .fr-line { font-size:10px; line-height:1.45; margin-bottom:4px; padding-left:10px; border-left:3px solid #ff5405; }
+    #printArea .fr-an .fr-sec td.num { white-space:nowrap; }
     #printArea .fr-foot { display:flex; justify-content:space-between; margin-top:auto; padding-top:var(--g); font-size:8.5px; letter-spacing:1px; text-transform:uppercase; color:#9a9aa0; }
     #printArea svg { width:100%; height:auto; }
     #printArea * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -373,6 +379,21 @@
   #ptr .spinner { width:16px; height:16px; border-width:2px; }
   #ptr.spin-off .spinner { animation:none; }
   .install-card .row { align-items:center; }
+
+  /* ---------- anthropometry ---------- */
+  .muted { color:var(--ink-3); }
+  .hist-full td.num { font-weight:700; color:var(--ink); }
+  .an-row { cursor:pointer; }
+  .an-row:hover td { background:var(--fill); }
+  .an-list { list-style:none; display:flex; flex-direction:column; gap:10px; }
+  .an-list li { font-size:13.5px; line-height:1.6; color:var(--ink-2); padding-left:14px; border-left:3px solid var(--orange); }
+  .an-list li strong { color:var(--ink); }
+  .an-field { display:grid; grid-template-columns:180px repeat(3, 84px) 1fr; gap:8px; align-items:center; margin-bottom:6px; }
+  .an-field input { height:34px; font-size:13px; padding:0 8px; }
+  .an-lbl { font-size:13px; font-weight:600; }
+  .an-used { font-size:12px; color:var(--ink-3); }
+  .an-used.warn { color:var(--notice-ink); font-weight:600; }
+  @media (max-width: 700px) { .an-field { grid-template-columns:1fr repeat(3, 1fr); } .an-used { grid-column:1 / -1; } }
 
   /* ---------- polish ---------- */
   @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
@@ -496,6 +517,10 @@
         <svg viewBox="0 0 24 24"><line x1="6" y1="20" x2="6" y2="11"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/></svg>
         Compare
       </button>
+      <button class="nav-item" data-view="anthro">
+        <svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="1.5"/><path d="M7 8v3M11 8v4M15 8v3M19 8v4"/></svg>
+        Anthropometry
+      </button>
       <button class="nav-item" data-view="recipes">
         <svg viewBox="0 0 24 24"><path d="M5 11h14a0 0 0 0 1 0 0 7 7 0 0 1-7 7 7 7 0 0 1-7-7z"/><path d="M8.5 11V8.6a3.5 3.5 0 0 1 7 0V11"/><path d="M12 18v2.5M8.5 20.5h7"/></svg>
         Recipes
@@ -602,6 +627,15 @@
 
       <!-- PLAYER PROFILE -->
       <section id="view-player" class="view hidden"></section>
+
+      <!-- ANTHROPOMETRY -->
+      <section id="view-anthro" class="view hidden">
+        <div class="page-head"><div><h1>Anthropometry</h1><div class="sub">Skinfolds, girths and basic measures: body composition, muscle development and proportions.</div></div></div>
+        <div class="kpis" id="anKpis"></div>
+        <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><input type="search" id="anSearch" placeholder="Search players" aria-label="Search players"></div></div>
+        <div class="card hist-full" id="anTable"></div>
+      </section>
+      <section id="view-anthrop" class="view hidden"></section>
 
       <!-- RECIPES -->
       <section id="view-recipes" class="view hidden">
@@ -895,6 +929,8 @@ async function loadAllInner() {
   const setting = k => { const row = st.data.find(x => x.key === k); return row ? row.value : undefined; };
   checkins = setting('checkins') || {};
   tagsMap = setting('player_tags') || {};
+  anthroProfiles = setting('anthro_profiles') || {};
+  anthroData = setting('anthro_assessments') || {};
   roster = pl.data.map(p => ({ id: p.id, name: p.name, checkedIn: !!checkins[p.id], tags: Array.isArray(tagsMap[p.id]) ? tagsMap[p.id] : [] }));
   notes = setting('player_notes');
   if (!notes) {
@@ -1044,18 +1080,23 @@ async function toggleCheckin(id) {
 }
 
 // ---- navigation ----
-const VIEWS = ['dashboard', 'summary', 'compare', 'recipes', 'player', 'settings'];
+const VIEWS = ['dashboard', 'summary', 'compare', 'anthro', 'anthrop', 'recipes', 'player', 'settings'];
 function navigate(route, silent) {
   let [view, param] = String(route || '').split('/');
+  if (view === 'anthro' && param) view = 'anthrop';
   if (!VIEWS.includes(view)) view = 'dashboard';
   if (view === 'player' && !(param && roster.some(p => p.id === param))) view = 'summary';
+  if (view === 'anthrop' && !(param && roster.some(p => p.id === param))) view = 'anthro';
   ui.view = view;
   ui.playerId = view === 'player' ? param : null;
+  ui.anPlayer = view === 'anthrop' ? param : null;
   VIEWS.forEach(v => document.getElementById('view-' + v).classList.toggle('hidden', v !== view));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === (view === 'player' ? 'summary' : view)));
-  if (!silent) history.replaceState(null, '', '#' + (view === 'player' ? 'player/' + param : view));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === (view === 'player' ? 'summary' : view === 'anthrop' ? 'anthro' : view)));
+  if (!silent) history.replaceState(null, '', '#' + (view === 'player' ? 'player/' + param : view === 'anthrop' ? 'anthro/' + param : view));
   if (view === 'player') renderProfile();
   if (view === 'compare') renderCompare();
+  if (view === 'anthro') renderAnthroList();
+  if (view === 'anthrop') renderAnthroPlayer();
   closeMenu();
   window.scrollTo(0, 0);
 }
@@ -1463,6 +1504,7 @@ function renderAll() {
   renderSummary();
   renderSettings();
   if (ui.view === 'compare') renderCompare();
+  if (ui.view === 'anthro' || ui.view === 'anthrop') renderAnthro();
   if (ui.view === 'player') {
     if (roster.some(p => p.id === ui.playerId)) renderProfile(); else navigate('summary');
   }
@@ -2136,6 +2178,357 @@ document.getElementById('reportFile').addEventListener('change', e => {
   e.target.value = '';
   if (files.length) importReports(files);
 });
+
+// ---- anthropometry: measurements and formulas (ISAK repeat-measure rule, Yuhasz, Slaughter, Ross & Kerr, Lee) ----
+const AN_SIZES = [['mass', 'Body mass', 'kg', 0.05], ['height', 'Height', 'cm', 0.1], ['sitting', 'Sitting height', 'cm', 0.1], ['span', 'Arm span', 'cm', 0.1]];
+const AN_FOLDS = [['triceps', 'Triceps'], ['subscapular', 'Subscapular'], ['supraspinal', 'Supraspinal'], ['abdominal', 'Abdominal'], ['thigh', 'Thigh'], ['calf', 'Calf']];
+const AN_GIRTHS = [['armRelaxed', 'Relaxed arm'], ['armFlexed', 'Flexed and contracted arm'], ['thigh', 'Mid-thigh'], ['calf', 'Calf']];
+const AN_KEYS = [...AN_SIZES.map(x => x[0]), ...AN_FOLDS.map(x => 'sf_' + x[0]), ...AN_GIRTHS.map(x => 'gr_' + x[0])];
+const AN_TOL = k => k.startsWith('sf_') ? 0.05 : 0.01;   // ISAK: 5 % for skinfolds, 1 % for sizes and girths
+
+function anHarmean(a, b) { return 2 / ((1 / a) + (1 / b)); }
+// One measure taken 1-3 times: single -> as is; two -> harmonic mean; three -> median. Flags a first-vs-second difference above the tolerance.
+function anTriple(list, tol) {
+  const n = (list || []).map(v => (v === '' || v == null) ? NaN : parseFloat(v));
+  const [m1, m2, m3] = n;
+  if (isNaN(m1)) return { value: null, pctDiff: null, out: false, singleMeasure: false };
+  if (isNaN(m2)) return { value: m1, pctDiff: 0, out: false, singleMeasure: true };
+  const pctDiff = (m2 - m1) / anHarmean(m1, m2);
+  const value = isNaN(m3) ? anHarmean(m1, m2) : [m1, m2, m3].sort((a, b) => a - b)[1];
+  return { value, pctDiff, out: Math.abs(pctDiff) > tol, singleMeasure: false };
+}
+function anResolve(raw) {
+  const v = {}, flags = {};
+  AN_KEYS.forEach(k => { const t = anTriple((raw || {})[k], AN_TOL(k)); v[k] = t.value; flags[k] = t; });
+  return { v, flags };
+}
+function anAge(dateISO, dobISO) {
+  if (!dateISO || !dobISO) return null;
+  const a = new Date(dateISO + 'T00:00:00Z'), b = new Date(dobISO + 'T00:00:00Z');
+  if (isNaN(a) || isNaN(b)) return null;
+  return Math.abs(a - b) / 86400000 / 365.25;
+}
+const AN_ETHNICITY = { Caucasian: 0, Black: 1.1, Asian: -2 };
+// v = resolved values (AN_KEYS); profile = { sex: 'Male' | 'Female', ethnicity }; returns null while any value is missing
+function anCompute(v, profile, age) {
+  if (!profile || !(profile.sex === 'Male' || profile.sex === 'Female') || !(profile.ethnicity in AN_ETHNICITY) || age == null) return null;
+  if (AN_KEYS.some(k => v[k] == null || isNaN(v[k]))) return null;
+  const male = profile.sex === 'Male', H = v.height, mass = v.mass;
+  const sf = k => v['sf_' + k], gr = k => v['gr_' + k];
+  const R = { age };
+  R.sum6 = AN_FOLDS.reduce((s, f) => s + sf(f[0]), 0);
+  // corrected girths and muscle areas
+  R.corrArm = gr('armRelaxed') - Math.PI * sf('triceps') / 10;
+  R.corrThigh = gr('thigh') - Math.PI * sf('thigh') / 10;
+  R.corrCalf = gr('calf') - Math.PI * sf('calf') / 10;
+  R.areaArm = R.corrArm * R.corrArm / (4 * Math.PI);
+  R.areaThigh = R.corrThigh * R.corrThigh / (4 * Math.PI);
+  R.areaCalf = R.corrCalf * R.corrCalf / (4 * Math.PI);
+  const areas = R.areaArm + R.areaThigh + R.areaCalf;
+  R.shareArm = R.areaArm / areas * 100; R.shareThigh = R.areaThigh / areas * 100; R.shareCalf = R.areaCalf / areas * 100;
+  R.flexDiff = gr('armFlexed') - gr('armRelaxed');
+  // fat
+  R.yuhaszPct = male ? 3.64 + 0.097 * R.sum6 : 4.56 + 0.143 * R.sum6;
+  R.yuhaszKg = R.yuhaszPct / 100 * mass;
+  const z = (R.sum6 * (170.18 / H) - 116.41) / 34.79;
+  R.adiposeKg = ((z * 5.85) + 25.6) / Math.pow(170.18 / H, 3);
+  R.adiposePct = R.adiposeKg / mass * 100;
+  // Slaughter et al. 1988 (triceps + calf): an equation for young people, 8-18 years
+  const tc = sf('triceps') + sf('calf');
+  R.slaughterPct = (age >= 8 && age < 19) ? (male ? 0.735 * tc + 1.0 : 0.610 * tc + 5.1) : null;
+  // muscle (Lee 2000) and residual
+  R.muscleKg = H / 100 * (0.00744 * R.corrArm ** 2 + 0.00088 * R.corrThigh ** 2 + 0.00441 * R.corrCalf ** 2) + 2.4 * (male ? 1 : 0) - 0.048 * age + AN_ETHNICITY[profile.ethnicity] + 7.8;
+  R.musclePct = R.muscleKg / mass * 100;
+  R.residualKg = mass - R.adiposeKg - R.muscleKg;
+  R.residualPct = R.residualKg / mass * 100;
+  // indices
+  R.bmi = mass / Math.pow(H / 100, 2);
+  R.cormic = v.sitting / H;
+  const cut = male ? [0.509, 0.529] : [0.519, 0.54];
+  R.cormicText = R.cormic < cut[0] ? 'short trunk (brachycormic)' : R.cormic < cut[1] ? 'average trunk (metriocormic)' : 'long trunk (macrocormic)';
+  R.relSpan = v.span / H * 100;
+  R.fatDist = (sf('triceps') + sf('thigh') + sf('calf')) / (sf('subscapular') + sf('supraspinal') + sf('abdominal')) * 100;
+  R.fatDistText = R.fatDist > 105 ? 'relatively more fat on the limbs than on the trunk' : R.fatDist < 95 ? 'relatively more fat on the trunk than on the limbs' : 'similar amounts on the limbs and the trunk';
+  R.mass = mass; R.height = H;
+  return R;
+}
+
+// ---- anthropometry: data (stored in the settings table: no schema changes) ----
+let anthroProfiles = {};   // player id -> { dob, sex: 'Male' | 'Female', ethnicity }
+let anthroData = {};       // player id -> [{ id, date, raw: { key: [m1, m2, m3] } }]
+async function mutateSetting(key, mutate) {
+  const cur = await sb.from('settings').select('value').eq('key', key);
+  if (cur.error) { showError(cur.error); return null; }
+  const next = JSON.parse(JSON.stringify((cur.data[0] && cur.data[0].value) || {}));
+  mutate(next);
+  const { error } = await sb.from('settings').upsert({ key, value: next });
+  if (error) { showError(error); return null; }
+  return next;
+}
+function anList(pid) { return (anthroData[pid] || []).slice().sort((a, b) => (a.date || '').localeCompare(b.date || '')); }
+function anFull(pid, a) {
+  const prof = anthroProfiles[pid], { v, flags } = anResolve(a.raw);
+  const age = prof && prof.dob ? anAge(a.date, prof.dob) : null;
+  return { a, v, flags, age, R: anCompute(v, prof, age) };
+}
+function anMissing(pid, a) {
+  const prof = anthroProfiles[pid] || {}, { v } = anResolve(a.raw), m = [];
+  if (!prof.dob) m.push('date of birth'); if (!prof.sex) m.push('sex'); if (!prof.ethnicity) m.push('ethnicity');
+  const label = k => k.startsWith('sf_') ? AN_FOLDS.find(f => 'sf_' + f[0] === k)[1] + ' skinfold' : k.startsWith('gr_') ? AN_GIRTHS.find(f => 'gr_' + f[0] === k)[1] + ' girth' : AN_SIZES.find(s => s[0] === k)[1];
+  AN_KEYS.forEach(k => { if (v[k] == null) m.push(label(k)); });
+  return m;
+}
+// the variables shown in tables, with the usual measurement error used to judge a change
+const AN_VARS = {
+  mass: { label: 'Body mass', phrase: 'body mass', unit: ' kg', dec: 1, tol: 0.01 }, height: { label: 'Height', unit: ' cm', dec: 1, tol: 0.01 },
+  sum6: { label: 'Sum of 6 skinfolds', phrase: 'the sum of 6 skinfolds', unit: ' mm', dec: 1, tol: 0.05 },
+  yuhaszPct: { label: 'Fat, Yuhasz (1974) (%)', phrase: 'estimated fat (Yuhasz)', unit: ' %', dec: 1, tol: 0.05 }, yuhaszKg: { label: 'Fat mass, Yuhasz (kg)', unit: ' kg', dec: 1, tol: 0.05 },
+  slaughterPct: { label: 'Fat, Slaughter (1988), young people (%)', unit: ' %', dec: 1, tol: 0.05 },
+  adiposeKg: { label: 'Adipose tissue, Ross and Kerr (kg)', unit: ' kg', dec: 1, tol: 0.05 }, adiposePct: { label: 'Adipose tissue, Ross and Kerr (%)', unit: ' %', dec: 1, tol: 0.05 },
+  muscleKg: { label: 'Muscle mass, Lee (2000) (kg)', phrase: 'estimated muscle mass (Lee)', unit: ' kg', dec: 1, tol: 0.02 }, musclePct: { label: 'Muscle mass, Lee (2000) (% of body mass)', phrase: 'estimated muscle share (Lee)', unit: ' %', dec: 1, tol: 0.02 },
+  residualKg: { label: 'Residual mass (kg)', unit: ' kg', dec: 1, tol: 0.05 }, residualPct: { label: 'Residual mass (% of body mass)', unit: ' %', dec: 1, tol: 0.05 },
+  bmi: { label: 'BMI', unit: '', dec: 1, tol: 0.02 },
+  corrArm: { label: 'Corrected arm girth', unit: ' cm', dec: 1, tol: 0.01 }, corrThigh: { label: 'Corrected thigh girth', unit: ' cm', dec: 1, tol: 0.01 }, corrCalf: { label: 'Corrected calf girth', unit: ' cm', dec: 1, tol: 0.01 },
+  areaArm: { label: 'Muscle area, arm', unit: ' cm²', dec: 1, tol: 0.02 }, areaThigh: { label: 'Muscle area, thigh', unit: ' cm²', dec: 1, tol: 0.02 }, areaCalf: { label: 'Muscle area, calf', unit: ' cm²', dec: 1, tol: 0.02 },
+  shareArm: { label: 'Share of muscle area, arm', unit: ' %', dec: 1 }, shareThigh: { label: 'Share of muscle area, thigh', unit: ' %', dec: 1 }, shareCalf: { label: 'Share of muscle area, calf', unit: ' %', dec: 1 },
+  flexDiff: { label: 'Flexed minus relaxed arm', unit: ' cm', dec: 1 },
+  cormic: { label: 'Cormic index', unit: '', dec: 3 }, relSpan: { label: 'Relative arm span', unit: ' %', dec: 1 },
+  fatDist: { label: 'Fat distribution index', unit: '', dec: 0 },
+};
+const anFmt = (k, x) => x == null || isNaN(x) ? '—' : x.toFixed(AN_VARS[k].dec) + AN_VARS[k].unit;
+function anChange(k, cur, prev) {
+  if (!prev || prev[k] == null || cur[k] == null) return null;
+  const diff = cur[k] - prev[k], tol = AN_VARS[k].tol;
+  return { diff, beyond: tol != null && prev[k] !== 0 && Math.abs(diff / prev[k]) > tol };
+}
+function anChangeHtml(k, cur, prev) {
+  const c = anChange(k, cur, prev);
+  if (!c) return '<span class="muted">—</span>';
+  const s = (c.diff > 0 ? '+' : c.diff < 0 ? '−' : '±') + Math.abs(c.diff).toFixed(AN_VARS[k].dec) + AN_VARS[k].unit;
+  return c.beyond ? `<strong>${s}</strong> <span class="tag-chip" title="Larger than the usual measurement error">beyond error</span>` : `${s} <span class="muted">within error</span>`;
+}
+// where a player sits in the academy group: latest complete assessment of every player with a profile
+function anGroupRows() {
+  const out = [];
+  roster.forEach(p => {
+    const list = anList(p.id);
+    for (let i = list.length - 1; i >= 0; i--) { const f = anFull(p.id, list[i]); if (f.R) { out.push({ pid: p.id, R: f.R }); break; } }
+  });
+  return out;
+}
+function anGroupStat(rows, k, pid) {
+  const vals = rows.map(r => r.R[k]).filter(x => x != null && !isNaN(x));
+  if (vals.length < 2) return null;
+  const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+  const mine = rows.find(r => r.pid === pid);
+  const rank = mine && mine.R[k] != null ? vals.filter(x => x > mine.R[k]).length + 1 : null;
+  return { mean, n: vals.length, rank };
+}
+const ordinal = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
+function anGroupHtml(g, k, R, noRank) {
+  if (!g || R[k] == null) return '<span class="muted">—</span>';
+  return anFmt(k, g.mean) + (g.rank && !noRank ? ` <span class="muted">· ${ordinal(g.rank)} highest of ${g.n}</span>` : '');
+}
+// neutral, non-diagnostic summary sentences
+function anConclusions(R, prevR, rows, pid, dateText) {
+  const out = [], sentence = [];
+  let s = `Sum of 6 skinfolds is ${anFmt('sum6', R.sum6)}; estimated fat is ${anFmt('yuhaszPct', R.yuhaszPct)} (Yuhasz)`;
+  if (R.slaughterPct != null) s += ` and ${anFmt('slaughterPct', R.slaughterPct)} (Slaughter, an equation for young people)`;
+  s += `; estimated muscle mass is ${anFmt('muscleKg', R.muscleKg)} (${anFmt('musclePct', R.musclePct)} of body mass).`;
+  out.push('<strong>Body composition.</strong> ' + s);
+  out.push(`<strong>Muscle development.</strong> Muscle areas are ${anFmt('areaArm', R.areaArm)} (arm), ${anFmt('areaThigh', R.areaThigh)} (thigh) and ${anFmt('areaCalf', R.areaCalf)} (calf), which make up ${R.shareArm.toFixed(0)} %, ${R.shareThigh.toFixed(0)} % and ${R.shareCalf.toFixed(0)} % of the three areas together.`);
+  out.push(`<strong>Proportions.</strong> Cormic index ${R.cormic.toFixed(3)}: ${R.cormicText}; arm span is ${R.relSpan.toFixed(1)} % of height; fat distribution index ${R.fatDist.toFixed(0)} (${R.fatDistText}).`);
+  if (prevR) {
+    const parts = ['sum6', 'yuhaszPct', 'muscleKg', 'mass'].map(k => { const c = anChange(k, R, prevR); return c ? `${AN_VARS[k].phrase} ${c.diff > 0 ? '+' : c.diff < 0 ? '−' : '±'}${Math.abs(c.diff).toFixed(AN_VARS[k].dec)}${AN_VARS[k].unit} (${c.beyond ? 'larger than' : 'within'} the usual measurement error)` : null; }).filter(Boolean);
+    out.push(`<strong>Evolution.</strong> Since the previous assessment${dateText ? ' (' + dateText + ')' : ''}: ${parts.join('; ')}.`);
+  } else out.push('<strong>Evolution.</strong> This is the first complete assessment, so there is nothing to compare with yet.');
+  if (rows.length >= 2) {
+    const side = (k) => { const g = anGroupStat(rows, k, pid); return g ? `${AN_VARS[k].phrase} is ${R[k] > g.mean ? 'above' : R[k] < g.mean ? 'below' : 'at'} the group mean (${anFmt(k, g.mean)})` : null; };
+    const parts = ['sum6', 'yuhaszPct', 'musclePct'].map(side).filter(Boolean);
+    if (parts.length) parts[0] = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+    out.push(`<strong>Academy group</strong> (${rows.length} players, latest assessments). ${parts.join('; ')}. These are descriptive comparisons, not targets.`);
+  }
+  return out;
+}
+const AN_CAVEAT = 'BMI does not tell muscle from fat, which matters in athletes. Fat and muscle percentages come from equations based on skinfolds and girths: they are estimates, so the trend over several assessments says more than a single value. Yuhasz and Ross and Kerr were not developed on teenagers; the Slaughter equation was developed for young people (8 to 18 years).';
+
+// ---- anthropometry: pages ----
+function anAgeText(pid) { const p = anthroProfiles[pid]; return p && p.dob ? anAge(todayStr(), p.dob) : null; }
+function renderAnthroList() {
+  const q = (document.getElementById('anSearch').value || '').toLowerCase();
+  const rows = roster.filter(p => !q || p.name.toLowerCase().includes(q));
+  const group = anGroupRows();
+  const avgOf = k => { const v = group.map(g => g.R[k]); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+  const withData = roster.filter(p => anList(p.id).length).length;
+  document.getElementById('anKpis').innerHTML = `
+    <div class="kpi"><div class="k-label">Players with an assessment</div><div class="k-value">${withData}<small> / ${roster.length}</small></div><div class="progress"><span style="width:${roster.length ? Math.round(withData / roster.length * 100) : 0}%"></span></div></div>
+    <div class="kpi"><div class="k-label">Group mean · sum of 6 skinfolds</div><div class="k-value">${group.length ? avgOf('sum6').toFixed(1) : '—'}<small>${group.length ? ' mm' : ''}</small></div><div class="k-sub">${group.length} complete assessments</div></div>
+    <div class="kpi"><div class="k-label">Group mean · fat (Yuhasz)</div><div class="k-value">${group.length ? avgOf('yuhaszPct').toFixed(1) : '—'}<small>${group.length ? ' %' : ''}</small></div></div>
+    <div class="kpi"><div class="k-label">Group mean · muscle (Lee)</div><div class="k-value">${group.length ? avgOf('musclePct').toFixed(1) : '—'}<small>${group.length ? ' %' : ''}</small></div></div>`;
+  document.getElementById('anTable').innerHTML = `<table><tr><th>Player</th><th>Age</th><th>Last assessment</th><th>Σ6 (mm)</th><th>Fat % (Yuhasz)</th><th>Muscle % (Lee)</th><th>BMI</th></tr>
+    ${rows.map(p => {
+      const list = anList(p.id), last = list[list.length - 1], f = last ? anFull(p.id, last) : null, age = anAgeText(p.id);
+      const need = !(anthroProfiles[p.id] && anthroProfiles[p.id].dob && anthroProfiles[p.id].sex && anthroProfiles[p.id].ethnicity);
+      return `<tr class="an-row" data-open="${p.id}"><td><span class="attn-name">${escapeHtml(p.name)}</span>${need ? ' <span class="tag-chip">profile needed</span>' : ''}</td>
+        <td>${age != null ? age.toFixed(1) : '—'}</td><td>${last ? escapeHtml(last.date) : '<span class="muted">none</span>'}</td>
+        <td>${f && f.R ? f.R.sum6.toFixed(1) : '—'}</td><td>${f && f.R ? f.R.yuhaszPct.toFixed(1) : '—'}</td><td>${f && f.R ? f.R.musclePct.toFixed(1) : '—'}</td><td>${f && f.R ? f.R.bmi.toFixed(1) : '—'}</td></tr>`;
+    }).join('')}</table>`;
+  document.querySelectorAll('#anTable [data-open]').forEach(r => r.addEventListener('click', () => navigate('anthro/' + r.dataset.open)));
+}
+document.getElementById('anSearch').addEventListener('input', renderAnthroList);
+
+let anSelected = null;   // assessment id shown on the player page
+function renderAnthroPlayer() {
+  const p = roster.find(x => x.id === ui.anPlayer), el = document.getElementById('view-anthrop');
+  if (!p) { el.innerHTML = ''; return; }
+  const prof = anthroProfiles[p.id], list = anList(p.id);
+  if (!list.some(a => a.id === anSelected)) anSelected = list.length ? list[list.length - 1].id : null;
+  const idx = list.findIndex(a => a.id === anSelected), a = idx >= 0 ? list[idx] : null;
+  const cur = a ? anFull(p.id, a) : null;
+  // the previous assessment that can be calculated
+  let prev = null; for (let i = idx - 1; i >= 0 && !prev; i--) { const f = anFull(p.id, list[i]); if (f.R) prev = f; }
+  const rows = anGroupRows(), R = cur && cur.R, pR = prev && prev.R;
+  const age = anAgeText(p.id);
+  const profText = prof && prof.dob ? `Born ${escapeHtml(longDateSafe(prof.dob))} · ${escapeHtml(prof.sex || 'sex not set')} · ${escapeHtml(prof.ethnicity || 'ethnicity not set')}${age != null ? ' · age ' + age.toFixed(1) : ''}` : 'Profile incomplete: date of birth, sex and ethnicity are needed for the calculations.';
+  const kpi = (label, key, sub) => `<div class="kpi"><div class="k-label">${label}</div><div class="k-value">${R ? anFmt(key, R[key]).replace(/ (mm|%|kg)$/, '<small> $1</small>') : '—'}</div>${sub || ''}</div>`;
+  const trow = (k, extra) => R && R[k] != null ? `<tr><td>${AN_VARS[k].label}</td><td class="num">${anFmt(k, R[k])}</td><td>${anChangeHtml(k, R, pR)}</td><td>${anGroupHtml(anGroupStat(rows, k, p.id), k, R)}</td></tr>` : '';
+  const tbl = keys => `<div class="hist-full"><table><tr><th>Variable</th><th>Value</th><th>Change vs previous</th><th>Academy group</th></tr>${keys.map(trow).join('')}</table></div>`;
+  let body = '';
+  if (!prof || !prof.dob || !prof.sex || !prof.ethnicity) body += `<div class="card"><div class="empty-state"><strong>Add the player's profile first</strong>Date of birth, sex and ethnicity are needed to calculate age, fat and muscle mass.<br><button class="btn primary" style="margin-top:12px;" id="anEditProfile2">Edit profile</button></div></div>`;
+  if (!a) body += `<div class="card"><div class="empty-state"><strong>No assessments yet</strong>Add the first one to see the results.<br><button class="btn primary" style="margin-top:12px;" id="anNew2">New assessment</button></div></div>`;
+  else {
+    body += `<div class="card"><div class="row" style="justify-content:space-between;"><div class="row"><label class="save-note" for="anSel">Assessment</label><select id="anSel" style="width:auto;">${list.slice().reverse().map(x => `<option value="${x.id}"${x.id === anSelected ? ' selected' : ''}>${escapeHtml(longDateSafe(x.date))}</option>`).join('')}</select></div>
+      <div class="row"><button class="btn sm" id="anEdit">Edit</button><button class="btn sm danger" id="anDelete">Delete</button></div></div></div>`;
+    if (!R) {
+      const m = anMissing(p.id, a);
+      body += `<div class="card"><h2>Results not available yet</h2><div class="note" style="margin-top:0;">Still missing: ${m.map(escapeHtml).join(', ')}.</div></div>`;
+    } else {
+      body += `<div class="kpis">${kpi('Sum of 6 skinfolds', 'sum6', pR ? `<div class="k-sub">${anChange('sum6', R, pR).diff > 0 ? '+' : ''}${anChange('sum6', R, pR).diff.toFixed(1)} mm vs previous</div>` : '')}${kpi('Fat (Yuhasz)', 'yuhaszPct', R.slaughterPct != null ? `<div class="k-sub">Slaughter (young people): ${R.slaughterPct.toFixed(1)} %</div>` : '')}${kpi('Muscle (Lee)', 'musclePct', `<div class="k-sub">${R.muscleKg.toFixed(1)} kg</div>`)}${kpi('BMI', 'bmi')}</div>
+        <div class="card"><h2>Summary</h2><ul class="an-list">${anConclusions(R, pR, rows, p.id, prev ? longDateSafe(prev.a.date) : '').map(t => `<li>${t}</li>`).join('')}</ul></div>
+        <div class="card"><h2>Body composition</h2>${tbl(['mass', 'sum6', 'yuhaszPct', 'yuhaszKg', 'slaughterPct', 'adiposePct', 'adiposeKg', 'musclePct', 'muscleKg', 'residualPct', 'bmi'])}<div class="note">${AN_CAVEAT}</div></div>
+        <div class="card"><h2>Muscle development</h2>${tbl(['corrArm', 'corrThigh', 'corrCalf', 'areaArm', 'areaThigh', 'areaCalf', 'shareArm', 'shareThigh', 'shareCalf', 'flexDiff'])}</div>
+        <div class="card"><h2>Proportions</h2>${tbl(['height', 'cormic', 'relSpan', 'fatDist'])}</div>`;
+      const unit = k => k.startsWith('sf_') ? 'mm' : k.startsWith('gr_') ? 'cm' : (AN_SIZES.find(s => s[0] === k) || [0, 0, ''])[2];
+      body += `<div class="card"><h2>Measurements used</h2><div class="hist-full"><table><tr><th>Measure</th><th>Value used</th><th>Taken</th><th>Check</th></tr>${AN_KEYS.map(k => { const t = cur.flags[k]; const lbl = k.startsWith('sf_') ? AN_FOLDS.find(f => 'sf_' + f[0] === k)[1] + ' skinfold' : k.startsWith('gr_') ? AN_GIRTHS.find(f => 'gr_' + f[0] === k)[1] + ' girth' : AN_SIZES.find(s => s[0] === k)[1]; return `<tr><td>${lbl}</td><td class="num">${t.value != null ? (Math.round(t.value * 100) / 100) + ' ' + unit(k) : '—'}</td><td>${(cur.a.raw[k] || []).filter(x => x !== '' && x != null).length}×</td><td>${t.singleMeasure ? '<span class="muted">single measure</span>' : t.out ? '<span class="tag-chip">difference above ' + (AN_TOL(k) * 100) + ' %</span>' : '<span class="muted">ok</span>'}</td></tr>`; }).join('')}</table></div></div>`;
+    }
+    const done = list.map(x => ({ x, f: anFull(p.id, x) })).reverse();
+    body += `<div class="card"><h2>All assessments</h2><div class="hist-full"><table><tr><th>Date</th><th>Age</th><th>Body mass</th><th>Σ6 (mm)</th><th>Fat % (Yuhasz)</th><th>Muscle (kg)</th></tr>${done.map(({ x, f }) => `<tr class="an-row" data-sel="${x.id}"><td>${escapeHtml(longDateSafe(x.date))}</td><td>${f.age != null ? f.age.toFixed(1) : '—'}</td><td>${f.v.mass != null ? f.v.mass + ' kg' : '—'}</td><td>${f.R ? f.R.sum6.toFixed(1) : '—'}</td><td>${f.R ? f.R.yuhaszPct.toFixed(1) : '—'}</td><td>${f.R ? f.R.muscleKg.toFixed(1) : '—'}</td></tr>`).join('')}</table></div></div>`;
+  }
+  el.innerHTML = `<button class="btn sm back" id="anBack">← Anthropometry</button>
+    <div class="page-head"><div class="name-row"><span class="avatar lg" aria-hidden="true">${escapeHtml(initials(p.name))}</span><div><h1>${escapeHtml(p.name)}</h1><div class="sub">${profText}</div></div></div>
+      <div class="actions"><button class="btn" id="anEditProfile">Edit profile</button><button class="btn${a ? '' : ' primary'}" id="anNew">New assessment</button>${R ? '<button class="btn primary" id="anPrint">Print report</button>' : ''}</div></div>${body}`;
+  const on = (id, fn) => { const b = document.getElementById(id); if (b) b.addEventListener('click', fn); };
+  on('anBack', () => navigate('anthro')); on('anEditProfile', () => anProfileForm(p.id)); on('anEditProfile2', () => anProfileForm(p.id));
+  on('anNew', () => anAssessmentForm(p.id, null)); on('anNew2', () => anAssessmentForm(p.id, null));
+  on('anEdit', () => anAssessmentForm(p.id, a)); on('anDelete', () => anDeleteAssessment(p.id, a)); on('anPrint', () => anPrint(p.id, a.id));
+  const sel = document.getElementById('anSel'); if (sel) sel.addEventListener('change', e => { anSelected = e.target.value; renderAnthroPlayer(); });
+  el.querySelectorAll('[data-sel]').forEach(r => r.addEventListener('click', () => { anSelected = r.dataset.sel; renderAnthroPlayer(); window.scrollTo(0, 0); }));
+}
+
+// ---- anthropometry: forms ----
+function anOverlay(inner) {
+  const o = document.createElement('div');
+  o.className = 'modal-overlay imp-overlay';
+  o.innerHTML = '<div class="modal-box imp-box">' + inner + '</div>';
+  document.body.appendChild(o);
+  return o;
+}
+function anProfileForm(pid) {
+  const p = roster.find(x => x.id === pid), cur = anthroProfiles[pid] || {};
+  const o = anOverlay(`<h3>Profile: ${escapeHtml(p.name)}</h3><div class="save-note" style="margin-bottom:12px;">Personal data stays in your database only. It is used for age, fat and muscle estimates.</div>
+    <div class="imp-grid" style="grid-template-columns:repeat(3,1fr);"><div><label>Date of birth</label><input type="date" id="pfDob" value="${escapeHtml(cur.dob || '')}"></div>
+      <div><label>Sex</label><select id="pfSex"><option value="">—</option>${['Male', 'Female'].map(s => `<option${cur.sex === s ? ' selected' : ''}>${s}</option>`).join('')}</select></div>
+      <div><label>Ethnicity (used by the muscle equation)</label><select id="pfEth"><option value="">—</option>${Object.keys(AN_ETHNICITY).map(s => `<option${cur.ethnicity === s ? ' selected' : ''}>${s}</option>`).join('')}</select></div></div>
+    <div class="imp-foot"><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Save</button></div>`);
+  o.querySelector('.modal-cancel').addEventListener('click', () => o.remove());
+  o.querySelector('.modal-ok').addEventListener('click', async () => {
+    const prof = { dob: o.querySelector('#pfDob').value || '', sex: o.querySelector('#pfSex').value || '', ethnicity: o.querySelector('#pfEth').value || '' };
+    const next = await mutateSetting('anthro_profiles', all => { all[pid] = prof; });
+    if (!next) return;
+    anthroProfiles = next; o.remove(); toast('Profile saved'); renderAnthro();
+  });
+}
+function anAssessmentForm(pid, a) {
+  const p = roster.find(x => x.id === pid);
+  const groups = [['Basic measures', AN_SIZES.map(s => [s[0], s[1], s[2]])], ['Skinfolds (mm)', AN_FOLDS.map(f => ['sf_' + f[0], f[1], 'mm'])], ['Girths (cm)', AN_GIRTHS.map(f => ['gr_' + f[0], f[1], 'cm'])]];
+  const val = (k, i) => a && a.raw[k] && a.raw[k][i] != null ? a.raw[k][i] : '';
+  const o = anOverlay(`<h3>${a ? 'Edit' : 'New'} assessment: ${escapeHtml(p.name)}</h3>
+    <div class="save-note" style="margin-bottom:10px;">Enter each measure once, twice or three times. Two readings use the harmonic mean, three use the median; a warning shows when the first two differ by more than 1 % (basic measures and girths) or 5 % (skinfolds).</div>
+    <div class="imp-grid" style="grid-template-columns:200px 1fr;margin-bottom:6px;"><div><label>Date of the assessment</label><input type="date" id="asDate" value="${escapeHtml(a ? a.date : todayStr())}"></div></div>
+    ${groups.map(([title, items]) => `<h3 style="font-size:13px;margin:14px 0 6px;">${title}</h3>${items.map(([k, lbl, unit]) => `<div class="an-field" data-k="${k}"><span class="an-lbl">${lbl}</span>${[0, 1, 2].map(i => `<input type="number" step="any" inputmode="decimal" data-i="${i}" placeholder="${i === 2 ? '3rd (opt.)' : i === 0 ? '1st' : '2nd'}" value="${val(k, i)}">`).join('')}<span class="an-used" aria-live="polite"></span></div>`).join('')}`).join('')}
+    <div class="imp-foot"><span class="save-note" id="asNote"></span><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Save</button></div>`);
+  const refresh = () => o.querySelectorAll('.an-field').forEach(row => {
+    const k = row.dataset.k, t = anTriple([...row.querySelectorAll('input')].map(i => i.value), AN_TOL(k));
+    const used = row.querySelector('.an-used');
+    used.className = 'an-used' + (t.out ? ' warn' : '');
+    used.textContent = t.value == null ? '' : (Math.round(t.value * 100) / 100) + (t.out ? ' · difference ' + (Math.abs(t.pctDiff) * 100).toFixed(1) + ' % (limit ' + AN_TOL(k) * 100 + ' %): check the measure' : t.singleMeasure ? ' · single measure' : '');
+  });
+  o.addEventListener('input', refresh); refresh();
+  o.querySelector('.modal-cancel').addEventListener('click', () => o.remove());
+  o.querySelector('.modal-ok').addEventListener('click', async () => {
+    const date = o.querySelector('#asDate').value;
+    if (!date) { o.querySelector('#asNote').textContent = 'Choose the date of the assessment.'; return; }
+    const raw = {};
+    o.querySelectorAll('.an-field').forEach(row => {
+      const vals = [...row.querySelectorAll('input')].map(i => i.value === '' ? null : parseFloat(i.value));
+      if (vals.some(x => x != null && !isNaN(x))) raw[row.dataset.k] = vals.map(x => (x == null || isNaN(x)) ? null : x);
+    });
+    if (!Object.keys(raw).length) { o.querySelector('#asNote').textContent = 'Enter at least one measure.'; return; }
+    const rec = { id: a ? a.id : uid(), date, raw };
+    const next = await mutateSetting('anthro_assessments', all => {
+      const list = (all[pid] = all[pid] || []);
+      const i = list.findIndex(x => x.id === rec.id);
+      if (i >= 0) list[i] = rec; else list.push(rec);
+    });
+    if (!next) return;
+    anthroData = next; anSelected = rec.id; o.remove(); toast('Assessment saved'); renderAnthro();
+  });
+}
+async function anDeleteAssessment(pid, a) {
+  if (!await customConfirm('Delete the assessment of ' + longDateSafe(a.date) + '? This cannot be undone.')) return;
+  const next = await mutateSetting('anthro_assessments', all => { all[pid] = (all[pid] || []).filter(x => x.id !== a.id); });
+  if (!next) return;
+  anthroData = next; anSelected = null; toast('Assessment deleted'); renderAnthro();
+}
+function renderAnthro() { renderAnthroList(); if (ui.view === 'anthrop') renderAnthroPlayer(); }
+
+// ---- anthropometry: printable report (one A4 page) ----
+function anSpacing(histRows) {
+  const roomy = { g: 11, sp: 10, spx: 16, td: 4, bp: 16 }, tight = { g: 6, sp: 7, spx: 14, td: 2.5, bp: 12 };
+  const f = Math.min(1, Math.max(0, (histRows - 2) / 2));   // roomy with <= 2 evolution rows, tightest from 4
+  const mix = k => Math.round((roomy[k] + (tight[k] - roomy[k]) * f) * 10) / 10;
+  return { g: mix('g'), sp: mix('sp'), spx: mix('spx'), td: mix('td'), bp: mix('bp') };
+}
+function anthroReportHtml(pid, aid) {
+  const p = roster.find(x => x.id === pid), list = anList(pid), idx = list.findIndex(x => x.id === aid);
+  const cur = anFull(pid, list[idx]), R = cur.R, prof = anthroProfiles[pid];
+  let prev = null; for (let i = idx - 1; i >= 0 && !prev; i--) { const f = anFull(pid, list[i]); if (f.R) prev = f; }
+  const rows = anGroupRows(), pR = prev && prev.R;
+  const grey = h => h.replace(/<span class="muted">(.*?)<\/span>/g, '<span style="color:#8a8a90;">$1</span>');
+  const chg = k => { const c = anChange(k, R, pR); if (!c) return '<span style="color:#8a8a90;">—</span>'; const sgn = (c.diff > 0 ? '+' : c.diff < 0 ? '−' : '±') + Math.abs(c.diff).toFixed(AN_VARS[k].dec) + AN_VARS[k].unit; return c.beyond ? `<strong>${sgn}</strong> <i style="color:#b84300;font-style:normal;">*</i>` : `${sgn}`; };
+  const trow = k => R[k] == null ? '' : `<tr><td>${AN_VARS[k].label}</td><td class="num">${anFmt(k, R[k])}</td><td>${chg(k)}</td><td>${grey(anGroupHtml(anGroupStat(rows, k, pid), k, R, true))}</td></tr>`;
+  const table = keys => `<table><tr><th>Variable</th><th>Value</th><th>Change</th><th>Group mean</th></tr>${keys.map(trow).join('')}</table>`;
+  const hist = list.map(x => ({ x, f: anFull(pid, x) })).filter(h => h.f.R).slice(-4).reverse();
+  const concl = anConclusions(R, pR, rows, pid, prev ? longDateSafe(prev.a.date) : '');
+  const comp = ['mass', 'sum6', 'yuhaszPct', 'slaughterPct', 'adiposePct', 'musclePct', 'residualPct', 'bmi'], musc = ['areaArm', 'areaThigh', 'areaCalf', 'shareThigh', 'flexDiff', 'cormic', 'relSpan', 'fatDist'];
+  const sp = anSpacing(hist.length > 1 ? hist.length : 0);
+  const kpi = (label, val, sub) => `<div class="fr-kpi"><b>${val}</b><span>${label}</span><small>${sub || '&nbsp;'}</small></div>`;
+  return `<div class="fr fr-an" style="--g:${sp.g}px;--sp:${sp.sp}px;--spx:${sp.spx}px;--td:${sp.td}px;--bp:${sp.bp}px">
+    <div class="fr-band"><img src="${LOGO_SRC}" alt="FUTEDU Team"><div class="fr-kicker">FUTEDU Academy · Nutrition Department</div>
+      <h1>${escapeHtml(p.name)}</h1>
+      <div class="fr-sub">Anthropometry assessment · ${escapeHtml(longDateSafe(cur.a.date))} · age ${cur.age.toFixed(1)} · ${escapeHtml(prof.sex)} · Report generated ${longDate(todayStr())}</div></div>
+    <div class="fr-kpis">${kpi('Sum of 6 skinfolds', R.sum6.toFixed(1) + ' mm', pR ? signed(R.sum6 - pR.sum6, ' mm') + ' vs previous' : '')}${kpi('Fat (Yuhasz)', R.yuhaszPct.toFixed(1) + ' %', R.slaughterPct != null ? 'Slaughter ' + R.slaughterPct.toFixed(1) + ' %' : '')}${kpi('Muscle (Lee)', R.musclePct.toFixed(1) + ' %', R.muscleKg.toFixed(1) + ' kg')}${kpi('BMI', R.bmi.toFixed(1), 'Body mass ' + R.mass.toFixed(1) + ' kg')}</div>
+    <div class="fr-sec"><h2>Summary</h2><div class="fr-target">Neutral, descriptive conclusions from the measurements</div>${concl.map(t => `<div class="fr-line">${t}</div>`).join('')}</div>
+    <div class="fr-cols"><div class="fr-sec"><h2>Body composition</h2><div class="fr-target">Estimates: the trend matters more than one value</div>${table(comp)}</div>
+      <div class="fr-sec"><h2>Muscle and proportions</h2><div class="fr-target">* change larger than the usual measurement error</div>${table(musc)}</div></div>
+    ${hist.length > 1 ? `<div class="fr-sec"><h2>Evolution</h2><div class="fr-target">Latest ${hist.length} assessments</div><table><tr><th>Date</th><th>Body mass</th><th>Σ6 (mm)</th><th>Fat % (Yuhasz)</th><th>Muscle (kg)</th></tr>${hist.map(({ x, f }) => `<tr><td>${escapeHtml(longDateSafe(x.date))}</td><td>${f.v.mass} kg</td><td>${f.R.sum6.toFixed(1)}</td><td>${f.R.yuhaszPct.toFixed(1)}</td><td>${f.R.muscleKg.toFixed(1)}</td></tr>`).join('')}</table></div>` : ''}
+    <div class="fr-disc">${AN_CAVEAT} Confidential: contains health data of a minor; share it only with the player's family or the staff who need it. Not a medical diagnosis.</div>
+    <div class="fr-foot"><span>FUTEDU Academy — Anthropometry report</span><span>Nutrition Department</span></div></div>`;
+}
+function anPrint(pid, aid) {
+  const p = roster.find(x => x.id === pid);
+  printHtml(anthroReportHtml(pid, aid), 'futedu-' + slugify(p.name) + '-anthropometry');
+}
 
 // ---- series + charts ----
 function seriesFor(id) {
