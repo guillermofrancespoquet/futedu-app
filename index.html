@@ -570,6 +570,12 @@
         <div class="card hidden" id="groupCard"><h2>By group <span class="muted">current round</span></h2><div id="groupList"></div></div>
         <div class="card"><h2>Classification overview <span class="muted">current round</span></h2><div class="dash-grid" id="dashGrid"></div></div>
         <div class="card"><h2>Pending measurement <span class="muted" id="pendCount"></span></h2><div id="pendList"></div></div>
+        <div class="card" id="anthroDash">
+          <div class="row" style="justify-content:space-between;gap:12px;">
+            <div><h2 style="margin-bottom:4px;">Anthropometry</h2><div class="save-note" id="anthroDashText"></div></div>
+            <div class="row"><span class="tag-chip hidden" id="anthroDue">Next round due</span><button class="btn sm" data-goto="anthro">Open</button></div>
+          </div>
+        </div>
       </section>
 
       <!-- SUMMARY -->
@@ -1407,6 +1413,18 @@ function renderDashboard() {
     : '<div class="empty">Everyone has data.</div>';
 
   document.querySelectorAll('[data-show]').forEach(b => b.addEventListener('click', () => showPlayer(b.dataset.show)));
+  renderAnthroDash();
+}
+// Anthropometry is done about once a semester: a quiet status line, with a reminder only when a new round is due
+function renderAnthroDash() {
+  const all = roster.map(p => ({ p, list: anList(p.id) }));
+  const dates = all.flatMap(x => x.list.map(a => a.date)).filter(Boolean).sort();
+  const text = document.getElementById('anthroDashText'), due = document.getElementById('anthroDue');
+  if (!dates.length) { text.textContent = 'No assessments yet. They are usually done once a semester; past ones can be imported from the Excel files.'; due.classList.add('hidden'); return; }
+  const last = dates[dates.length - 1], daysAgo = Math.floor((Date.now() - new Date(last + 'T00:00:00').getTime()) / 86400000);
+  const recent = all.filter(x => x.list.length && (Date.now() - new Date(x.list[x.list.length - 1].date + 'T00:00:00').getTime()) / 86400000 <= 183).length;
+  text.textContent = `Last assessment ${longDateSafe(last)} (${daysAgo <= 0 ? 'today' : daysAgo + ' day' + (daysAgo === 1 ? '' : 's') + ' ago'}) · ${recent} of ${roster.length} players assessed in the last 6 months`;
+  due.classList.toggle('hidden', daysAgo < 170);
 }
 
 function matchesFilter(p) {
