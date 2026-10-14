@@ -320,6 +320,7 @@
     #printArea .fr-cols { display:grid; grid-template-columns:1fr 1fr; gap:var(--g); }
     #printArea .fr-cols .fr-sec { margin-bottom:var(--g); }
     #printArea .fr-an .fr-sec td, #printArea .fr-an .fr-sec th { font-size:9.5px; }
+    #printArea .fr-anr .fr-sec td { font-size:var(--fs); }
     #printArea .fr-an .fr-sec th { font-size:8px; }
     #printArea .fr-line { font-size:10px; line-height:1.45; margin-bottom:4px; padding-left:10px; border-left:3px solid #ff5405; }
     #printArea .fr-an .fr-sec td.num { white-space:nowrap; }
@@ -722,10 +723,10 @@
       <!-- ANTHROPOMETRY -->
       <section id="view-anthro" class="view hidden">
         <div class="page-head"><div><h1>Anthropometry</h1><div class="sub">Skinfolds, girths and basic measures: body composition, muscle development and proportions.</div></div>
-          <div class="actions"><button class="btn" id="anImportBtn">Import past assessments</button></div></div>
+          <div class="actions"><button class="btn" id="anRoundReportBtn">Round report</button><button class="btn" id="anPendingBtn">Pending list</button><button class="btn" id="anImportBtn">Import past assessments</button></div></div>
         <input type="file" id="anFile" accept=".xlsx,.xlsm,.xls,application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple class="hidden">
         <div class="kpis" id="anKpis"></div>
-        <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><input type="search" id="anSearch" placeholder="Search players" aria-label="Search players"></div><div class="seg" id="anFilter" role="group" aria-label="Round status"><button data-f="all" class="on">All</button><button data-f="pending">Pending</button><button data-f="done">Done</button></div></div>
+        <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><input type="search" id="anSearch" placeholder="Search players" aria-label="Search players"></div><select id="anSort" aria-label="Sort players" style="width:auto;"><option value="name">Sort: Name</option><option value="pending">Sort: Pending first</option><option value="age">Sort: Age (oldest)</option><option value="last">Sort: Last assessment (oldest)</option></select><div class="seg" id="anFilter" role="group" aria-label="Round status"><button data-f="all" class="on">All</button><button data-f="pending">Pending</button><button data-f="done">Done</button></div></div>
         <div class="an-round" id="anRound"></div>
         <div class="card hist-full" id="anTable"></div>
       </section>
@@ -791,12 +792,13 @@
         <div class="card">
           <h2>Data</h2>
           <div class="row">
-            <button class="btn" id="exportCsvBtn">Export CSV</button>
-            <button class="btn" id="exportHistoryBtn">Export JSON</button>
+            <button class="btn primary" id="exportHistoryBtn">Back up everything (JSON)</button>
+            <button class="btn" id="exportCsvBtn">Bioimpedance CSV</button>
+            <button class="btn" id="exportAnCsvBtn">Anthropometry CSV</button>
             <button class="btn js-reset-checkins">Reset check-ins</button>
           </div>
           <div class="note" id="backupNote"></div>
-          <div class="note">Exports download to this device and contain player data: store them somewhere private and never put them in a repository. Check-ins are shared across devices.</div>
+          <div class="note">The JSON backup has everything (players, bioimpedance, anthropometry, notes, tags, thresholds). Exports download to this device and contain player data: store them somewhere private and never put them in a repository. Check-ins are shared across devices.</div>
         </div>
       </section>
 
@@ -807,7 +809,7 @@
 <div id="printArea"></div>
 <input type="file" id="reportFile" accept="image/*,application/pdf,.pdf" multiple class="hidden">
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3"></script>
 <script>
 // ---------------------------------------------------------------------
 // Data lives in Supabase (see schema.sql). The URL and anon key
@@ -1347,9 +1349,37 @@ function download(name, text, type) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
+// the settings table holds everything that is not a player or a measurement: notes, tags, check-ins, thresholds, anthropometry profiles, assessments and the round start
+function backupCounts(all) {
+  const val = k => { const r = all.settings.find(x => x.key === k); return r && r.value ? r.value : {}; };
+  const assessments = Object.values(val('anthro_assessments')).reduce((n, l) => n + (Array.isArray(l) ? l.length : 0), 0);
+  return { players: all.players.length, rounds: all.rounds.length, measurements: all.measurements.length, settings_keys: all.settings.length, anthropometry_profiles: Object.keys(val('anthro_profiles')).length, anthropometry_assessments: assessments };
+}
 document.getElementById('exportHistoryBtn').addEventListener('click', async () => {
   const all = await fetchEverything();
-  if (all) { download('futedu-bioimpedance-export.json', JSON.stringify(all, null, 2), 'application/json'); markBackup(); }
+  if (!all) return;
+  const counts = backupCounts(all);
+  download('futedu-backup-' + todayStr() + '.json', JSON.stringify({ meta: { app: 'futedu-tracker', exported_on: todayStr(), counts }, ...all }, null, 2), 'application/json');
+  markBackup();
+  toast(`Backup saved: ${counts.players} players, ${counts.measurements} bioimpedance readings, ${counts.anthropometry_assessments} anthropometry assessments`);
+});
+document.getElementById('exportAnCsvBtn').addEventListener('click', async () => {
+  const all = await fetchEverything();
+  if (!all) return;
+  const val = k => { const r = all.settings.find(x => x.key === k); return r && r.value ? r.value : {}; };
+  anthroProfiles = val('anthro_profiles'); anthroData = val('anthro_assessments');   // use what is stored, not what this device had cached
+  const esc = v => v == null || v === '' ? '' : '"' + String(v).replace(/"/g, '""') + '"';
+  const num = (x, d) => x == null || isNaN(x) ? '' : (Math.round(x * Math.pow(10, d)) / Math.pow(10, d));
+  const keys = AN_KEYS, res = ['sum6', 'yuhaszPct', 'slaughterPct', 'adiposePct', 'muscleKg', 'musclePct', 'residualPct', 'bmi'];
+  const lines = [['player', 'date', 'age', 'sex', 'ethnicity', ...keys, ...res].join(',')];
+  all.players.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach(pl => {
+    anList(pl.id).forEach(a => {
+      const f = anFull(pl.id, a), pf = anthroProfiles[pl.id] || {};
+      lines.push([esc(pl.name), esc(a.date), num(f.age, 2), esc(pf.sex), esc(pf.ethnicity), ...keys.map(k => num(f.v[k], 2)), ...res.map(k => num(f.R ? f.R[k] : null, 2))].join(','));
+    });
+  });
+  download('futedu-anthropometry-export.csv', lines.join('\n'), 'text/csv');
+  toast('Anthropometry CSV exported');
 });
 document.getElementById('exportCsvBtn').addEventListener('click', async () => {
   const all = await fetchEverything();
@@ -2131,7 +2161,7 @@ function checkBioValues(v) {
 
 // ---- import from photo / PDF (OCR runs in the browser; files never leave this device) ----
 const OCR_LIBS = {
-  tesseract: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js',
+  tesseract: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',
   pdfjs: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
   pdfWorker: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
   lang: 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng/4.0.0_best_int',
@@ -2574,6 +2604,11 @@ function renderAnthroList() {
   const q = (document.getElementById('anSearch').value || '').toLowerCase();
   const start = anRoundStart(), doneN = roster.filter(p => anDoneThisRound(p.id)).length, pendN = roster.length - doneN;
   const rows = roster.filter(p => (!q || p.name.toLowerCase().includes(q)) && (anFilter === 'all' || (anFilter === 'done') === anDoneThisRound(p.id)));
+  const ageOf = p => { const a = anAgeText(p.id); return a == null ? -1 : a; }, lastOf = p => { const l = anList(p.id); return l.length ? l[l.length - 1].date : ''; };
+  if (anSort === 'pending') rows.sort((a, b) => (anDoneThisRound(a.id) - anDoneThisRound(b.id)) || a.name.localeCompare(b.name));
+  else if (anSort === 'age') rows.sort((a, b) => ageOf(b) - ageOf(a) || a.name.localeCompare(b.name));
+  else if (anSort === 'last') rows.sort((a, b) => lastOf(a).localeCompare(lastOf(b)) || a.name.localeCompare(b.name));
+  document.getElementById('anSort').value = anSort;
   document.querySelectorAll('#anFilter button').forEach(b => b.classList.toggle('on', b.dataset.f === anFilter));
   document.getElementById('anRound').innerHTML = `<span><strong>Current round</strong> · assessments dated ${escapeHtml(longDateSafe(start))} or later count${anthroRound.start ? '' : ' (default: start of the half-year)'}</span><span class="an-round-btns"><button class="btn sm" id="anRoundEdit">Change start date</button><button class="btn sm" id="anRoundNew">Start a new round</button></span>`;
   document.getElementById('anRoundEdit').addEventListener('click', anRoundDialog);
@@ -2602,7 +2637,8 @@ function renderAnthroList() {
   document.querySelectorAll('#anTable [data-open]').forEach(r => r.addEventListener('click', () => navigate('anthro/' + r.dataset.open)));
   document.querySelectorAll('#anTable [data-new]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); anAssessmentForm(b.dataset.new, null); }));
 }
-let anFilter = 'all';
+let anFilter = 'all', anSort = 'name';
+document.getElementById('anSort').addEventListener('change', e => { anSort = e.target.value; renderAnthroList(); });
 document.getElementById('anFilter').addEventListener('click', e => { const b = e.target.closest('button[data-f]'); if (b) { anFilter = b.dataset.f; renderAnthroList(); } });
 function anRoundDialog() {
   const o = anOverlay(`<h3>Current round</h3><div class="save-note" style="margin-bottom:10px;">Players with an assessment dated on or after this day count as done in the current round. Changing it does not touch any assessment.</div>
@@ -2989,6 +3025,64 @@ function anPrint(pid, aid) {
   const p = roster.find(x => x.id === pid);
   printHtml(anthroReportHtml(pid, aid), 'futedu-' + slugify(p.name) + '-anthropometry');
 }
+
+// ---- anthropometry: round report (whole academy, current round) and pending list ----
+function anRoundData() {
+  const start = anRoundStart(), done = [], incomplete = [], pending = [];
+  roster.forEach(p => {
+    const list = anList(p.id), inRound = list.filter(a => a.date >= start);
+    if (!inRound.length) { pending.push({ p, last: list.length ? list[list.length - 1].date : '' }); return; }
+    const a = inRound[inRound.length - 1], f = anFull(p.id, a), idx = list.indexOf(a);
+    if (!f.R) { incomplete.push({ p, a, missing: anMissing(p.id, a) }); return; }
+    let prev = null; for (let i = idx - 1; i >= 0 && !prev; i--) { const g = anFull(p.id, list[i]); if (g.R) prev = g; }
+    done.push({ p, a, f, R: f.R, pR: prev && prev.R });
+  });
+  done.sort((x, y) => x.p.name.localeCompare(y.p.name));
+  return { start, done, incomplete, pending };
+}
+function anRoundReportHtml() {
+  const { start, done, incomplete, pending } = anRoundData();
+  const stat = k => { const v = done.map(d => d.R[k]); const mean = v.reduce((a, b) => a + b, 0) / v.length; return { mean, min: Math.min(...v), max: Math.max(...v) }; };
+  const n = done.length, load = n + pending.length * 0.35 + incomplete.length * 0.6, fs = load <= 22 ? 9.5 : Math.max(7.4, 9.5 - (load - 22) * 0.09), td = load <= 22 ? 4.2 : Math.max(0.8, 4.2 - (load - 22) * 0.16);
+  const st = { sum6: stat('sum6'), yuhaszPct: stat('yuhaszPct'), musclePct: stat('musclePct'), bmi: stat('bmi') };
+  const kpi = (label, val, sub) => `<div class="fr-kpi"><b>${val}</b><span>${label}</span><small>${sub || '&nbsp;'}</small></div>`;
+  const chg = d => { const c = d.pR ? anChange('sum6', d.R, d.pR) : null; if (!c) return '<span style="color:#8a8a90;">—</span>'; const sgn = (c.diff > 0 ? '+' : c.diff < 0 ? '−' : '±') + Math.abs(c.diff).toFixed(1); return c.beyond ? `<strong>${sgn}</strong> <i style="color:#b84300;font-style:normal;">*</i>` : sgn; };
+  const rowsHtml = done.map(d => `<tr><td>${escapeHtml(d.p.name)}</td><td>${d.f.age.toFixed(1)}</td><td>${d.R.mass.toFixed(1)}</td><td class="num">${d.R.sum6.toFixed(1)}</td><td>${d.R.yuhaszPct.toFixed(1)}</td><td>${d.R.musclePct.toFixed(1)}</td><td>${d.R.bmi.toFixed(1)}</td><td>${chg(d)}</td></tr>`).join('');
+  const cmp = done.filter(d => d.pR).map(d => anChange('sum6', d.R, d.pR)).filter(Boolean);
+  const up = cmp.filter(c => c.beyond && c.diff > 0).length, down = cmp.filter(c => c.beyond && c.diff < 0).length;
+  const lines = [];
+  if (n) lines.push(`<strong>Group.</strong> ${n} of ${roster.length} players have a complete assessment in this round. Mean sum of 6 skinfolds ${st.sum6.mean.toFixed(1)} mm (range ${st.sum6.min.toFixed(1)} to ${st.sum6.max.toFixed(1)}); mean estimated fat ${st.yuhaszPct.mean.toFixed(1)} % (Yuhasz); mean estimated muscle ${st.musclePct.mean.toFixed(1)} % (Lee).`);
+  if (cmp.length) lines.push(`<strong>Evolution.</strong> ${cmp.length} players have an earlier assessment to compare with. Their sum of 6 skinfolds changed by more than the usual measurement error in ${up + down} of them (${up} higher, ${down} lower); in the other ${cmp.length - up - down} it stayed within it.`);
+  else if (n) lines.push('<strong>Evolution.</strong> No player has an earlier complete assessment to compare with yet.');
+  if (pending.length) lines.push(`<strong>Pending (${pending.length}).</strong> ${pending.map(x => escapeHtml(x.p.name)).join(', ')}.`);
+  if (incomplete.length) lines.push(`<strong>Incomplete (${incomplete.length}).</strong> ${incomplete.map(x => escapeHtml(x.p.name) + ' (missing ' + x.missing.slice(0, 3).map(escapeHtml).join(', ') + (x.missing.length > 3 ? '…' : '') + ')').join('; ')}.`);
+  return `<div class="fr fr-an fr-anr" style="--g:8px;--sp:9px;--spx:14px;--bp:14px;--td:${td.toFixed(1)}px;--fs:${fs.toFixed(1)}px">
+    <div class="fr-band"><img src="${LOGO_SRC}" alt="FUTEDU Team"><div class="fr-kicker">FUTEDU Academy · Nutrition Department</div>
+      <h1>Anthropometry round report</h1>
+      <div class="fr-sub">Assessments dated ${escapeHtml(longDateSafe(start))} or later · ${n} of ${roster.length} players · Report generated ${longDate(todayStr())}</div></div>
+    <div class="fr-kpis">${kpi('Players assessed', n + ' / ' + roster.length, pending.length ? pending.length + ' pending' : 'Everyone is done')}${n ? kpi('Mean sum of 6', st.sum6.mean.toFixed(1) + ' mm', 'range ' + st.sum6.min.toFixed(0) + '–' + st.sum6.max.toFixed(0)) + kpi('Mean fat (Yuhasz)', st.yuhaszPct.mean.toFixed(1) + ' %', 'range ' + st.yuhaszPct.min.toFixed(1) + '–' + st.yuhaszPct.max.toFixed(1)) + kpi('Mean muscle (Lee)', st.musclePct.mean.toFixed(1) + ' %', 'range ' + st.musclePct.min.toFixed(1) + '–' + st.musclePct.max.toFixed(1)) : ''}</div>
+    ${n ? `<div class="fr-sec"><h2>Players</h2><div class="fr-target">Latest complete assessment of the round · Δ Σ6 vs the previous assessment, * = larger than the usual measurement error</div><table><tr><th>Player</th><th>Age</th><th>Mass (kg)</th><th>Σ6 (mm)</th><th>Fat % (Yuhasz)</th><th>Muscle % (Lee)</th><th>BMI</th><th>Δ Σ6 (mm)</th></tr>${rowsHtml}</table></div>` : '<div class="fr-sec"><h2>No complete assessments in this round yet</h2></div>'}
+    <div class="fr-sec"><h2>Summary</h2><div class="fr-target">Neutral, descriptive conclusions</div>${lines.map(t => `<div class="fr-line">${t}</div>`).join('')}</div>
+    <div class="fr-disc">${AN_CAVEAT} Confidential: contains health data of minors; share it only with the staff who need it. Not a medical diagnosis.</div>
+    <div class="fr-foot"><span>FUTEDU Academy — Anthropometry round report</span><span>Nutrition Department</span></div></div>`;
+}
+function anPendingHtml() {
+  const { start, pending, incomplete } = anRoundData();
+  const rows = [...pending.map(x => ({ p: x.p, last: x.last, note: '' })), ...incomplete.map(x => ({ p: x.p, last: x.a.date, note: 'incomplete: ' + x.missing.slice(0, 2).join(', ') }))].sort((a, b) => a.p.name.localeCompare(b.p.name));
+  const tr = r => { const pf = anthroProfiles[r.p.id] || {}, need = !(pf.dob && pf.sex && pf.ethnicity && pf.height && pf.sitting && pf.span); return `<tr><td>${escapeHtml(r.p.name)}</td><td>${r.last ? escapeHtml(longDateSafe(r.last)) : 'none'}</td><td>${need ? 'profile needed' : ''}${r.note ? (need ? ' · ' : '') + escapeHtml(r.note) : ''}</td><td style="width:40px;">&#9744;</td></tr>`; };
+  const n = rows.length, td = n <= 24 ? 5.5 : Math.max(2, 5.5 - (n - 24) * 0.15);
+  return `<div class="fr fr-an" style="--g:8px;--sp:10px;--spx:16px;--bp:14px;--td:${td.toFixed(1)}px">
+    <div class="fr-band"><img src="${LOGO_SRC}" alt="FUTEDU Team"><div class="fr-kicker">FUTEDU Academy · Nutrition Department</div>
+      <h1>Anthropometry: players still to assess</h1>
+      <div class="fr-sub">Round starting ${escapeHtml(longDateSafe(start))} · ${n} of ${roster.length} players · Generated ${longDate(todayStr())}</div></div>
+    <div class="fr-sec">${n ? `<table><tr><th>Player</th><th>Last assessment</th><th>Notes</th><th>Done</th></tr>${rows.map(tr).join('')}</table>` : '<h2>Everyone has been assessed in this round.</h2>'}</div>
+    <div class="fr-foot"><span>FUTEDU Academy — Anthropometry</span><span>Nutrition Department</span></div></div>`;
+}
+document.getElementById('anRoundReportBtn').addEventListener('click', () => {
+  if (!anRoundData().done.length) { customConfirm('No player has a complete assessment in the current round yet.'); return; }
+  printHtml(anRoundReportHtml(), 'futedu-anthropometry-round-report');
+});
+document.getElementById('anPendingBtn').addEventListener('click', () => printHtml(anPendingHtml(), 'futedu-anthropometry-pending'));
 
 // ---- series + charts ----
 function seriesFor(id) {

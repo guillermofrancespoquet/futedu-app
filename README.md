@@ -13,6 +13,7 @@ Single-file web app (`index.html`) backed by Supabase. **No player data lives in
 Publish this folder from a **separate public repository that contains only these files** (`index.html`, `schema.sql`, `README.md`). Do not make the main FUTEDU repo public: its Git history still holds player data.
 
 ## Features
+- **Anthropometry reports and exports**: besides the player report, a one-page **Round report** (everyone assessed in the current round with their results, group means and ranges, change in Σ6 vs the previous assessment, pending and incomplete players) and a **Pending list** to print and tick; list sortable by name, pending first, age or oldest assessment. Settings → Data: **Back up everything (JSON)** (players, bioimpedance, anthropometry, notes, tags, thresholds, check-ins; shows what was saved), plus bioimpedance and anthropometry CSV.
 - **Phones**: fixed scale (no pinch/double-tap zoom and no zoom on focus: fields are 16 px), anthropometry list as cards, full-screen New assessment with sticky actions.
 - **Recipes**: library of the workshop material, grouped by recipe (recipe card, session guide, printable handouts, facilitator keys) plus the general sessions; PDFs open or download, session guides are read in the app; searchable. The files are a generated copy in `library/` (see CLAUDE.md), public like the rest of the site.
 - **Dashboard**: KPIs, players needing attention, team average body fat by round, results by group (tags), classification overview, pending list, backup reminder.
