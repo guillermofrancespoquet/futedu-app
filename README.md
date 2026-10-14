@@ -13,4 +13,5 @@ Single-file web app (`index.html`) backed by Supabase. **No player data lives in
 Publish this folder from a **separate public repository that contains only these files** (`index.html`, `schema.sql`, `README.md`). Do not make the main FUTEDU repo public: its Git history still holds player data.
 
 ## Features
-Login, roster with check-ins (per device), thresholds, overview of flagged players, manual entry of readings, health notes, rounds (archive a round to start a new one), per-player History table with changes vs. the previous round, JSON export.
+- Side menu: **Dashboard** (KPIs, players needing attention, team average body fat by round, classification overview, pending list), **Bioimpedance** (search, filters, sort, check-ins, manual entry, health notes, per-player History with changes vs. the previous round) and **Settings** (thresholds, rounds, CSV/JSON export).
+- Login (Supabase auth), rounds (archive a round to start a new one), responsive layout with a mobile drawer menu.
