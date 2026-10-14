@@ -24,7 +24,7 @@ Bioimpedance tracker for the **FUTEDU Academy** (youth football academy). Single
   - Inputs per player and assessment: date of birth, age, weight, height, sitting height and arm span, plus **6 skinfolds and 4 girths only**. Conclusions are derived from those values.
   - Same conventions as the bioimpedance part: data in Supabase (use the `settings` table or a new approach that needs no schema migration, to be decided when the calculator arrives), photo/PDF/CSV import if useful, a printable one-page report per player and a round/team report in the same FUTEDU style, light and dark themes.
   - Date of birth is personal data of minors: it lives only in Supabase, never in the repo or in examples.
-  - Ask the owner for the calculator and for which conclusions/formulas to keep before designing anything; keep the wording neutral and non-diagnostic, like the rest of the app.
+  - Before designing anything, the owner will provide the calculator HTML and an **Excel with the candidate formulas**; together we pick the ones worth keeping (anything needing measurements outside the 6 skinfolds + 4 girths + basic sizes is out). Keep the wording neutral and non-diagnostic, like the rest of the app.
 
 ## Git
 - **Never push to `main`** (it is live). Work on a branch and open a PR; the owner reviews and merges it.
