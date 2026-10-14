@@ -397,8 +397,29 @@
   .an-fixed summary { cursor:pointer; font-size:12.5px; font-weight:600; color:var(--ink-2); }
   .an-check { display:flex; gap:8px; align-items:center; font-size:12.5px; margin:10px 0 4px; }
   .an-check input { width:auto; height:auto; }
+  .an-round { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-2); margin:-4px 0 12px; }
+  .an-round-btns { display:flex; gap:8px; }
+  .an-measure { margin-left:6px; }
+  .as-head { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
+  .as-player { display:flex; align-items:center; gap:10px; }
+  .as-player .save-note { margin:0; }
+  .as-preview { position:sticky; top:0; z-index:2; display:flex; gap:10px; flex-wrap:wrap; padding:10px; margin:0 -4px; border-radius:14px; background:var(--card-2); border:1px solid var(--line); }
+  .as-pv { flex:1 1 110px; min-width:100px; display:flex; flex-direction:column; gap:2px; }
+  .as-pv.wide { flex-basis:100%; }
+  .as-pv span { font-size:11.5px; color:var(--ink-3); }
+  .as-pv strong { font-size:18px; font-variant-numeric:tabular-nums; }
+  .as-pv em { font-style:normal; font-size:12px; font-weight:600; color:var(--ink-3); }
+  .as-help { margin:12px 0 4px; }
+  .as-group { margin-top:14px; }
+  .as-gh { display:grid; grid-template-columns:180px repeat(3, 84px) 1fr; gap:8px; align-items:center; margin-bottom:6px; }
+  .as-gh h4 { font-size:13px; }
+  .as-cols { display:contents; }
+  .as-cols span { font-size:11px; color:var(--ink-3); text-align:center; }
+  .an-lbl small { font-weight:500; color:var(--ink-3); }
+  .as-prev { display:inline-block; margin-left:6px; font-size:11.5px; font-weight:600; color:var(--ink-3); background:var(--fill); border-radius:6px; padding:1px 6px; }
+  .as-foot { position:sticky; bottom:0; padding:10px 0 2px; background:var(--card); }
   .an-imp-ass { border-top:1px solid var(--line); padding-top:10px; margin-top:10px; }
-  @media (max-width: 700px) { .an-field { grid-template-columns:1fr repeat(3, 1fr); } .an-used { grid-column:1 / -1; } }
+  @media (max-width: 700px) { .an-field, .as-gh { grid-template-columns:1fr repeat(3, 1fr); } .an-used { grid-column:1 / -1; } .as-gh h4 { grid-column:1; } }
 
   /* ---------- polish ---------- */
   @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
@@ -645,7 +666,8 @@
           <div class="actions"><button class="btn" id="anImportBtn">Import past assessments</button></div></div>
         <input type="file" id="anFile" accept=".xlsx,.xlsm,.xls,application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple class="hidden">
         <div class="kpis" id="anKpis"></div>
-        <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><input type="search" id="anSearch" placeholder="Search players" aria-label="Search players"></div></div>
+        <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><input type="search" id="anSearch" placeholder="Search players" aria-label="Search players"></div><div class="seg" id="anFilter" role="group" aria-label="Round status"><button data-f="all" class="on">All</button><button data-f="pending">Pending</button><button data-f="done">Done</button></div></div>
+        <div class="an-round" id="anRound"></div>
         <div class="card hist-full" id="anTable"></div>
       </section>
       <section id="view-anthrop" class="view hidden"></section>
@@ -944,6 +966,7 @@ async function loadAllInner() {
   tagsMap = setting('player_tags') || {};
   anthroProfiles = setting('anthro_profiles') || {};
   anthroData = setting('anthro_assessments') || {};
+  anthroRound = setting('anthro_round') || {};
   roster = pl.data.map(p => ({ id: p.id, name: p.name, checkedIn: !!checkins[p.id], tags: Array.isArray(tagsMap[p.id]) ? tagsMap[p.id] : [] }));
   notes = setting('player_notes');
   if (!notes) {
@@ -1422,9 +1445,10 @@ function renderAnthroDash() {
   const text = document.getElementById('anthroDashText'), due = document.getElementById('anthroDue');
   if (!dates.length) { text.textContent = 'No assessments yet. They are usually done once a semester; past ones can be imported from the Excel files.'; due.classList.add('hidden'); return; }
   const last = dates[dates.length - 1], daysAgo = Math.floor((Date.now() - new Date(last + 'T00:00:00').getTime()) / 86400000);
-  const recent = all.filter(x => x.list.length && (Date.now() - new Date(x.list[x.list.length - 1].date + 'T00:00:00').getTime()) / 86400000 <= 183).length;
-  text.textContent = `Last assessment ${longDateSafe(last)} (${daysAgo <= 0 ? 'today' : daysAgo + ' day' + (daysAgo === 1 ? '' : 's') + ' ago'}) · ${recent} of ${roster.length} players assessed in the last 6 months`;
-  due.classList.toggle('hidden', daysAgo < 170);
+  const done = roster.filter(p => anDoneThisRound(p.id)).length, pend = roster.length - done;
+  text.textContent = `Current round: ${done} of ${roster.length} players assessed${pend ? ', ' + pend + ' pending' : ''} · last assessment ${longDateSafe(last)} (${daysAgo <= 0 ? 'today' : daysAgo + ' day' + (daysAgo === 1 ? '' : 's') + ' ago'})`;
+  due.textContent = pend ? pend + ' pending' : 'Round complete';
+  due.classList.toggle('hidden', !pend);
 }
 
 function matchesFilter(p) {
@@ -2292,6 +2316,7 @@ function anCompute(v, profile, age) {
 
 // ---- anthropometry: data (stored in the settings table: no schema changes) ----
 let anthroProfiles = {};   // player id -> { dob, sex: 'Male' | 'Female', ethnicity }
+let anthroRound = {};      // { start: 'YYYY-MM-DD' }: the assessments from this date on belong to the current round
 let anthroData = {};       // player id -> [{ id, date, raw: { key: [m1, m2, m3] } }]
 async function mutateSetting(key, mutate) {
   const cur = await sb.from('settings').select('value').eq('key', key);
@@ -2303,6 +2328,14 @@ async function mutateSetting(key, mutate) {
   return next;
 }
 function anList(pid) { return (anthroData[pid] || []).slice().sort((a, b) => (a.date || '').localeCompare(b.date || '')); }
+// A "round" is one pass over the whole academy (about once a semester): a player is done when they have an assessment dated on or after the round start
+function anRoundStart() {
+  if (anthroRound && anthroRound.start) return anthroRound.start;
+  const d = new Date(), y = d.getFullYear();
+  return y + (d.getMonth() < 6 ? '-01-01' : '-07-01');   // default: start of the current half-year
+}
+function anDoneThisRound(pid) { const s = anRoundStart(); return anList(pid).some(a => a.date >= s); }
+function anSetRoundStart(start) { return mutateSetting('anthro_round', next => { next.start = start; }).then(v => { if (v) anthroRound = v; return v; }); }
 // fixed measures of an assessment: its own saved copy, else the player's profile (older records may have them among the raw readings)
 function anFixedFor(pid, a) {
   const prof = anthroProfiles[pid] || {}, out = {};
@@ -2402,24 +2435,46 @@ const AN_CAVEAT = 'BMI does not tell muscle from fat, which matters in athletes.
 function anAgeText(pid) { const p = anthroProfiles[pid]; return p && p.dob ? anAge(todayStr(), p.dob) : null; }
 function renderAnthroList() {
   const q = (document.getElementById('anSearch').value || '').toLowerCase();
-  const rows = roster.filter(p => !q || p.name.toLowerCase().includes(q));
+  const start = anRoundStart(), doneN = roster.filter(p => anDoneThisRound(p.id)).length, pendN = roster.length - doneN;
+  const rows = roster.filter(p => (!q || p.name.toLowerCase().includes(q)) && (anFilter === 'all' || (anFilter === 'done') === anDoneThisRound(p.id)));
+  document.querySelectorAll('#anFilter button').forEach(b => b.classList.toggle('on', b.dataset.f === anFilter));
+  document.getElementById('anRound').innerHTML = `<span><strong>Current round</strong> · assessments dated ${escapeHtml(longDateSafe(start))} or later count${anthroRound.start ? '' : ' (default: start of the half-year)'}</span><span class="an-round-btns"><button class="btn sm" id="anRoundEdit">Change start date</button><button class="btn sm" id="anRoundNew">Start a new round</button></span>`;
+  document.getElementById('anRoundEdit').addEventListener('click', anRoundDialog);
+  document.getElementById('anRoundNew').addEventListener('click', async () => {
+    if (!await customConfirm('Start a new round today? Everyone will show as pending until they get a new assessment. Existing assessments are kept.')) return;
+    if (await anSetRoundStart(todayStr())) { toast('New round started'); renderAnthro(); renderAnthroDash(); }
+  });
   const group = anGroupRows();
   const avgOf = k => { const v = group.map(g => g.R[k]); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
   const withData = roster.filter(p => anList(p.id).length).length;
   document.getElementById('anKpis').innerHTML = `
-    <div class="kpi"><div class="k-label">Players with an assessment</div><div class="k-value">${withData}<small> / ${roster.length}</small></div><div class="progress"><span style="width:${roster.length ? Math.round(withData / roster.length * 100) : 0}%"></span></div></div>
+    <div class="kpi"><div class="k-label">Assessed this round</div><div class="k-value">${doneN}<small> / ${roster.length}</small></div><div class="progress"><span style="width:${roster.length ? Math.round(doneN / roster.length * 100) : 0}%"></span></div><div class="k-sub">${pendN ? pendN + ' pending' : 'Everyone is done'} · ${withData} with any past assessment</div></div>
     <div class="kpi"><div class="k-label">Group mean · sum of 6 skinfolds</div><div class="k-value">${group.length ? avgOf('sum6').toFixed(1) : '—'}<small>${group.length ? ' mm' : ''}</small></div><div class="k-sub">${group.length} complete assessments</div></div>
     <div class="kpi"><div class="k-label">Group mean · fat (Yuhasz)</div><div class="k-value">${group.length ? avgOf('yuhaszPct').toFixed(1) : '—'}<small>${group.length ? ' %' : ''}</small></div></div>
     <div class="kpi"><div class="k-label">Group mean · muscle (Lee)</div><div class="k-value">${group.length ? avgOf('musclePct').toFixed(1) : '—'}<small>${group.length ? ' %' : ''}</small></div></div>`;
-  document.getElementById('anTable').innerHTML = `<table><tr><th>Player</th><th>Age</th><th>Last assessment</th><th>Σ6 (mm)</th><th>Fat % (Yuhasz)</th><th>Muscle % (Lee)</th><th>BMI</th></tr>
+  document.getElementById('anTable').innerHTML = `<table><tr><th>Player</th><th>This round</th><th>Age</th><th>Last assessment</th><th>Σ6 (mm)</th><th>Fat % (Yuhasz)</th><th>Muscle % (Lee)</th><th>BMI</th></tr>
     ${rows.map(p => {
       const list = anList(p.id), last = list[list.length - 1], f = last ? anFull(p.id, last) : null, age = anAgeText(p.id);
       const pf = anthroProfiles[p.id] || {}, need = !(pf.dob && pf.sex && pf.ethnicity && pf.height && pf.sitting && pf.span);
       return `<tr class="an-row" data-open="${p.id}"><td><span class="attn-name">${escapeHtml(p.name)}</span>${need ? ' <span class="tag-chip">profile needed</span>' : ''}</td>
+        <td>${anDoneThisRound(p.id) ? '<span class="chip flag-good">Done</span>' : `<span class="chip flag-watch">Pending</span> <button class="btn sm an-measure" data-new="${p.id}">Measure</button>`}</td>
         <td>${age != null ? age.toFixed(1) : '—'}</td><td>${last ? escapeHtml(last.date) : '<span class="muted">none</span>'}</td>
         <td>${f && f.R ? f.R.sum6.toFixed(1) : '—'}</td><td>${f && f.R ? f.R.yuhaszPct.toFixed(1) : '—'}</td><td>${f && f.R ? f.R.musclePct.toFixed(1) : '—'}</td><td>${f && f.R ? f.R.bmi.toFixed(1) : '—'}</td></tr>`;
     }).join('')}</table>`;
   document.querySelectorAll('#anTable [data-open]').forEach(r => r.addEventListener('click', () => navigate('anthro/' + r.dataset.open)));
+  document.querySelectorAll('#anTable [data-new]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); anAssessmentForm(b.dataset.new, null); }));
+}
+let anFilter = 'all';
+document.getElementById('anFilter').addEventListener('click', e => { const b = e.target.closest('button[data-f]'); if (b) { anFilter = b.dataset.f; renderAnthroList(); } });
+function anRoundDialog() {
+  const o = anOverlay(`<h3>Current round</h3><div class="save-note" style="margin-bottom:10px;">Players with an assessment dated on or after this day count as done in the current round. Changing it does not touch any assessment.</div>
+    <div class="imp-grid" style="grid-template-columns:200px 1fr;"><div><label for="rdStart">Round start date</label><input type="date" id="rdStart" value="${escapeHtml(anRoundStart())}"></div></div>
+    <div class="imp-foot"><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Save</button></div>`);
+  o.querySelector('.modal-cancel').addEventListener('click', () => o.remove());
+  o.querySelector('.modal-ok').addEventListener('click', async () => {
+    const d = o.querySelector('#rdStart').value; if (!d) return;
+    if (await anSetRoundStart(d)) { o.remove(); toast('Round start saved'); renderAnthro(); renderAnthroDash(); }
+  });
 }
 document.getElementById('anSearch').addEventListener('input', renderAnthroList);
 
@@ -2498,38 +2553,68 @@ function anProfileForm(pid) {
     anthroProfiles = next; o.remove(); toast('Profile saved'); renderAnthro();
   });
 }
-function anAssessmentForm(pid, a) {
+function anAssessmentForm(pid, a, opts) {
+  opts = opts || {};
   const p = roster.find(x => x.id === pid), fixedAll = AN_FIXED, fixedNow = anFixedFor(pid, a);
-  const groups = [['Body mass', AN_SIZES.filter(s => s[0] === 'mass').map(s => [s[0], s[1], s[2]])], ['Skinfolds (mm)', AN_FOLDS.map(f => ['sf_' + f[0], f[1], 'mm'])], ['Girths (cm)', AN_GIRTHS.map(f => ['gr_' + f[0], f[1], 'cm'])]];
+  const groups = [['Body mass', AN_SIZES.filter(s => s[0] === 'mass').map(s => [s[0], s[1], 'kg'])], ['Skinfolds', AN_FOLDS.map(f => ['sf_' + f[0], f[1], 'mm'])], ['Girths', AN_GIRTHS.map(f => ['gr_' + f[0], f[1], 'cm'])]];
   const val = (k, i) => a && a.raw[k] && a.raw[k][i] != null ? a.raw[k][i] : '';
-  const o = anOverlay(`<h3>${a ? 'Edit' : 'New'} assessment: ${escapeHtml(p.name)}</h3>
-    <div class="save-note" style="margin-bottom:10px;">Enter each skinfold, girth and the body mass once, or three times. With three readings the mean is used; otherwise only the first reading counts. A warning shows when the first two differ by more than 1 % (body mass and girths) or 5 % (skinfolds), as a hint to take a third reading.</div>
-    <div class="imp-grid" style="grid-template-columns:200px 1fr;margin-bottom:6px;"><div><label>Date of the assessment</label><input type="date" id="asDate" value="${escapeHtml(a ? a.date : todayStr())}"></div></div>
+  // previous assessment (before this one) as a reference next to each field
+  const before = anList(pid).filter(x => !a || (x.date < a.date && x.id !== a.id));
+  const prevA = before.length ? before[before.length - 1] : null, prevV = prevA ? anResolve(prevA.raw, anFixedFor(pid, prevA)).v : {};
+  const hasNext = roster.some(x => x.id !== pid && !anDoneThisRound(x.id));
+  const o = anOverlay(`<div class="as-head"><h3>${a ? 'Edit' : 'New'} assessment</h3><div class="as-player"><span class="avatar" aria-hidden="true">${escapeHtml(initials(p.name))}</span><div><strong>${escapeHtml(p.name)}</strong><div class="save-note">${prevA ? 'Previous assessment: ' + escapeHtml(longDateSafe(prevA.date)) + ' (its values are shown in grey next to each measure)' : 'No previous assessment'}</div></div></div></div>
+    <div class="as-preview" id="asPreview" aria-live="polite"></div>
+    <div class="imp-grid" style="grid-template-columns:200px 1fr;margin:10px 0 6px;"><div><label for="asDate">Date of the assessment</label><input type="date" id="asDate" value="${escapeHtml(a ? a.date : todayStr())}"></div></div>
     <details class="an-fixed" ${fixedAll.every(([k]) => fixedNow[k] != null) ? '' : 'open'}><summary>Fixed measures: ${fixedAll.map(([k, l, u]) => l.toLowerCase() + ' ' + (fixedNow[k] != null ? fixedNow[k] + ' ' + u : 'missing')).join(' · ')}</summary>
       <div class="imp-grid" style="grid-template-columns:repeat(3,1fr);margin-top:8px;">${fixedAll.map(([k, l, u]) => `<div><label>${l} (${u})</label><input type="number" step="any" inputmode="decimal" id="asFx_${k}" value="${fixedNow[k] != null ? fixedNow[k] : ''}"></div>`).join('')}</div>
       <label class="an-check"><input type="checkbox" id="asFxProfile" ${fixedAll.some(([k]) => (anthroProfiles[pid] || {})[k] == null) ? 'checked' : ''}> Also save these as the player's fixed values</label>
       <div class="save-note">They come from the player's profile; change them only if they were measured again.</div></details>
-    ${groups.map(([title, items]) => `<h3 style="font-size:13px;margin:14px 0 6px;">${title}</h3>${items.map(([k, lbl, unit]) => `<div class="an-field" data-k="${k}"><span class="an-lbl">${lbl}</span>${[0, 1, 2].map(i => `<input type="number" step="any" inputmode="decimal" data-i="${i}" placeholder="${i === 2 ? '3rd (opt.)' : i === 0 ? '1st' : '2nd'}" value="${val(k, i)}">`).join('')}<span class="an-used" aria-live="polite"></span></div>`).join('')}`).join('')}
-    <div class="imp-foot"><span class="save-note" id="asNote"></span><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Save</button></div>`);
-  const refresh = () => o.querySelectorAll('.an-field').forEach(row => {
-    const k = row.dataset.k, t = anTriple([...row.querySelectorAll('input')].map(i => i.value), AN_TOL(k));
-    const used = row.querySelector('.an-used');
-    used.className = 'an-used' + (t.out ? ' warn' : '');
-    used.textContent = t.value == null ? '' : (Math.round(t.value * 100) / 100) + (t.out ? ' · difference ' + (Math.abs(t.pctDiff) * 100).toFixed(1) + ' % (limit ' + AN_TOL(k) * 100 + ' %): check the measure' : t.singleMeasure ? ' · single measure' : (t.threeReadings ? ' · mean of 3' : ' · first reading used'));
-  });
-  o.addEventListener('input', refresh); refresh();
-  o.querySelector('.modal-cancel').addEventListener('click', () => o.remove());
-  o.querySelector('.modal-ok').addEventListener('click', async () => {
-    const date = o.querySelector('#asDate').value;
-    if (!date) { o.querySelector('#asNote').textContent = 'Choose the date of the assessment.'; return; }
+    <div class="save-note as-help">Type the first reading and press <strong>Enter</strong> to jump to the next measure. The 2nd and 3rd readings are optional: with three the mean is used, otherwise the first one. A warning shows when the first two differ by more than 1 % (body mass, girths) or 5 % (skinfolds).</div>
+    ${groups.map(([title, items]) => `<div class="as-group"><div class="as-gh"><h4>${title}</h4><span class="as-cols"><span>1st</span><span>2nd</span><span>3rd</span></span></div>${items.map(([k, lbl, unit]) => `<div class="an-field" data-k="${k}"><span class="an-lbl">${lbl} <small>${unit}</small>${prevV[k] != null ? `<span class="as-prev">${Math.round(prevV[k] * 100) / 100}</span>` : ''}</span>${[0, 1, 2].map(i => `<input type="number" step="any" inputmode="decimal" data-i="${i}" aria-label="${escapeHtml(lbl)} reading ${i + 1}" placeholder="${i === 0 ? '' : 'opt.'}" value="${val(k, i)}">`).join('')}<span class="an-used" aria-live="polite"></span></div>`).join('')}</div>`).join('')}
+    <div class="imp-foot as-foot"><span class="save-note" id="asNote"></span><button class="btn modal-cancel">Cancel</button><button class="btn${a || !hasNext ? ' primary' : ''} modal-ok" data-next="0">Save</button>${!a && hasNext ? '<button class="btn primary modal-ok" data-next="1">Save and next pending player</button>' : ''}</div>`);
+  const prof = anthroProfiles[pid] || {};
+  const readRaw = () => {
     const raw = {};
     o.querySelectorAll('.an-field').forEach(row => {
       const vals = [...row.querySelectorAll('input')].map(i => i.value === '' ? null : parseFloat(i.value));
       if (vals.some(x => x != null && !isNaN(x))) raw[row.dataset.k] = vals.map(x => (x == null || isNaN(x)) ? null : x);
     });
+    return raw;
+  };
+  const readFixed = () => { const f = {}; AN_FIXED.forEach(([k]) => { const x = parseFloat(o.querySelector('#asFx_' + k).value); f[k] = isNaN(x) ? null : x; }); return f; };
+  const refresh = () => {
+    o.querySelectorAll('.an-field').forEach(row => {
+      const k = row.dataset.k, t = anTriple([...row.querySelectorAll('input')].map(i => i.value), AN_TOL(k));
+      const used = row.querySelector('.an-used');
+      used.className = 'an-used' + (t.out ? ' warn' : '');
+      used.textContent = t.value == null ? '' : (Math.round(t.value * 100) / 100) + (t.out ? ' · differ ' + (Math.abs(t.pctDiff) * 100).toFixed(1) + ' % (limit ' + AN_TOL(k) * 100 + ' %): check' : t.singleMeasure ? ' · 1 reading' : (t.threeReadings ? ' · mean of 3' : ' · first used'));
+    });
+    // live result: how many of the variable measures are in, and the main results as soon as everything is there
+    const raw = readRaw(), date = o.querySelector('#asDate').value, { v } = anResolve(raw, readFixed());
+    const need = AN_KEYS.filter(k => !AN_FIXED.some(f => f[0] === k)), have = need.filter(k => v[k] != null).length;
+    const age = prof.dob && date ? anAge(date, prof.dob) : null, R = anCompute(v, prof, age);
+    const pv = (label, x, u) => `<div class="as-pv"><span>${label}</span><strong>${x}<em>${u}</em></strong></div>`;
+    o.querySelector('#asPreview').innerHTML = `<div class="as-pv"><span>Measures entered</span><strong>${have}<em> / ${need.length}</em></strong><div class="progress"><span style="width:${Math.round(have / need.length * 100)}%"></span></div></div>` +
+      (R ? pv('Σ6 skinfolds', R.sum6.toFixed(1), ' mm') + pv('Fat (Yuhasz)', R.yuhaszPct.toFixed(1), ' %') + pv('Muscle (Lee)', R.musclePct.toFixed(1), ' %') + pv('BMI', R.bmi.toFixed(1), '') : `<div class="as-pv wide"><span>Results appear when everything is entered${prof.dob && prof.sex && prof.ethnicity ? '' : ' (the profile is incomplete)'}.</span></div>`);
+  };
+  o.addEventListener('input', refresh); refresh();
+  // Enter moves on to the next measure's first reading
+  const firsts = () => [...o.querySelectorAll('.an-field')].map(r => r.querySelector('input[data-i="0"]'));
+  o.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || e.target.tagName !== 'INPUT' || !e.target.closest('.an-field')) return;
+    e.preventDefault();
+    const list = firsts(), i = list.indexOf(e.target.closest('.an-field').querySelector('input[data-i="0"]'));
+    if (i >= 0 && i < list.length - 1) { list[i + 1].focus(); list[i + 1].select(); } else o.querySelector('.modal-ok').focus();
+  });
+  setTimeout(() => { const f = firsts().find(x => x.value === '') || firsts()[0]; if (f && !a) f.focus(); }, 50);
+  o.querySelector('.modal-cancel').addEventListener('click', () => o.remove());
+  o.querySelectorAll('.modal-ok').forEach(btn => btn.addEventListener('click', async () => {
+    const goNext = btn.dataset.next === '1';
+    const date = o.querySelector('#asDate').value;
+    if (!date) { o.querySelector('#asNote').textContent = 'Choose the date of the assessment.'; return; }
+    const raw = readRaw();
     if (!Object.keys(raw).length) { o.querySelector('#asNote').textContent = 'Enter at least one measure.'; return; }
-    const fixed = {};
-    AN_FIXED.forEach(([k]) => { const x = parseFloat(o.querySelector('#asFx_' + k).value); fixed[k] = isNaN(x) ? null : x; });
+    const fixed = readFixed();
     const rec = { id: a ? a.id : uid(), date, raw, fixed };
     if (o.querySelector('#asFxProfile').checked && AN_FIXED.some(([k]) => fixed[k] != null && fixed[k] !== (anthroProfiles[pid] || {})[k])) {
       const np = await mutateSetting('anthro_profiles', all => { all[pid] = { ...(all[pid] || {}), ...Object.fromEntries(AN_FIXED.filter(([k]) => fixed[k] != null).map(([k]) => [k, fixed[k]])), fixedDate: date }; });
@@ -2541,8 +2626,12 @@ function anAssessmentForm(pid, a) {
       if (i >= 0) list[i] = rec; else list.push(rec);
     });
     if (!next) return;
-    anthroData = next; anSelected = rec.id; o.remove(); toast('Assessment saved'); renderAnthro();
-  });
+    anthroData = next; anSelected = rec.id; o.remove();
+    const left = roster.filter(x => !anDoneThisRound(x.id));
+    toast('Assessment saved' + (left.length ? ' · ' + left.length + ' pending in this round' : ' · everyone is done in this round'));
+    renderAnthro();
+    if (goNext) { const nx = left.find(x => x.id !== pid); if (nx) anAssessmentForm(nx.id, null); }
+  }));
 }
 async function anDeleteAssessment(pid, a) {
   if (!await customConfirm('Delete the assessment of ' + longDateSafe(a.date) + '? This cannot be undone.')) return;
