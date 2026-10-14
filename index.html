@@ -264,7 +264,7 @@
     @page { size:A4; margin:14mm; }
     :root, :root[data-theme], :root:not([data-theme="light"]) { --orange:#ff5405 !important; --orange-d:#e64a00 !important; --orange-soft:#fff1e8 !important; --ink:#1c1c1e !important; --ink-2:#48484a !important; --ink-3:#8e8e93 !important; --ink-4:#c7c7cc !important; --bg:#f5f5f7 !important; --card:#fff !important; --card-2:#fafafb !important; --line:#e8e8ed !important; --fill:#f2f2f4 !important; --fill-d:#e8e8ec !important; --seg-on:#fff !important; --good:#1e8c4a !important; --good-bg:#e9f7ee !important; --bad:#c0392b !important; --bad-bg:#fdeaea !important; --bad-hover:#f9d9d6 !important; --info:#3a8fd1 !important; --info-bg:#eef6fb !important; --info-ink:#2c5f82 !important; --hist-bg:#e8f1f8 !important; --hist-ink:#2c6a94 !important; --tag-bg:#eceef3 !important; --tag-ink:#4a5068 !important; --warn-bg:#fff6d9 !important; --warn-ink:#7a5b00 !important; --notice-ink:#8a3200 !important; --on-accent:#fff !important; --shadow-s:0 1px 2px rgba(0,0,0,.03) !important; --shadow-l:0 20px 50px rgba(0,0,0,.3) !important; --logo-bg:#fff !important; color-scheme:light !important; }
     body { background:#fff; }
-    .login-wrap, .shell, .modal-overlay { display:none !important; }
+    .login-wrap, .shell, .modal-overlay, .toasts, .toast, .loadbar { display:none !important; }
     #printArea { display:block !important; color:#1c1c1e; font-size:12px; }
     #printArea .p-head { display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid var(--orange); padding-bottom:10px; margin-bottom:16px; }
     #printArea .p-head img { width:150px; }
@@ -278,25 +278,26 @@
     #printArea .p-charts h3 { font-size:11px; margin-bottom:4px; }
     #printArea .ch-legend { font-size:9px; color:#6a6a6e; }
     #printArea .p-note { border-left:3px solid #3a8fd1; padding:4px 10px; margin-bottom:6px; background:#f3f8fc; }
-    #printArea .fr-band { background:linear-gradient(140deg,#4a4a4a 0%,#303030 100%); border-radius:18px; padding:16px 22px; margin-bottom:9px; position:relative; color:#fff; }
+    #printArea .fr { --g:8px; --sp:10px; --spx:16px; --td:4.5px; --bp:16px; display:flex; flex-direction:column; min-height:266mm; }
+    #printArea .fr-band { background:linear-gradient(140deg,#4a4a4a 0%,#303030 100%); border-radius:20px; padding:var(--bp) 26px; margin-bottom:var(--g); position:relative; color:#fff; }
     #printArea .fr-band .fr-kicker { font-size:9.5px; letter-spacing:3px; text-transform:uppercase; color:#ff5405; font-weight:700; margin-bottom:6px; }
     #printArea .fr-band h1 { font-size:20px; color:#fff; margin:0 0 6px; max-width:78%; }
     #printArea .fr-band .fr-sub { font-size:11px; color:#cfcfcf; line-height:1.55; max-width:80%; }
     #printArea .fr-band img { position:absolute; top:18px; right:20px; width:74px; background:#fff; border-radius:12px; padding:7px 9px; }
-    #printArea .fr-kpis { display:flex; gap:7px; margin-bottom:9px; }
-    #printArea .fr-kpi { flex:1; background:#f4f4f6; border-radius:12px; padding:9px 6px 8px; text-align:center; break-inside:avoid; }
+    #printArea .fr-kpis { display:flex; gap:var(--g); margin-bottom:var(--g); }
+    #printArea .fr-kpi { flex:1; background:#f4f4f6; border-radius:12px; padding:calc(var(--sp) - 1px) 6px var(--sp); text-align:center; break-inside:avoid; }
     #printArea .fr-kpi b { display:block; font-size:22px; color:#ff5405; line-height:1; margin-bottom:5px; }
     #printArea .fr-kpi span { display:block; font-size:8.5px; letter-spacing:.9px; text-transform:uppercase; color:#6a6a6e; line-height:1.35; }
-    #printArea .fr-notice { background:#fff4ec; border-left:4px solid #ff5405; border-radius:8px; padding:7px 14px; margin-bottom:9px; font-size:10px; color:#5a4a40; line-height:1.55; }
-    #printArea .fr-sec { background:#f4f4f6; border-radius:12px; padding:10px 16px 6px; margin-bottom:8px; break-inside:avoid; }
+    #printArea .fr-notice { background:#fff4ec; border-left:4px solid #ff5405; border-radius:8px; padding:calc(var(--sp) - 3px) 14px; margin-bottom:var(--g); font-size:10px; color:#5a4a40; line-height:1.55; }
+    #printArea .fr-sec { background:#f4f4f6; border-radius:12px; padding:var(--sp) var(--spx) calc(var(--sp) - 4px); margin-bottom:var(--g); break-inside:avoid; }
     #printArea .fr-sec h2 { font-size:13px; margin:0 0 1px; }
     #printArea .fr-sec .fr-target { font-size:10px; color:#7a7a7e; margin-bottom:8px; }
     #printArea .fr-sec table { width:100%; border-collapse:collapse; }
     #printArea .fr-sec th { font-size:8.5px; letter-spacing:1px; text-transform:uppercase; color:#ff5405; text-align:left; padding:0 8px 5px 0; border-bottom:2px solid #dcdce0; }
-    #printArea .fr-sec td { padding:4.5px 8px 4.5px 0; border-bottom:1px solid #e3e3e6; font-size:11px; }
+    #printArea .fr-sec td { padding:var(--td) 8px var(--td) 0; border-bottom:1px solid #e3e3e6; font-size:11px; }
     #printArea .fr-sec tr:last-child td { border-bottom:none; }
     #printArea .fr-ok { color:#1e8c4a; font-weight:700; font-size:11.5px; padding:8px 0 4px; }
-    #printArea .fr-foot { display:flex; justify-content:space-between; margin-top:12px; font-size:8.5px; letter-spacing:1px; text-transform:uppercase; color:#9a9aa0; }
+    #printArea .fr-foot { display:flex; justify-content:space-between; margin-top:auto; padding-top:var(--g); font-size:8.5px; letter-spacing:1px; text-transform:uppercase; color:#9a9aa0; }
     #printArea .p-foot { margin-top:22px; padding-top:8px; border-top:1px solid #ccc; font-size:10px; color:#6a6a6e; line-height:1.5; }
     #printArea svg { width:100%; height:auto; }
     #printArea * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -2172,6 +2173,20 @@ function dateRangeText(dates) {
   if (y1 === y2 && m1 === m2) return MONTHS[m1 - 1] + ' ' + d1 + '-' + d2 + ', ' + y1;
   return MONTHS[m1 - 1].slice(0, 3) + ' ' + d1 + (y1 !== y2 ? ', ' + y1 : '') + ' – ' + MONTHS[m2 - 1].slice(0, 3) + ' ' + d2 + ', ' + y2;
 }
+// Spacing of the round report grows when there is little to list and shrinks as it fills up, so it stays on one A4 page.
+// "load" = rows + 3 per section (+2 for a notice). Anchors were measured: each spacing set fits one page up to ~2 load units above its anchor.
+const SPACING = [
+  { load: 20, g: 18, sp: 16, spx: 22, td: 7, bp: 26 },
+  { load: 25, g: 12, sp: 13, spx: 18, td: 5.5, bp: 20 },
+  { load: 29, g: 8, sp: 10, spx: 16, td: 4.5, bp: 16 },
+];
+function reportSpacing(load) {
+  if (load <= SPACING[0].load) return SPACING[0];
+  if (load >= SPACING[SPACING.length - 1].load) return SPACING[SPACING.length - 1];
+  const i = SPACING.findIndex(a => a.load >= load), a = SPACING[i - 1], b = SPACING[i], f = (load - a.load) / (b.load - a.load);
+  const mix = k => Math.round((a[k] + (b[k] - a[k]) * f) * 10) / 10;
+  return { g: mix('g'), sp: mix('sp'), spx: mix('spx'), td: mix('td'), bp: mix('bp') };
+}
 function flaggedReportHtml(roundId, o) {
   o = o || {};
   const t = thresholds, rd = rounds.find(r => r.id === roundId);
@@ -2202,8 +2217,10 @@ function flaggedReportHtml(roundId, o) {
   if (o.listMissing !== false && missing.length) notices.push(missing.length + ' player' + (missing.length === 1 ? '' : 's') + ' (' + missing.map(escapeHtml).join(', ') + ') ' + (missing.length === 1 ? 'has' : 'have') + ' not yet been measured and ' + (missing.length === 1 ? 'is' : 'are') + ' not included in this report.');
   if (t.smMin != null && measured.length && withSm === 0) notices.push('Skeletal muscle % is not part of this report: none of the measured players has it (it depends on which device/report format was used).');
   else if (t.smMin != null && withSm < measured.length) notices.push('Skeletal muscle % is only available for ' + withSm + ' of the ' + measured.length + ' measured players, based on which device/report format was used.');
+  const load = results.length * 3 + results.reduce((n, x) => n + Math.max(1, x.rows.length), 0) + (notices.length ? 2 : 0);
+  const sp = reportSpacing(load);
   const rl = rd ? roundLabel(rd) : '';
-  return `<div class="fr">
+  return `<div class="fr" style="--g:${sp.g}px;--sp:${sp.sp}px;--spx:${sp.spx}px;--td:${sp.td}px;--bp:${sp.bp}px">
     <div class="fr-band"><img src="${LOGO_SRC}" alt="FUTEDU Team">
       <div class="fr-kicker">FUTEDU Academy · Nutrition Department</div>
       <h1>Bioimpedance Assessment — Flagged Players Report</h1>
