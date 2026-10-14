@@ -278,6 +278,25 @@
     #printArea .p-charts h3 { font-size:11px; margin-bottom:4px; }
     #printArea .ch-legend { font-size:9px; color:#6a6a6e; }
     #printArea .p-note { border-left:3px solid #3a8fd1; padding:4px 10px; margin-bottom:6px; background:#f3f8fc; }
+    #printArea .fr-band { background:linear-gradient(140deg,#4a4a4a 0%,#303030 100%); border-radius:18px; padding:16px 22px; margin-bottom:9px; position:relative; color:#fff; }
+    #printArea .fr-band .fr-kicker { font-size:9.5px; letter-spacing:3px; text-transform:uppercase; color:#ff5405; font-weight:700; margin-bottom:6px; }
+    #printArea .fr-band h1 { font-size:20px; color:#fff; margin:0 0 6px; max-width:78%; }
+    #printArea .fr-band .fr-sub { font-size:11px; color:#cfcfcf; line-height:1.55; max-width:80%; }
+    #printArea .fr-band img { position:absolute; top:18px; right:20px; width:74px; background:#fff; border-radius:12px; padding:7px 9px; }
+    #printArea .fr-kpis { display:flex; gap:7px; margin-bottom:9px; }
+    #printArea .fr-kpi { flex:1; background:#f4f4f6; border-radius:12px; padding:9px 6px 8px; text-align:center; break-inside:avoid; }
+    #printArea .fr-kpi b { display:block; font-size:22px; color:#ff5405; line-height:1; margin-bottom:5px; }
+    #printArea .fr-kpi span { display:block; font-size:8.5px; letter-spacing:.9px; text-transform:uppercase; color:#6a6a6e; line-height:1.35; }
+    #printArea .fr-notice { background:#fff4ec; border-left:4px solid #ff5405; border-radius:8px; padding:7px 14px; margin-bottom:9px; font-size:10px; color:#5a4a40; line-height:1.55; }
+    #printArea .fr-sec { background:#f4f4f6; border-radius:12px; padding:10px 16px 6px; margin-bottom:8px; break-inside:avoid; }
+    #printArea .fr-sec h2 { font-size:13px; margin:0 0 1px; }
+    #printArea .fr-sec .fr-target { font-size:10px; color:#7a7a7e; margin-bottom:8px; }
+    #printArea .fr-sec table { width:100%; border-collapse:collapse; }
+    #printArea .fr-sec th { font-size:8.5px; letter-spacing:1px; text-transform:uppercase; color:#ff5405; text-align:left; padding:0 8px 5px 0; border-bottom:2px solid #dcdce0; }
+    #printArea .fr-sec td { padding:4.5px 8px 4.5px 0; border-bottom:1px solid #e3e3e6; font-size:11px; }
+    #printArea .fr-sec tr:last-child td { border-bottom:none; }
+    #printArea .fr-ok { color:#1e8c4a; font-weight:700; font-size:11.5px; padding:8px 0 4px; }
+    #printArea .fr-foot { display:flex; justify-content:space-between; margin-top:12px; font-size:8.5px; letter-spacing:1px; text-transform:uppercase; color:#9a9aa0; }
     #printArea .p-foot { margin-top:22px; padding-top:8px; border-top:1px solid #ccc; font-size:10px; color:#6a6a6e; line-height:1.5; }
     #printArea svg { width:100%; height:auto; }
     #printArea * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -488,6 +507,7 @@
           <div><h1>Bioimpedance</h1><div class="sub" id="sumSub"></div></div>
           <div class="actions">
             <div class="seg" id="modeSeg"><button data-mode="cards" class="on">Cards</button><button data-mode="table">Quick entry</button></div>
+            <button class="btn js-round-report">Round report</button>
             <button class="btn js-reset-checkins">Reset check-ins</button>
             <button class="btn js-archive">Archive round</button>
           </div>
@@ -567,7 +587,7 @@
         <div class="card">
           <h2>Rounds</h2>
           <div id="roundList"></div>
-          <div class="row" style="margin-top:14px;"><button class="btn js-archive">Archive current round</button></div>
+          <div class="row" style="margin-top:14px;"><button class="btn js-round-report">Create round report</button><button class="btn js-archive">Archive current round</button></div>
           <div class="note">Archiving closes the current round under the name you choose, clears check-ins and opens a new round with everyone pending. Previous values stay visible on each player's History.</div>
         </div>
 
@@ -999,6 +1019,7 @@ document.querySelectorAll('.js-archive').forEach(btn => btn.addEventListener('cl
   currentRound = data; rounds.push(data);
   await persistCheckins(c => { Object.keys(c).forEach(k => delete c[k]); });
   renderAll();
+  if (await customConfirm('Round archived. Create its report now?')) roundReportFlow(closedRound.id);
 }));
 
 async function fetchEverything() {
@@ -1331,11 +1352,13 @@ function renderSettings() {
   const rows = rounds.slice().reverse().map(r => {
     const n = Object.keys(measurements[r.id] || {}).length;
     return `<div class="round-row"><strong>${escapeHtml(r.label)}</strong>${r.closed ? '' : '<span class="tag">Current</span>'}
-      <span class="r-meta">${n} players${r.closed_on ? ' · closed ' + escapeHtml(r.closed_on) : ''}</span></div>`;
+      <span class="r-meta">${n} players${r.closed_on ? ' · closed ' + escapeHtml(r.closed_on) : ''}</span>${n ? `<button class="btn sm" data-round-report="${r.id}">Report</button>` : ''}</div>`;
   });
   const lbk = lastBackup();
   document.getElementById('backupNote').textContent = lbk ? 'Last export from this device: ' + lbk + ' (' + daysSince(lbk) + ' days ago).' : 'No export made from this device yet.';
-  document.getElementById('roundList').innerHTML = rows.join('') || '<div class="empty">No rounds yet.</div>';
+  const rl = document.getElementById('roundList');
+  rl.innerHTML = rows.join('') || '<div class="empty">No rounds yet.</div>';
+  rl.querySelectorAll('[data-round-report]').forEach(b => b.addEventListener('click', () => roundReportFlow(b.dataset.roundReport)));
 }
 
 function renderAll() {
@@ -2136,6 +2159,102 @@ function renderProfile() {
   document.getElementById('pfPrint').addEventListener('click', () => printReport(p.id));
   bindNoteActions(el);
 }
+
+// ---- round report ("flagged players" summary, one A4 page) ----
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+function longDate(iso) { const [y, m, d] = iso.split('-').map(Number); return MONTHS[m - 1] + ' ' + d + ', ' + y; }
+function dateRangeText(dates) {
+  const u = [...new Set(dates.filter(Boolean))].sort();
+  if (!u.length) return '';
+  const a = u[0], b = u[u.length - 1];
+  if (a === b) return longDate(a);
+  const [y1, m1, d1] = a.split('-').map(Number), [y2, m2, d2] = b.split('-').map(Number);
+  if (y1 === y2 && m1 === m2) return MONTHS[m1 - 1] + ' ' + d1 + '-' + d2 + ', ' + y1;
+  return MONTHS[m1 - 1].slice(0, 3) + ' ' + d1 + (y1 !== y2 ? ', ' + y1 : '') + ' – ' + MONTHS[m2 - 1].slice(0, 3) + ' ' + d2 + ', ' + y2;
+}
+function flaggedReportHtml(roundId, o) {
+  o = o || {};
+  const t = thresholds, rd = rounds.find(r => r.id === roundId);
+  const pool = roster.filter(p => !o.tag || p.tags.includes(o.tag));
+  const data = pool.map(p => ({ p, r: readingIn(roundId, p.id) }));
+  const measured = data.filter(x => x.r), missing = data.filter(x => !x.r).map(x => x.p.name);
+  const smOf = r => (r.skeletal_muscle_mass_kg != null && r.weight_kg) ? r.skeletal_muscle_mass_kg / r.weight_kg * 100 : null;
+  const withSm = measured.filter(x => smOf(x.r) != null).length;
+  const hasAny = f => measured.some(x => f(x.r) != null);
+  const SEC = [
+    { title: 'Body Fat Above Target', kpi: 'Above body fat target', sub: 'Target: ' + t.bodyFat + '% or below', col: 'Body fat %', test: c => c.bodyFat === 'bad', val: r => r.body_fat_percent + '%', key: r => r.body_fat_percent, dir: -1 },
+    { title: 'Subcutaneous Fat Above Target', kpi: 'Above subcutaneous fat target', sub: 'Target: below ' + t.subFat + '%', col: 'Subcutaneous fat %', test: c => c.subFat === 'watch', val: r => r.subcutaneous_fat_percent + '%', key: r => r.subcutaneous_fat_percent, dir: -1 },
+    { title: 'Hydration Below Target', kpi: 'Below hydration target', sub: 'Target: ' + t.hydMin + '% or above', col: 'Hydration %', test: c => c.hydration === 'watch', val: r => r.total_body_water_percent + '%', key: r => r.total_body_water_percent, dir: 1 },
+    { title: 'BMI Outside Healthy Range', kpi: 'Outside healthy BMI', sub: 'Healthy range: ' + t.bmiMin + ' – ' + t.bmiMax, col: 'BMI', test: c => c.bmi === 'watch', val: r => String(r.bmi), key: r => r.bmi > t.bmiMax ? r.bmi - t.bmiMax : t.bmiMin - r.bmi, dir: -1, note: r => r.bmi > t.bmiMax ? 'Above healthy range' : 'Below healthy range' },
+  ];
+  if (t.smMin != null && withSm > 0) SEC.push({ title: 'Skeletal Muscle Below Target', kpi: 'Below skeletal muscle target', sub: 'Target: ' + t.smMin + '% of body weight or above' + (withSm < measured.length ? ' (based on ' + withSm + ' of ' + measured.length + ' measured players with this data point)' : ''), col: 'Skeletal muscle %', test: c => c.smPercent === 'watch', val: r => smOf(r).toFixed(1) + '%', key: r => smOf(r), dir: 1 });
+  if (t.ffmMin != null) SEC.push({ title: 'Fat-Free Mass Below Target', kpi: 'Below fat-free mass target', sub: 'Target: ' + t.ffmMin + ' kg or above', col: 'Fat-free mass', test: c => c.ffm === 'watch', val: r => r.fat_free_mass_kg + ' kg', key: r => r.fat_free_mass_kg, dir: 1 });
+  if (hasAny(r => r.visceral_fat)) SEC.push({ title: 'High Visceral Fat', kpi: 'High visceral fat', sub: 'Target: below 10', col: 'Visceral fat', test: c => c.visceralFat === 'bad', val: r => String(r.visceral_fat), key: r => r.visceral_fat, dir: -1 });
+  if (hasAny(r => r.muscle_balance)) SEC.push({ title: 'Notable Muscle Asymmetry', kpi: 'Notable muscle asymmetry', sub: 'Upper, lower or overall balance marked as severely uneven', col: 'Where', test: (c, r) => !!(r.muscle_balance && ['upper', 'lower', 'overall'].some(k => r.muscle_balance[k] === 'severe')), val: r => ['upper', 'lower', 'overall'].filter(k => r.muscle_balance[k] === 'severe').join(', '), key: () => 0, dir: 0 });
+  const results = SEC.map(sc => {
+    const rows = measured.filter(x => { const c = classify(x.r) || {}; return sc.test(c, x.r); })
+      .sort((a, b) => a.p.name.localeCompare(b.p.name));
+    return { sc, rows };
+  });
+  const dates = measured.map(x => x.r.date);
+  const today = new Date().toISOString().slice(0, 10);
+  const notices = [];
+  if (o.listMissing !== false && missing.length) notices.push(missing.length + ' player' + (missing.length === 1 ? '' : 's') + ' (' + missing.map(escapeHtml).join(', ') + ') ' + (missing.length === 1 ? 'has' : 'have') + ' not yet been measured and ' + (missing.length === 1 ? 'is' : 'are') + ' not included in this report.');
+  if (t.smMin != null && measured.length && withSm === 0) notices.push('Skeletal muscle % is not part of this report: none of the measured players has it (it depends on which device/report format was used).');
+  else if (t.smMin != null && withSm < measured.length) notices.push('Skeletal muscle % is only available for ' + withSm + ' of the ' + measured.length + ' measured players, based on which device/report format was used.');
+  const rl = rd ? roundLabel(rd) : '';
+  return `<div class="fr">
+    <div class="fr-band"><img src="${LOGO_SRC}" alt="FUTEDU Team">
+      <div class="fr-kicker">FUTEDU Academy · Nutrition Department</div>
+      <h1>Bioimpedance Assessment — Flagged Players Report</h1>
+      <div class="fr-sub">${dates.length ? 'Measurements taken ' + dateRangeText(dates) + ' · ' : ''}${measured.length} of ${pool.length} players measured · Report generated ${longDate(today)}${o.tag ? ' · Group: ' + escapeHtml(o.tag) : ''}${rl ? ' · Round: ' + escapeHtml(rl) : ''}</div></div>
+    <div class="fr-kpis">${results.map(({ sc, rows }) => `<div class="fr-kpi"><b>${rows.length}</b><span>${sc.kpi}</span></div>`).join('')}</div>
+    ${notices.length ? `<div class="fr-notice">${notices.join(' ')}</div>` : ''}
+    ${results.map(({ sc, rows }) => `<div class="fr-sec"><h2>${sc.title}</h2><div class="fr-target">${sc.sub}</div>
+      <table><tr><th>Player</th><th>${sc.col}</th>${sc.note ? '<th>Note</th>' : ''}</tr>
+      ${rows.length ? rows.map(x => `<tr><td>${escapeHtml(x.p.name)}</td><td>${escapeHtml(sc.val(x.r))}</td>${sc.note ? `<td>${sc.note(x.r)}</td>` : ''}</tr>`).join('') : `<tr><td colspan="${sc.note ? 3 : 2}" class="fr-ok">✓ No players currently flagged in this category.</td></tr>`}
+      </table></div>`).join('')}
+    <div class="fr-foot"><span>FUTEDU Academy — Internal report</span><span>Nutrition Department</span></div>
+  </div>`;
+}
+function readingIn(roundId, pid) { return (measurements[roundId] && measurements[roundId][pid]) || null; }
+function printHtml(html, fileTitle) {
+  document.getElementById('printArea').innerHTML = html;
+  const old = document.title;
+  if (fileTitle) document.title = fileTitle;
+  const restore = () => { document.title = old; window.removeEventListener('afterprint', restore); };
+  window.addEventListener('afterprint', restore);
+  setTimeout(() => window.print(), 80);
+}
+function roundReportModal(preRoundId) {
+  return new Promise(resolve => {
+    const withData = rounds.filter(r => Object.keys(measurements[r.id] || {}).length);
+    if (!withData.length) { customConfirm('There are no measurements to report yet.'); resolve(null); return; }
+    const sel = withData.some(r => r.id === preRoundId) ? preRoundId : (withData.some(r => r.id === (currentRound && currentRound.id)) ? currentRound.id : withData[withData.length - 1].id);
+    const tags = allTags();
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `<div class="modal-box"><p><strong>Round report</strong><br><span class="save-note">One A4 page listing who is outside the targets, like the internal nutrition report.</span></p>
+      <label>Round</label><select id="rrRound">${withData.map(r => `<option value="${r.id}"${r.id === sel ? ' selected' : ''}>${escapeHtml(roundLabel(r))} · ${Object.keys(measurements[r.id]).length} players</option>`).join('')}</select>
+      ${tags.length ? `<label style="margin-top:10px;">Group</label><select id="rrTag"><option value="">All players</option>${tags.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('')}</select>` : ''}
+      <label style="margin:12px 0 14px;display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ink);font-weight:500;"><input type="checkbox" id="rrMissing" checked style="width:auto;height:auto;"> List players who have not been measured</label>
+      <div class="modal-actions"><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Create PDF</button></div></div>`;
+    document.body.appendChild(overlay);
+    const done = v => { overlay.remove(); resolve(v); };
+    overlay.querySelector('.modal-cancel').addEventListener('click', () => done(null));
+    overlay.querySelector('.modal-ok').addEventListener('click', () => done({ roundId: overlay.querySelector('#rrRound').value, tag: (overlay.querySelector('#rrTag') || {}).value || '', listMissing: overlay.querySelector('#rrMissing').checked }));
+    overlay.addEventListener('click', e => { if (e.target === overlay) done(null); });
+  });
+}
+async function roundReportFlow(preRoundId) {
+  const v = await roundReportModal(preRoundId);
+  if (!v) return;
+  const d = new Date();
+  const stamp = String(d.getDate()).padStart(2, '0') + String(d.getMonth() + 1).padStart(2, '0') + d.getFullYear();
+  printHtml(flaggedReportHtml(v.roundId, v), 'futedu-nutrition-report-' + stamp);
+  toast('In the print window, choose “Save as PDF”.');
+}
+document.querySelectorAll('.js-round-report').forEach(b => b.addEventListener('click', () => roundReportFlow()));
 
 // ---- printable report (browser print dialog -> Save as PDF) ----
 async function printReport(id) {
