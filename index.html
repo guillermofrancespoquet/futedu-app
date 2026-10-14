@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FUTEDU — Bioimpedance Summary</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Helvetica Neue', Arial, sans-serif; }
+  body { background:#f7f7f7; padding:20px 14px 60px; color:#1a1a1a; }
+  .wrap { max-width:760px; margin:0 auto; }
+
+  .header {
+    background:linear-gradient(140deg,#4a4a4a 0%,#303030 100%);
+    border-radius:22px; padding:20px 24px; margin-bottom:16px;
+    box-shadow:0 10px 24px rgba(0,0,0,0.25);
+    position:relative;
+  }
+  .header .logo-badge {
+    position:absolute; top:16px; right:18px; background:#fff; border-radius:16px;
+    padding:9px 12px; box-shadow:0 6px 16px rgba(0,0,0,0.30), 0 1px 3px rgba(0,0,0,0.15);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .header .logo-badge img { width:70px; height:auto; display:block; }
+  .header .brand, .header h1, .header .sub { max-width:calc(100% - 128px); }
+  .header .brand { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:#ff5405; font-weight:700; margin-bottom:6px; }
+  .header h1 { font-size:19px; color:#fff; font-weight:700; }
+  .header .sub { color:#cfcfcf; font-size:12px; margin-top:6px; line-height:1.5; }
+
+  .card { background:#fff; border-radius:18px; padding:18px 20px; margin-bottom:14px; box-shadow:0 3px 12px rgba(0,0,0,0.06); }
+  .card h2 { font-size:13px; letter-spacing:1.5px; text-transform:uppercase; color:#ff5405; font-weight:700; margin-bottom:12px; }
+
+  .settings-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; }
+  .settings-grid label { display:block; font-size:11px; color:#8a8a8a; margin-bottom:3px; }
+  .settings-grid input { width:100%; padding:7px 9px; border:1.5px solid #e5e5e5; border-radius:9px; font-size:13px; }
+  .settings-actions { margin-top:12px; display:flex; align-items:center; gap:10px; }
+  button.primary {
+    background:#ff5405; color:#fff; border:none; border-radius:20px; padding:8px 18px;
+    font-size:12.5px; font-weight:700; cursor:pointer;
+  }
+  button.primary:hover { background:#e64a00; }
+  .save-note { font-size:11.5px; color:#8a8a8a; }
+  .bmi-note { font-size:10.5px; color:#b5b5b5; margin-top:10px; line-height:1.5; }
+
+  .dash-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .dash-box { background:#f7f7f7; border-radius:14px; padding:12px 14px; }
+  .dash-box .dtitle { font-size:11px; font-weight:700; color:#4a4a4a; margin-bottom:6px; }
+  .dash-box .dcount { font-size:22px; font-weight:700; color:#ff5405; margin-bottom:4px; }
+  .dash-box ul { list-style:none; font-size:12px; color:#5a5a5a; line-height:1.7; }
+  .dash-box .empty { font-size:12px; color:#b5b5b5; }
+
+  .roster-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+  .roster-header h2 { margin-bottom:0; }
+  .roster-count { font-weight:400; color:#9a9a9a; text-transform:none; letter-spacing:0; font-size:12px; }
+  .btn-outline {
+    font-size:11.5px; padding:6px 14px; border-radius:16px; border:1.5px solid #d5d5d5;
+    background:#fff; color:#7a7a7a; cursor:pointer; font-weight:600;
+  }
+
+  .add-row { display:flex; gap:8px; margin-bottom:14px; }
+  .add-row input { flex:1; padding:9px 12px; border:1.5px solid #e5e5e5; border-radius:20px; font-size:13.5px; }
+
+  .group-heading {
+    display:flex; align-items:center; gap:8px; margin:18px 0 10px;
+    font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#7a7a7a;
+  }
+  .group-heading:first-child { margin-top:0; }
+  .group-heading .g-count {
+    font-size:10.5px; font-weight:700; color:#fff; background:#c7c7c7;
+    border-radius:10px; padding:1px 8px;
+  }
+  .group-heading.pending .g-count { background:#ff5405; }
+  .group-empty { font-size:12px; color:#b5b5b5; padding:2px 2px 12px; }
+
+  .player { border:1.5px solid #ececec; border-radius:16px; padding:12px 14px; margin-bottom:9px; transition:background 0.15s; }
+  .player.checked-in { background:#fafafa; }
+  .player-top { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .check-circle {
+    flex-shrink:0; width:24px; height:24px; border-radius:7px; cursor:pointer;
+    border:2px solid #d5d5d5; display:flex; align-items:center; justify-content:center;
+    transition:background 0.15s, border-color 0.15s;
+  }
+  .check-circle.on { background:#ff5405; border-color:#ff5405; }
+  .check-circle svg { width:14px; height:14px; opacity:0; }
+  .check-circle.on svg { opacity:1; }
+  .player-name { font-weight:700; font-size:14px; flex:1; min-width:120px; }
+  .player.checked-in .player-name { color:#9a9a9a; }
+  .status-pill { font-size:10.5px; padding:3px 10px; border-radius:12px; font-weight:700; }
+  .status-done { background:#e9f7ee; color:#1e8c4a; }
+  .status-none { background:#f0f0f0; color:#9a9a9a; }
+
+  .player-actions { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .btn-sm {
+    font-size:11px; padding:6px 12px; border-radius:14px; border:1.5px solid #e0e0e0;
+    background:#fff; color:#4a4a4a; cursor:pointer; font-weight:600;
+  }
+  .btn-sm.remove { color:#c0392b; border-color:#f3d0d0; }
+
+  .metrics { margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { font-size:11px; padding:5px 10px; border-radius:12px; font-weight:700; }
+  .chip.flag-bad { background:#fdeaea; color:#c0392b; }
+  .chip.flag-watch { background:#fff1e6; color:#ff5405; }
+  .chip.flag-good { background:#e9f7ee; color:#1e8c4a; }
+  .chip.flag-neutral { background:#f0f0f0; color:#7a7a7a; }
+
+  .balance-row { margin-top:10px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .balance-item { display:flex; align-items:center; gap:6px; }
+  .balance-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .balance-dot.bal-good { background:#1e8c4a; }
+  .balance-dot.bal-slight { background:#ff5405; }
+  .balance-dot.bal-severe { background:#c0392b; }
+  .balance-label { font-size:10.5px; color:#8a8a8a; }
+  .balance-value { font-size:10.5px; font-weight:700; color:#4a4a4a; }
+
+  .manual-form { margin-top:10px; background:#fafafa; border-radius:12px; padding:10px 12px; display:none; }
+  .manual-form.open { display:block; }
+
+  .health-note {
+    margin-top:10px; background:#eef6fb; border-left:3px solid #3a8fd1; border-radius:10px;
+    padding:9px 13px; font-size:11px; color:#2c5f82; line-height:1.55;
+  }
+  .health-note .hn-label { font-weight:700; text-transform:uppercase; letter-spacing:0.4px; font-size:9.5px; color:#3a8fd1; margin-bottom:3px; display:block; }
+  .manual-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+  .manual-grid label { display:block; font-size:10.5px; color:#8a8a8a; margin-bottom:2px; }
+  .manual-grid input { width:100%; padding:6px 8px; border:1.5px solid #e5e5e5; border-radius:8px; font-size:12.5px; }
+
+  .modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-box { background:#fff; border-radius:18px; padding:20px 22px; max-width:340px; width:100%; box-shadow:0 20px 50px rgba(0,0,0,0.35); }
+  .modal-box p { font-size:14px; color:#1a1a1a; margin-bottom:14px; line-height:1.5; }
+  .modal-box input { width:100%; padding:9px 12px; border:1.5px solid #e5e5e5; border-radius:10px; font-size:14px; margin-bottom:14px; }
+  .modal-actions { display:flex; gap:8px; justify-content:flex-end; }
+  .modal-actions button { font-size:13px; padding:8px 16px; border-radius:16px; border:none; cursor:pointer; font-weight:700; }
+  .modal-actions .modal-cancel { background:#f0f0f0; color:#6a6a6a; }
+  .modal-actions .modal-ok { background:#ff5405; color:#fff; }
+
+  .hist-panel { margin-top:10px; background:#fafafa; border-radius:12px; padding:10px 12px; display:none; overflow-x:auto; }
+  .hist-panel.open { display:block; }
+  .hist-panel table { width:100%; border-collapse:collapse; font-size:11px; min-width:430px; }
+  .hist-panel th { text-align:left; font-size:9.5px; text-transform:uppercase; letter-spacing:0.5px; color:#9a9a9a; padding:0 6px 5px 0; border-bottom:1px solid #e8e8e8; }
+  .hist-panel td { padding:5px 6px 5px 0; color:#4a4a4a; border-bottom:1px solid #f0f0f0; }
+  .hist-panel tr:last-child td { border-bottom:none; }
+  .delta-row { margin-top:8px; font-size:10.5px; color:#7a7a7a; }
+  .delta-row b { color:#4a4a4a; }
+  .btn-sm.hist { color:#3a6f8f; border-color:#cfe0ea; }
+
+  .login-box { max-width:380px; margin:60px auto; }
+  .login-box input { width:100%; padding:9px 11px; border:1.5px solid #e5e5e5; border-radius:10px; font-size:14px; margin-bottom:10px; }
+  .login-err { color:#c0392b; font-size:12px; margin-top:8px; min-height:16px; }
+  .hidden { display:none !important; }
+  .header-actions { margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="logo-badge"><img id="logoImg" alt="FUTEDU"></div>
+    <div class="brand">FUTEDU Academy · Nutrition</div>
+    <h1>Bioimpedance Summary</h1>
+    <div class="sub">Check off players as they're measured and enter their values. Everything is saved to the database; previous rounds appear under each player's History.</div>
+    <div class="header-actions hidden" id="headerActions"><button class="btn-outline" id="logoutBtn" style="background:#fff;">Sign out</button></div>
+  </div>
+
+  <div class="card login-box" id="loginCard">
+    <h2>Sign in</h2>
+    <input type="email" id="loginEmail" placeholder="Email" autocomplete="username">
+    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+    <button class="primary" id="loginBtn">Sign in</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+
+  <div id="app" class="hidden">
+
+  <div class="card">
+    <h2>Classification thresholds</h2>
+    <div class="settings-grid">
+      <div><label>Body fat % — flag above</label><input type="number" step="0.1" id="th-bodyFat"></div>
+      <div><label>Subcutaneous fat % — flag at/above</label><input type="number" step="0.1" id="th-subFat"></div>
+      <div><label>Hydration % — optimal min</label><input type="number" step="0.1" id="th-hydMin"></div>
+      <div><label>BMI — healthy min</label><input type="number" step="0.1" id="th-bmiMin"></div>
+      <div><label>BMI — healthy max</label><input type="number" step="0.1" id="th-bmiMax"></div>
+      <div><label>Fat-free mass (kg) — flag below</label><input type="number" step="0.1" id="th-ffmMin" placeholder="optional"></div>
+      <div><label>Skeletal muscle % — flag below</label><input type="number" step="0.1" id="th-smMin"></div>
+    </div>
+    <div class="settings-actions">
+      <button class="primary" id="saveThresholdsBtn">Save thresholds</button>
+      <span class="save-note" id="thresholdsSavedNote"></span>
+    </div>
+    <div class="bmi-note">BMI is a rough proxy and doesn't account well for muscle mass in growing athletes. Fat-free mass varies by height/age, so its threshold is optional.</div>
+  </div>
+
+  <div class="card">
+    <h2>Overview</h2>
+    <div class="dash-grid" id="dashGrid"></div>
+  </div>
+
+  <div class="card">
+    <h2>History</h2>
+    <div id="historyList"></div>
+    <div class="settings-actions"><button class="btn-outline" id="exportHistoryBtn">Export all data (JSON)</button></div>
+    <div class="bmi-note">"Archive round" closes the current round under the name you choose, clears check-ins and opens a new round with everyone pending. Previous values stay visible on each player as a reference.</div>
+  </div>
+
+  <div class="card">
+    <div class="roster-header">
+      <h2>Players <span class="roster-count" id="rosterCount"></span></h2>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="save-note" id="checkinCount"></span>
+        <button class="btn-outline" id="archiveRoundBtn">Archive round</button>
+        <button class="btn-outline" id="resetCheckinsBtn">Reset check-ins</button>
+      </div>
+    </div>
+    <div class="add-row">
+      <input type="text" id="newPlayerName" placeholder="Add player name...">
+      <button class="primary" id="addPlayerBtn">Add</button>
+    </div>
+    <div id="playerList"></div>
+  </div>
+
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ---------------------------------------------------------------------
+// Data lives in Supabase (see supabase/schema.sql). The URL and anon key
+// below are public by design: access is controlled by login + Row Level
+// Security, so without signing in the database returns nothing.
+// No player data is stored in this file.
+// ---------------------------------------------------------------------
+const SUPABASE_URL = 'https://cmrlkmsnwibrtbulwdnz.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_Y-bNjAaQP0BdZuXDTSNq2Q_PHv_s3B3';
+const DEFAULT_THRESHOLDS = { bodyFat:12.5, subFat:10.5, hydMin:60, bmiMin:18.5, bmiMax:24.9, ffmMin:null, smMin:55 };
+
+const CONFIGURED = !SUPABASE_URL.includes('YOUR-PROJECT-REF') && !SUPABASE_ANON_KEY.includes('YOUR-ANON-KEY');
+const sb = CONFIGURED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+let roster = [];            // [{id, name, checkedIn}]
+let notes = {};             // player id -> health note
+let thresholds = {...DEFAULT_THRESHOLDS};
+let rounds = [];            // all rounds, oldest first
+let currentRound = null;    // the open round
+let measurements = {};      // round id -> { player id -> reading }
+let checkins = {};          // player id -> true (per device, only matters during a session)
+
+function slugify(name) {
+  return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+}
+function sortRosterAlpha() {
+  roster.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+}
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = String(s == null ? '' : s);
+  return div.innerHTML;
+}
+function noteFor(id) { return notes[id] || null; }
+function readingFor(id) {
+  return (currentRound && measurements[currentRound.id] && measurements[currentRound.id][id]) || null;
+}
+function closedRounds() { return rounds.filter(r => r.closed); }
+// Most recent closed-round reading for a player
+function previousFor(id) {
+  const closed = closedRounds();
+  for (let i = closed.length - 1; i >= 0; i--) {
+    const r = measurements[closed[i].id] && measurements[closed[i].id][id];
+    if (r) return { round: closed[i], reading: r };
+  }
+  return null;
+}
+
+// ---- per-device check-ins (localStorage, optional) ----
+function loadCheckins() {
+  try { checkins = JSON.parse(localStorage.getItem('futedu_checkins') || '{}'); } catch(e) { checkins = {}; }
+}
+function saveCheckins() {
+  try { localStorage.setItem('futedu_checkins', JSON.stringify(checkins)); } catch(e) { /* ignore */ }
+}
+
+// ---- row <-> reading mapping ----
+function rowToReading(m) {
+  const num = v => v == null ? undefined : Number(v);
+  const r = {
+    body_fat_percent: num(m.body_fat_percent),
+    subcutaneous_fat_percent: num(m.subcutaneous_fat_percent),
+    total_body_water_percent: num(m.total_body_water_percent),
+    bmi: num(m.bmi),
+    fat_free_mass_kg: num(m.fat_free_mass_kg),
+    visceral_fat: num(m.visceral_fat),
+    skeletal_muscle_mass_kg: num(m.skeletal_muscle_mass_kg),
+    weight_kg: num(m.weight_kg),
+    date: m.measured_on,
+  };
+  if (m.balance_upper || m.balance_lower || m.balance_overall) {
+    r.muscle_balance = { upper: m.balance_upper, lower: m.balance_lower, overall: m.balance_overall };
+  }
+  return r;
+}
+
+function showError(msg) {
+  console.error(msg);
+  alert('Could not save: ' + (msg && msg.message ? msg.message : msg));
+}
+
+// ---- auth ----
+function showLogin() {
+  document.getElementById('loginCard').classList.remove('hidden');
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('headerActions').classList.add('hidden');
+}
+function showApp() {
+  document.getElementById('loginCard').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('headerActions').classList.remove('hidden');
+}
+async function doLogin() {
+  const err = document.getElementById('loginErr');
+  err.textContent = '';
+  const { error } = await sb.auth.signInWithPassword({
+    email: document.getElementById('loginEmail').value.trim(),
+    password: document.getElementById('loginPassword').value,
+  });
+  if (error) { err.textContent = error.message; return; }
+  document.getElementById('loginPassword').value = '';
+  await loadAll();
+}
+document.getElementById('loginBtn').addEventListener('click', doLogin);
+document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  roster = []; notes = {}; rounds = []; measurements = {}; currentRound = null;
+  showLogin();
+});
+
+// ---- load ----
+async function loadAll() {
+  const [pl, rd, ms, st] = await Promise.all([
+    sb.from('players').select('*').eq('active', true),
+    sb.from('rounds').select('*').order('created_at', { ascending: true }),
+    sb.from('measurements').select('*'),
+    sb.from('settings').select('*').eq('key', 'thresholds'),
+  ]);
+  const failed = [pl, rd, ms, st].find(x => x.error);
+  if (failed) { showError(failed.error); return; }
+
+  loadCheckins();
+  roster = pl.data.map(p => ({ id: p.id, name: p.name, checkedIn: !!checkins[p.id] }));
+  notes = {};
+  pl.data.forEach(p => { if (p.health_note) notes[p.id] = p.health_note; });
+  rounds = rd.data;
+  measurements = {};
+  ms.data.forEach(m => {
+    (measurements[m.round_id] = measurements[m.round_id] || {})[m.player_id] = rowToReading(m);
+  });
+  thresholds = (st.data[0] && st.data[0].value) ? { ...DEFAULT_THRESHOLDS, ...st.data[0].value } : {...DEFAULT_THRESHOLDS};
+
+  currentRound = rounds.filter(r => !r.closed).pop() || null;
+  if (!currentRound) {
+    const { data, error } = await sb.from('rounds').insert({ label: 'In progress' }).select().single();
+    if (error) { showError(error); return; }
+    currentRound = data; rounds.push(data);
+  }
+  sortRosterAlpha();
+  fillThresholdInputs();
+  showApp();
+  renderAll();
+}
+
+function fillThresholdInputs() {
+  document.getElementById('th-bodyFat').value = thresholds.bodyFat;
+  document.getElementById('th-subFat').value = thresholds.subFat;
+  document.getElementById('th-hydMin').value = thresholds.hydMin;
+  document.getElementById('th-bmiMin').value = thresholds.bmiMin;
+  document.getElementById('th-bmiMax').value = thresholds.bmiMax;
+  document.getElementById('th-ffmMin').value = thresholds.ffmMin != null ? thresholds.ffmMin : '';
+  document.getElementById('th-smMin').value = thresholds.smMin != null ? thresholds.smMin : '';
+}
+
+document.getElementById('saveThresholdsBtn').addEventListener('click', async () => {
+  const ffmRaw = parseFloat(document.getElementById('th-ffmMin').value);
+  const smRaw = parseFloat(document.getElementById('th-smMin').value);
+  thresholds = {
+    bodyFat: parseFloat(document.getElementById('th-bodyFat').value),
+    subFat: parseFloat(document.getElementById('th-subFat').value),
+    hydMin: parseFloat(document.getElementById('th-hydMin').value),
+    bmiMin: parseFloat(document.getElementById('th-bmiMin').value),
+    bmiMax: parseFloat(document.getElementById('th-bmiMax').value),
+    ffmMin: isNaN(ffmRaw) ? null : ffmRaw,
+    smMin: isNaN(smRaw) ? null : smRaw,
+  };
+  const { error } = await sb.from('settings').upsert({ key: 'thresholds', value: thresholds });
+  if (error) { showError(error); return; }
+  const note = document.getElementById('thresholdsSavedNote');
+  note.textContent = 'Saved.';
+  setTimeout(() => note.textContent = '', 1800);
+  renderAll();
+});
+
+function customConfirm(message) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `<div class="modal-box"><p>${escapeHtml(message)}</p>
+      <div class="modal-actions"><button class="modal-cancel">Cancel</button><button class="modal-ok">Confirm</button></div></div>`;
+    document.body.appendChild(overlay);
+    const cleanup = (r) => { overlay.remove(); resolve(r); };
+    overlay.querySelector('.modal-cancel').addEventListener('click', () => cleanup(false));
+    overlay.querySelector('.modal-ok').addEventListener('click', () => cleanup(true));
+    overlay.addEventListener('click', e => { if (e.target === overlay) cleanup(false); });
+  });
+}
+function customPrompt(message, defaultValue) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `<div class="modal-box"><p>${escapeHtml(message)}</p>
+      <input type="text" value="${escapeHtml(defaultValue || '')}">
+      <div class="modal-actions"><button class="modal-cancel">Cancel</button><button class="modal-ok">Save</button></div></div>`;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('input');
+    input.focus(); input.select();
+    const cleanup = (r) => { overlay.remove(); resolve(r); };
+    overlay.querySelector('.modal-cancel').addEventListener('click', () => cleanup(null));
+    overlay.querySelector('.modal-ok').addEventListener('click', () => cleanup(input.value));
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') cleanup(input.value);
+      if (e.key === 'Escape') cleanup(null);
+    });
+    overlay.addEventListener('click', e => { if (e.target === overlay) cleanup(null); });
+  });
+}
+
+document.getElementById('addPlayerBtn').addEventListener('click', addPlayer);
+document.getElementById('newPlayerName').addEventListener('keydown', e => { if (e.key === 'Enter') addPlayer(); });
+
+async function addPlayer() {
+  const input = document.getElementById('newPlayerName');
+  const name = input.value.trim();
+  if (!name) return;
+  let id = slugify(name) || 'player', suffix = 1;
+  const base = id;
+  // ids are unique across active AND removed players (removed ones keep their history)
+  const { data: existing } = await sb.from('players').select('id').like('id', base + '%');
+  const taken = new Set((existing || []).map(r => r.id));
+  while (taken.has(id)) { id = base + '-' + (++suffix); }
+  const { error } = await sb.from('players').insert({ id, name });
+  if (error) { showError(error); return; }
+  roster.push({ id, name, checkedIn: false });
+  input.value = '';
+  sortRosterAlpha();
+  renderAll();
+}
+
+async function removePlayer(id) {
+  const player = roster.find(p => p.id === id);
+  const ok = await customConfirm('Remove ' + player.name + '? Their past measurements are kept in History.');
+  if (!ok) return;
+  const { error } = await sb.from('players').update({ active: false }).eq('id', id);
+  if (error) { showError(error); return; }
+  roster = roster.filter(p => p.id !== id);
+  delete checkins[id]; saveCheckins();
+  renderAll();
+}
+
+async function renamePlayer(id) {
+  const player = roster.find(p => p.id === id);
+  if (!player) return;
+  const newName = await customPrompt('New name for ' + player.name + ':', player.name);
+  if (!newName || !newName.trim() || newName.trim() === player.name) return;
+  const { error } = await sb.from('players').update({ name: newName.trim() }).eq('id', id);
+  if (error) { showError(error); return; }
+  player.name = newName.trim();
+  sortRosterAlpha();
+  renderAll();
+}
+
+function toggleCheckin(id) {
+  const player = roster.find(p => p.id === id);
+  player.checkedIn = !player.checkedIn;
+  if (player.checkedIn) checkins[id] = true; else delete checkins[id];
+  saveCheckins();
+  renderAll();
+}
+
+document.getElementById('resetCheckinsBtn').addEventListener('click', async () => {
+  const ok = await customConfirm('Reset check-ins for everyone? (measurement values are kept)');
+  if (!ok) return;
+  roster.forEach(p => { p.checkedIn = false; });
+  checkins = {}; saveCheckins();
+  renderAll();
+});
+
+document.getElementById('archiveRoundBtn').addEventListener('click', async () => {
+  const n = roster.filter(p => readingFor(p.id)).length;
+  if (!n) { await customConfirm('There are no current measurements to archive.'); return; }
+  const today = new Date().toISOString().slice(0, 10);
+  const label = await customPrompt('Name for this round (' + n + ' players measured):', today);
+  if (label === null || !label.trim()) return;
+  const closedRound = currentRound;
+  const { error: e1 } = await sb.from('rounds').update({ label: label.trim(), closed: true, closed_on: today }).eq('id', closedRound.id);
+  if (e1) { showError(e1); return; }
+  closedRound.label = label.trim(); closedRound.closed = true; closedRound.closed_on = today;
+  const { data, error: e2 } = await sb.from('rounds').insert({ label: 'In progress' }).select().single();
+  if (e2) { showError(e2); return; }
+  currentRound = data; rounds.push(data);
+  roster.forEach(p => { p.checkedIn = false; });
+  checkins = {}; saveCheckins();
+  renderAll();
+});
+
+document.getElementById('exportHistoryBtn').addEventListener('click', async () => {
+  const [pl, rd, ms] = await Promise.all([
+    sb.from('players').select('*'), sb.from('rounds').select('*'), sb.from('measurements').select('*'),
+  ]);
+  const failed = [pl, rd, ms].find(x => x.error);
+  if (failed) { showError(failed.error); return; }
+  const blob = new Blob([JSON.stringify({ players: pl.data, rounds: rd.data, measurements: ms.data }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'futedu-bioimpedance-export.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  const closed = closedRounds();
+  el.innerHTML = closed.length
+    ? closed.map(r => `<div class="group-empty" style="text-align:left;">📁 <strong>${escapeHtml(r.label)}</strong> — ${Object.keys(measurements[r.id] || {}).length} players</div>`).join('')
+    : '<div class="group-empty">No archived rounds yet.</div>';
+}
+
+// Every reading of a player across closed rounds, oldest first.
+function historyFor(id) {
+  return closedRounds()
+    .map(rd => ({ round: rd, r: measurements[rd.id] && measurements[rd.id][id] }))
+    .filter(x => x.r)
+    .map(x => ({ ...x.r, date: x.r.date || x.round.closed_on, round: x.round.label }))
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+}
+function fmtN(v, unit) { return v == null ? '—' : v + (unit || ''); }
+function signed(d, unit) { const s = Math.round(d * 10) / 10; return (s > 0 ? '+' : s < 0 ? '−' : '±') + Math.abs(s) + (unit || ''); }
+function previousHtml(id) {
+  const list = historyFor(id);
+  const r = readingFor(id);
+  if (!r || !list.length) return '';
+  const prev = list[list.length - 1];
+  const parts = [];
+  const add = (label, key, unit) => {
+    if (r[key] != null && prev[key] != null) parts.push(label + ' <b>' + signed(r[key] - prev[key], unit) + '</b>');
+  };
+  add('Body fat', 'body_fat_percent', '%');
+  add('Fat-free mass', 'fat_free_mass_kg', ' kg');
+  add('Hydration', 'total_body_water_percent', '%');
+  add('Skeletal muscle', 'skeletal_muscle_mass_kg', ' kg');
+  if (!parts.length) return '';
+  return `<div class="delta-row">Change vs ${escapeHtml(prev.round)}: ${parts.join(' · ')}</div>`;
+}
+function historyPanelHtml(id) {
+  const list = historyFor(id);
+  if (!list.length) return '';
+  const rows = list.slice().reverse().map(x => `<tr>
+    <td>${escapeHtml(x.round)}</td><td>${fmtN(x.body_fat_percent, '%')}</td><td>${fmtN(x.subcutaneous_fat_percent, '%')}</td>
+    <td>${fmtN(x.total_body_water_percent, '%')}</td><td>${fmtN(x.bmi)}</td><td>${fmtN(x.fat_free_mass_kg, ' kg')}</td>
+    <td>${fmtN(x.visceral_fat)}</td><td>${fmtN(x.skeletal_muscle_mass_kg, ' kg')}</td><td>${fmtN(x.weight_kg, ' kg')}</td></tr>`).join('');
+  return `<div class="hist-panel" id="hist-${id}"><table>
+    <tr><th>Round</th><th>Body fat</th><th>Subcut.</th><th>Hydration</th><th>BMI</th><th>FFM</th><th>Visc.</th><th>Skel. muscle</th><th>Weight</th></tr>${rows}</table></div>`;
+}
+
+function classify(reading) {
+  if (!reading) return null;
+  const c = {};
+  if (reading.body_fat_percent != null) c.bodyFat = reading.body_fat_percent > thresholds.bodyFat ? 'bad' : 'good';
+  if (reading.subcutaneous_fat_percent != null) c.subFat = reading.subcutaneous_fat_percent >= thresholds.subFat ? 'watch' : 'good';
+  if (reading.total_body_water_percent != null) {
+    c.hydration = reading.total_body_water_percent >= thresholds.hydMin ? 'good' : 'watch';
+  }
+  if (reading.bmi != null) c.bmi = (reading.bmi >= thresholds.bmiMin && reading.bmi <= thresholds.bmiMax) ? 'good' : 'watch';
+  if (reading.fat_free_mass_kg != null && thresholds.ffmMin != null) {
+    c.ffm = reading.fat_free_mass_kg < thresholds.ffmMin ? 'watch' : 'good';
+  }
+  if (reading.visceral_fat != null) c.visceralFat = reading.visceral_fat >= 10 ? 'bad' : 'good';
+  if (reading.skeletal_muscle_mass_kg != null && reading.weight_kg != null && thresholds.smMin != null) {
+    const smPercent = reading.skeletal_muscle_mass_kg / reading.weight_kg * 100;
+    c.smPercent = smPercent < thresholds.smMin ? 'watch' : 'good';
+  }
+  return c;
+}
+
+function chipHtml(label, value, unit, flag) {
+  if (value == null) return '';
+  const cls = flag === 'bad' ? 'flag-bad' : flag === 'watch' ? 'flag-watch' : flag === 'good' ? 'flag-good' : 'flag-neutral';
+  return `<span class="chip ${cls}">${label}: ${value}${unit}</span>`;
+}
+
+function skeletalMuscleChip(r, c) {
+  if (!r || r.skeletal_muscle_mass_kg == null) return '';
+  if (r.weight_kg == null) {
+    return chipHtml('Skeletal muscle', r.skeletal_muscle_mass_kg, ' kg', 'neutral');
+  }
+  const pct = (r.skeletal_muscle_mass_kg / r.weight_kg * 100).toFixed(1);
+  const cls = c.smPercent === 'watch' ? 'flag-watch' : c.smPercent === 'good' ? 'flag-good' : 'flag-neutral';
+  return `<span class="chip ${cls}">Skeletal muscle: ${pct}% (${r.skeletal_muscle_mass_kg}kg)</span>`;
+}
+
+function balanceRowHtml(balance) {
+  if (!balance) return '';
+  const dotClass = v => v === 'severe' ? 'bal-severe' : v === 'slight' ? 'bal-slight' : 'bal-good';
+  const label = v => v === 'severe' ? 'Severely uneven' : v === 'slight' ? 'Slightly uneven' : 'Balanced';
+  const item = (name, v) => v ? `
+    <div class="balance-item">
+      <span class="balance-dot ${dotClass(v)}"></span>
+      <span class="balance-label">${name}:</span>
+      <span class="balance-value">${label(v)}</span>
+    </div>` : '';
+  return `<div class="balance-row">${item('Upper', balance.upper)}${item('Lower', balance.lower)}${item('Overall', balance.overall)}</div>`;
+}
+
+function renderDashboard() {
+  const groups = {
+    aboveBodyFat: { title: 'Above body fat target (>' + thresholds.bodyFat + '%)', names: [] },
+    subFatFlag: { title: 'Subcutaneous fat ≥ ' + thresholds.subFat + '%', names: [] },
+    optimalHydration: { title: 'Optimal hydration', names: [] },
+    healthyBmi: { title: 'Healthy BMI range', names: [] },
+    belowFfm: {
+      title: thresholds.ffmMin != null ? 'Below fat-free mass target (<' + thresholds.ffmMin + ' kg)' : 'Fat-free mass target',
+      names: [], disabled: thresholds.ffmMin == null,
+    },
+    highVisceral: { title: 'High visceral fat (≥10)', names: [] },
+    asymmetry: { title: 'Notable muscle asymmetry', names: [] },
+    belowSm: {
+      title: thresholds.smMin != null ? 'Below skeletal muscle target (<' + thresholds.smMin + '%)' : 'Skeletal muscle target',
+      names: [], disabled: thresholds.smMin == null,
+    },
+  };
+  roster.forEach(p => {
+    const r = readingFor(p.id);
+    if (!r) return;
+    const c = classify(r);
+    if (c.bodyFat === 'bad') groups.aboveBodyFat.names.push(p.name);
+    if (c.subFat === 'watch') groups.subFatFlag.names.push(p.name);
+    if (c.hydration === 'good') groups.optimalHydration.names.push(p.name);
+    if (c.bmi === 'good') groups.healthyBmi.names.push(p.name);
+    if (c.ffm === 'watch') groups.belowFfm.names.push(p.name);
+    if (c.visceralFat === 'bad') groups.highVisceral.names.push(p.name);
+    if (r.muscle_balance && (r.muscle_balance.upper === 'severe' || r.muscle_balance.lower === 'severe' || r.muscle_balance.overall === 'severe')) {
+      groups.asymmetry.names.push(p.name);
+    }
+    if (c.smPercent === 'watch') groups.belowSm.names.push(p.name);
+  });
+  const grid = document.getElementById('dashGrid');
+  grid.innerHTML = '';
+  Object.values(groups).forEach(g => {
+    const box = document.createElement('div');
+    box.className = 'dash-box';
+    const body = g.disabled
+      ? `<div class="empty">Set a threshold above to enable</div>`
+      : (g.names.length ? `<ul>${g.names.map(n => `<li>${escapeHtml(n)}</li>`).join('')}</ul>` : `<div class="empty">No one yet</div>`);
+    box.innerHTML = `<div class="dtitle">${g.title}</div>` + (g.disabled ? '' : `<div class="dcount">${g.names.length}</div>`) + body;
+    grid.appendChild(box);
+  });
+}
+
+function renderAll() {
+  document.getElementById('rosterCount').textContent = '(' + roster.length + ')';
+  const checkedCount = roster.filter(p => p.checkedIn).length;
+  document.getElementById('checkinCount').textContent = checkedCount + ' / ' + roster.length + ' checked in';
+
+  renderDashboard();
+  renderHistory();
+
+  const list = document.getElementById('playerList');
+  list.innerHTML = '';
+
+  const measured = roster.filter(p => readingFor(p.id));
+  const pending = roster.filter(p => !readingFor(p.id));
+
+  const doneHeading = document.createElement('div');
+  doneHeading.className = 'group-heading';
+  doneHeading.innerHTML = `<span>✅ Already measured</span><span class="g-count">${measured.length}</span>`;
+  list.appendChild(doneHeading);
+  if (!measured.length) {
+    const empty = document.createElement('div');
+    empty.className = 'group-empty';
+    empty.textContent = 'No one yet.';
+    list.appendChild(empty);
+  }
+  measured.forEach(p => list.appendChild(renderPlayerCard(p)));
+
+  const pendingHeading = document.createElement('div');
+  pendingHeading.className = 'group-heading pending';
+  pendingHeading.innerHTML = `<span>📋 Pending measurement</span><span class="g-count">${pending.length}</span>`;
+  list.appendChild(pendingHeading);
+  if (!pending.length) {
+    const empty = document.createElement('div');
+    empty.className = 'group-empty';
+    empty.textContent = 'Everyone has data.';
+    list.appendChild(empty);
+  }
+  pending.forEach(p => list.appendChild(renderPlayerCard(p)));
+
+  list.querySelectorAll('[data-checkin]').forEach(el => el.addEventListener('click', () => toggleCheckin(el.dataset.checkin)));
+  list.querySelectorAll('.manual-toggle').forEach(btn => {
+    btn.addEventListener('click', () => document.getElementById('manual-' + btn.dataset.id).classList.toggle('open'));
+  });
+  list.querySelectorAll('.hist-toggle').forEach(btn => {
+    btn.addEventListener('click', () => document.getElementById('hist-' + btn.dataset.id).classList.toggle('open'));
+  });
+  list.querySelectorAll('[data-save-manual]').forEach(btn => {
+    btn.addEventListener('click', () => saveManualEntry(btn.dataset.saveManual));
+  });
+  list.querySelectorAll('.note-edit').forEach(btn => btn.addEventListener('click', () => editNote(btn.dataset.id)));
+  list.querySelectorAll('.rename').forEach(btn => btn.addEventListener('click', () => renamePlayer(btn.dataset.id)));
+  list.querySelectorAll('.remove').forEach(btn => btn.addEventListener('click', () => removePlayer(btn.dataset.id)));
+}
+
+function renderPlayerCard(p) {
+    const r = readingFor(p.id);
+    const c = classify(r) || {};
+    const div = document.createElement('div');
+    div.className = 'player' + (p.checkedIn ? ' checked-in' : '');
+    div.innerHTML = `
+      <div class="player-top">
+        <div class="check-circle ${p.checkedIn ? 'on' : ''}" data-checkin="${p.id}">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <span class="player-name">${escapeHtml(p.name)}</span>
+        <span class="status-pill ${r ? 'status-done' : 'status-none'}">${r ? 'Data in' : 'No data'}</span>
+      </div>
+      <div class="player-actions">
+        <button class="btn-sm manual-toggle" data-id="${p.id}">Edit values</button>
+        ${historyFor(p.id).length ? `<button class="btn-sm hist hist-toggle" data-id="${p.id}">History (${historyFor(p.id).length})</button>` : ''}
+        <button class="btn-sm note-edit" data-id="${p.id}">${noteFor(p.id) ? 'Edit note' : 'Add note'}</button>
+        <button class="btn-sm rename" data-id="${p.id}">Rename</button>
+        <button class="btn-sm remove" data-id="${p.id}">Remove</button>
+      </div>
+      <div class="metrics">
+        ${chipHtml('Body fat', r && r.body_fat_percent, '%', c.bodyFat)}
+        ${chipHtml('Subcutaneous fat', r && r.subcutaneous_fat_percent, '%', c.subFat)}
+        ${chipHtml('Hydration', r && r.total_body_water_percent, '%', c.hydration)}
+        ${chipHtml('BMI', r && r.bmi, '', c.bmi)}
+        ${chipHtml('Fat-free mass', r && r.fat_free_mass_kg, ' kg', c.ffm)}
+        ${chipHtml('Visceral fat', r && r.visceral_fat, '', c.visceralFat)}
+        ${skeletalMuscleChip(r, c)}
+      </div>
+      ${balanceRowHtml(r && r.muscle_balance)}
+      ${previousHtml(p.id)}
+      ${historyPanelHtml(p.id)}
+      ${noteFor(p.id) ? `<div class="health-note"><span class="hn-label">Health note</span>${escapeHtml(noteFor(p.id))}</div>` : ''}
+      <div class="manual-form" id="manual-${p.id}">
+        <div class="manual-grid">
+          <div><label>Body fat %</label><input type="number" step="0.1" id="m-bodyFat-${p.id}" value="${r && r.body_fat_percent != null ? r.body_fat_percent : ''}"></div>
+          <div><label>Subcutaneous fat %</label><input type="number" step="0.1" id="m-subFat-${p.id}" value="${r && r.subcutaneous_fat_percent != null ? r.subcutaneous_fat_percent : ''}"></div>
+          <div><label>Hydration (TBW) %</label><input type="number" step="0.1" id="m-hyd-${p.id}" value="${r && r.total_body_water_percent != null ? r.total_body_water_percent : ''}"></div>
+          <div><label>BMI</label><input type="number" step="0.1" id="m-bmi-${p.id}" value="${r && r.bmi != null ? r.bmi : ''}"></div>
+          <div><label>Fat-free mass (kg)</label><input type="number" step="0.1" id="m-ffm-${p.id}" value="${r && r.fat_free_mass_kg != null ? r.fat_free_mass_kg : ''}"></div>
+          <div><label>Visceral fat</label><input type="number" step="1" id="m-visc-${p.id}" value="${r && r.visceral_fat != null ? r.visceral_fat : ''}"></div>
+          <div><label>Skeletal muscle (kg)</label><input type="number" step="0.1" id="m-smkg-${p.id}" value="${r && r.skeletal_muscle_mass_kg != null ? r.skeletal_muscle_mass_kg : ''}"></div>
+          <div><label>Weight (kg)</label><input type="number" step="0.05" id="m-wt-${p.id}" value="${r && r.weight_kg != null ? r.weight_kg : ''}"></div>
+          ${['upper','lower','overall'].map(k => `<div><label>Muscle balance — ${k}</label><select id="m-bal-${k}-${p.id}">${[['', '—'],['balanced','Balanced'],['slight','Slightly uneven'],['severe','Severely uneven']].map(([v,l]) => `<option value="${v}"${(r && r.muscle_balance && r.muscle_balance[k] || '') === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>`).join('')}
+        </div>
+        <button class="btn-sm" style="border-color:#1e8c4a;color:#1e8c4a;" data-save-manual="${p.id}">Save values</button>
+      </div>
+    `;
+    return div;
+}
+
+async function editNote(id) {
+  const player = roster.find(p => p.id === id);
+  if (!player) return;
+  const current = noteFor(id) || '';
+  const newNote = await customPrompt('Health note for ' + player.name + ' (leave blank to remove):', current);
+  if (newNote === null) return; // cancelled
+  const value = newNote.trim() === '' ? null : newNote.trim();
+  const { error } = await sb.from('players').update({ health_note: value }).eq('id', id);
+  if (error) { showError(error); return; }
+  if (value) notes[id] = value; else delete notes[id];
+  renderAll();
+}
+
+async function saveManualEntry(id) {
+  const val = (elId) => {
+    const v = parseFloat(document.getElementById(elId).value);
+    return isNaN(v) ? null : v;
+  };
+  const sel = (k) => document.getElementById('m-bal-' + k + '-' + id).value || null;
+  const row = {
+    round_id: currentRound.id,
+    player_id: id,
+    measured_on: new Date().toISOString().slice(0, 10),
+    body_fat_percent: val('m-bodyFat-' + id),
+    subcutaneous_fat_percent: val('m-subFat-' + id),
+    total_body_water_percent: val('m-hyd-' + id),
+    bmi: val('m-bmi-' + id),
+    fat_free_mass_kg: val('m-ffm-' + id),
+    visceral_fat: val('m-visc-' + id),
+    skeletal_muscle_mass_kg: val('m-smkg-' + id),
+    weight_kg: val('m-wt-' + id),
+    balance_upper: sel('upper'),
+    balance_lower: sel('lower'),
+    balance_overall: sel('overall'),
+  };
+  const { error } = await sb.from('measurements').upsert(row, { onConflict: 'round_id,player_id' });
+  if (error) { showError(error); return; }
+  (measurements[currentRound.id] = measurements[currentRound.id] || {})[id] = rowToReading(row);
+  renderAll();
+}
+
+document.getElementById('logoImg').src = "data:image/png;base64,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";
+if (!CONFIGURED) {
+  showLogin();
+  document.getElementById('loginErr').textContent = 'Supabase is not configured yet: set SUPABASE_URL and SUPABASE_ANON_KEY in this file (see README).';
+} else {
+  sb.auth.getSession().then(({ data }) => { if (data.session) loadAll(); else showLogin(); });
+}
+
+</script>
+</body>
+</html>
