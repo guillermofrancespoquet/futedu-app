@@ -10,7 +10,7 @@ Bioimpedance tracker for the **FUTEDU Academy** (youth football academy). Single
 - `README.md`: setup and feature list.
 
 ## Privacy (minors' health data)
-- This repo is **public**. It must never contain player names, measurements, health notes, import/export files (CSV/JSON), screenshots or PDFs of reports, seed or migration SQL with data, or any Supabase secret (`service_role` or secret key). The URL and publishable key in `index.html` are public by design; access is controlled by login and RLS.
+- This repo is **public**. It must never contain player names, measurements, health notes, import/export files (CSV/JSON; the recipe index `library/index.json` is the only JSON allowed), screenshots or PDFs of reports, seed or migration SQL with data, or any Supabase secret (`service_role` or secret key). The URL and publishable key in `index.html` are public by design; access is controlled by login and RLS.
 - Player data is stored in Supabase only (tables plus the `settings` table: thresholds, notes, tags, check-ins). New features must not need schema migrations: use the `settings` table for extra data.
 - OCR of reports runs in the browser; files are never uploaded.
 
