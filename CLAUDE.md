@@ -1,11 +1,12 @@
 # FUTEDU Tracker – Repo Context
 
-Bioimpedance tracker for the **FUTEDU Academy** (youth football academy). Single-file web app (`index.html`), published with **GitHub Pages** from `main`. This is the **only** copy of the app. Recipes, session docs and handouts live in a separate private repo.
+Bioimpedance tracker for the **FUTEDU Academy** (youth football academy). Single-file web app (`index.html`), published with **GitHub Pages** from `main`. This is the **only** copy of the app. Recipes, session docs and handouts are authored in a separate private repo; a published copy lives in `library/`.
 
 ## Files
 - `index.html`: the whole app (HTML, CSS, JS). Data lives in Supabase; the page only holds the public project URL and publishable key.
 - `schema.sql`: tables and Row Level Security (run once in the Supabase SQL Editor when creating a project).
 - `manifest.webmanifest`, `sw.js`, `favicon.ico`, `icons/`: app icons (FUTEDU shield) and the install setup. `sw.js` only lets browsers offer "Install app"; it must never cache data.
+- `library/`: the recipe library shown on the Recipes page (session guides .md, recipe cards and handouts PDF, `index.json`). **Generated** from the private `futedu` repo by `scripts/sync_to_app.py` there: never edit it by hand, and it must hold no player data. To update it, change the files in `futedu`, run the script against a checkout of this repo and open a PR.
 - `README.md`: setup and feature list.
 
 ## Privacy (minors' health data)
