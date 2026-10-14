@@ -393,6 +393,10 @@
   .an-lbl { font-size:13px; font-weight:600; }
   .an-used { font-size:12px; color:var(--ink-3); }
   .an-used.warn { color:var(--notice-ink); font-weight:600; }
+  .an-fixed { margin:12px 0 4px; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--card-2); }
+  .an-fixed summary { cursor:pointer; font-size:12.5px; font-weight:600; color:var(--ink-2); }
+  .an-check { display:flex; gap:8px; align-items:center; font-size:12.5px; margin:10px 0 4px; }
+  .an-check input { width:auto; height:auto; }
   @media (max-width: 700px) { .an-field { grid-template-columns:1fr repeat(3, 1fr); } .an-used { grid-column:1 / -1; } }
 
   /* ---------- polish ---------- */
@@ -2183,6 +2187,7 @@ document.getElementById('reportFile').addEventListener('change', e => {
 const AN_SIZES = [['mass', 'Body mass', 'kg', 0.05], ['height', 'Height', 'cm', 0.1], ['sitting', 'Sitting height', 'cm', 0.1], ['span', 'Arm span', 'cm', 0.1]];
 const AN_FOLDS = [['triceps', 'Triceps'], ['subscapular', 'Subscapular'], ['supraspinal', 'Supraspinal'], ['abdominal', 'Abdominal'], ['thigh', 'Thigh'], ['calf', 'Calf']];
 const AN_GIRTHS = [['armRelaxed', 'Relaxed arm'], ['armFlexed', 'Flexed and contracted arm'], ['thigh', 'Mid-thigh'], ['calf', 'Calf']];
+const AN_FIXED = [['height', 'Height', 'cm'], ['sitting', 'Sitting height', 'cm'], ['span', 'Arm span', 'cm']];   // fixed per player (profile); an assessment keeps its own copy
 const AN_KEYS = [...AN_SIZES.map(x => x[0]), ...AN_FOLDS.map(x => 'sf_' + x[0]), ...AN_GIRTHS.map(x => 'gr_' + x[0])];
 const AN_TOL = k => k.startsWith('sf_') ? 0.05 : 0.01;   // ISAK: 5 % for skinfolds, 1 % for sizes and girths
 
@@ -2197,9 +2202,16 @@ function anTriple(list, tol) {
   const value = isNaN(m3) ? anHarmean(m1, m2) : [m1, m2, m3].sort((a, b) => a - b)[1];
   return { value, pctDiff, out: Math.abs(pctDiff) > tol, singleMeasure: false };
 }
-function anResolve(raw) {
+function anResolve(raw, fixed) {
   const v = {}, flags = {};
-  AN_KEYS.forEach(k => { const t = anTriple((raw || {})[k], AN_TOL(k)); v[k] = t.value; flags[k] = t; });
+  AN_KEYS.forEach(k => {
+    if (AN_FIXED.some(f => f[0] === k)) {
+      const val = fixed && fixed[k] != null && !isNaN(fixed[k]) ? fixed[k] : null;
+      v[k] = val; flags[k] = { value: val, pctDiff: 0, out: false, singleMeasure: true, fixed: true };
+      return;
+    }
+    const t = anTriple((raw || {})[k], AN_TOL(k)); v[k] = t.value; flags[k] = t;
+  });
   return { v, flags };
 }
 function anAge(dateISO, dobISO) {
@@ -2266,13 +2278,22 @@ async function mutateSetting(key, mutate) {
   return next;
 }
 function anList(pid) { return (anthroData[pid] || []).slice().sort((a, b) => (a.date || '').localeCompare(b.date || '')); }
+// fixed measures of an assessment: its own saved copy, else the player's profile (older records may have them among the raw readings)
+function anFixedFor(pid, a) {
+  const prof = anthroProfiles[pid] || {}, out = {};
+  AN_FIXED.forEach(([k]) => {
+    const old = a && a.raw && a.raw[k] ? a.raw[k].filter(x => x != null)[0] : null;
+    out[k] = a && a.fixed && a.fixed[k] != null ? a.fixed[k] : (old != null ? old : (prof[k] != null ? prof[k] : null));
+  });
+  return out;
+}
 function anFull(pid, a) {
-  const prof = anthroProfiles[pid], { v, flags } = anResolve(a.raw);
+  const prof = anthroProfiles[pid], { v, flags } = anResolve(a.raw, anFixedFor(pid, a));
   const age = prof && prof.dob ? anAge(a.date, prof.dob) : null;
   return { a, v, flags, age, R: anCompute(v, prof, age) };
 }
 function anMissing(pid, a) {
-  const prof = anthroProfiles[pid] || {}, { v } = anResolve(a.raw), m = [];
+  const prof = anthroProfiles[pid] || {}, { v } = anResolve(a.raw, anFixedFor(pid, a)), m = [];
   if (!prof.dob) m.push('date of birth'); if (!prof.sex) m.push('sex'); if (!prof.ethnicity) m.push('ethnicity');
   const label = k => k.startsWith('sf_') ? AN_FOLDS.find(f => 'sf_' + f[0] === k)[1] + ' skinfold' : k.startsWith('gr_') ? AN_GIRTHS.find(f => 'gr_' + f[0] === k)[1] + ' girth' : AN_SIZES.find(s => s[0] === k)[1];
   AN_KEYS.forEach(k => { if (v[k] == null) m.push(label(k)); });
@@ -2368,7 +2389,7 @@ function renderAnthroList() {
   document.getElementById('anTable').innerHTML = `<table><tr><th>Player</th><th>Age</th><th>Last assessment</th><th>Σ6 (mm)</th><th>Fat % (Yuhasz)</th><th>Muscle % (Lee)</th><th>BMI</th></tr>
     ${rows.map(p => {
       const list = anList(p.id), last = list[list.length - 1], f = last ? anFull(p.id, last) : null, age = anAgeText(p.id);
-      const need = !(anthroProfiles[p.id] && anthroProfiles[p.id].dob && anthroProfiles[p.id].sex && anthroProfiles[p.id].ethnicity);
+      const pf = anthroProfiles[p.id] || {}, need = !(pf.dob && pf.sex && pf.ethnicity && pf.height && pf.sitting && pf.span);
       return `<tr class="an-row" data-open="${p.id}"><td><span class="attn-name">${escapeHtml(p.name)}</span>${need ? ' <span class="tag-chip">profile needed</span>' : ''}</td>
         <td>${age != null ? age.toFixed(1) : '—'}</td><td>${last ? escapeHtml(last.date) : '<span class="muted">none</span>'}</td>
         <td>${f && f.R ? f.R.sum6.toFixed(1) : '—'}</td><td>${f && f.R ? f.R.yuhaszPct.toFixed(1) : '—'}</td><td>${f && f.R ? f.R.musclePct.toFixed(1) : '—'}</td><td>${f && f.R ? f.R.bmi.toFixed(1) : '—'}</td></tr>`;
@@ -2389,12 +2410,12 @@ function renderAnthroPlayer() {
   let prev = null; for (let i = idx - 1; i >= 0 && !prev; i--) { const f = anFull(p.id, list[i]); if (f.R) prev = f; }
   const rows = anGroupRows(), R = cur && cur.R, pR = prev && prev.R;
   const age = anAgeText(p.id);
-  const profText = prof && prof.dob ? `Born ${escapeHtml(longDateSafe(prof.dob))} · ${escapeHtml(prof.sex || 'sex not set')} · ${escapeHtml(prof.ethnicity || 'ethnicity not set')}${age != null ? ' · age ' + age.toFixed(1) : ''}` : 'Profile incomplete: date of birth, sex and ethnicity are needed for the calculations.';
+  const profText = prof && prof.dob ? `Born ${escapeHtml(longDateSafe(prof.dob))} · ${escapeHtml(prof.sex || 'sex not set')} · ${escapeHtml(prof.ethnicity || 'ethnicity not set')}${age != null ? ' · age ' + age.toFixed(1) : ''}${prof.height ? ' · height ' + prof.height + ' cm' : ''}${prof.sitting ? ' · sitting height ' + prof.sitting + ' cm' : ''}${prof.span ? ' · arm span ' + prof.span + ' cm' : ''}` : 'Profile incomplete: date of birth, sex, ethnicity, height, sitting height and arm span are needed for the calculations.';
   const kpi = (label, key, sub) => `<div class="kpi"><div class="k-label">${label}</div><div class="k-value">${R ? anFmt(key, R[key]).replace(/ (mm|%|kg)$/, '<small> $1</small>') : '—'}</div>${sub || ''}</div>`;
   const trow = (k, extra) => R && R[k] != null ? `<tr><td>${AN_VARS[k].label}</td><td class="num">${anFmt(k, R[k])}</td><td>${anChangeHtml(k, R, pR)}</td><td>${anGroupHtml(anGroupStat(rows, k, p.id), k, R)}</td></tr>` : '';
   const tbl = keys => `<div class="hist-full"><table><tr><th>Variable</th><th>Value</th><th>Change vs previous</th><th>Academy group</th></tr>${keys.map(trow).join('')}</table></div>`;
   let body = '';
-  if (!prof || !prof.dob || !prof.sex || !prof.ethnicity) body += `<div class="card"><div class="empty-state"><strong>Add the player's profile first</strong>Date of birth, sex and ethnicity are needed to calculate age, fat and muscle mass.<br><button class="btn primary" style="margin-top:12px;" id="anEditProfile2">Edit profile</button></div></div>`;
+  if (!prof || !prof.dob || !prof.sex || !prof.ethnicity) body += `<div class="card"><div class="empty-state"><strong>Add the player's profile first</strong>Date of birth, sex and ethnicity (and the fixed measures: height, sitting height, arm span) are needed for the calculations.<br><button class="btn primary" style="margin-top:12px;" id="anEditProfile2">Edit profile</button></div></div>`;
   if (!a) body += `<div class="card"><div class="empty-state"><strong>No assessments yet</strong>Add the first one to see the results.<br><button class="btn primary" style="margin-top:12px;" id="anNew2">New assessment</button></div></div>`;
   else {
     body += `<div class="card"><div class="row" style="justify-content:space-between;"><div class="row"><label class="save-note" for="anSel">Assessment</label><select id="anSel" style="width:auto;">${list.slice().reverse().map(x => `<option value="${x.id}"${x.id === anSelected ? ' selected' : ''}>${escapeHtml(longDateSafe(x.date))}</option>`).join('')}</select></div>
@@ -2409,7 +2430,7 @@ function renderAnthroPlayer() {
         <div class="card"><h2>Muscle development</h2>${tbl(['corrArm', 'corrThigh', 'corrCalf', 'areaArm', 'areaThigh', 'areaCalf', 'shareArm', 'shareThigh', 'shareCalf', 'flexDiff'])}</div>
         <div class="card"><h2>Proportions</h2>${tbl(['height', 'cormic', 'relSpan', 'fatDist'])}</div>`;
       const unit = k => k.startsWith('sf_') ? 'mm' : k.startsWith('gr_') ? 'cm' : (AN_SIZES.find(s => s[0] === k) || [0, 0, ''])[2];
-      body += `<div class="card"><h2>Measurements used</h2><div class="hist-full"><table><tr><th>Measure</th><th>Value used</th><th>Taken</th><th>Check</th></tr>${AN_KEYS.map(k => { const t = cur.flags[k]; const lbl = k.startsWith('sf_') ? AN_FOLDS.find(f => 'sf_' + f[0] === k)[1] + ' skinfold' : k.startsWith('gr_') ? AN_GIRTHS.find(f => 'gr_' + f[0] === k)[1] + ' girth' : AN_SIZES.find(s => s[0] === k)[1]; return `<tr><td>${lbl}</td><td class="num">${t.value != null ? (Math.round(t.value * 100) / 100) + ' ' + unit(k) : '—'}</td><td>${(cur.a.raw[k] || []).filter(x => x !== '' && x != null).length}×</td><td>${t.singleMeasure ? '<span class="muted">single measure</span>' : t.out ? '<span class="tag-chip">difference above ' + (AN_TOL(k) * 100) + ' %</span>' : '<span class="muted">ok</span>'}</td></tr>`; }).join('')}</table></div></div>`;
+      body += `<div class="card"><h2>Measurements used</h2><div class="hist-full"><table><tr><th>Measure</th><th>Value used</th><th>Taken</th><th>Check</th></tr>${AN_KEYS.map(k => { const t = cur.flags[k]; const lbl = k.startsWith('sf_') ? AN_FOLDS.find(f => 'sf_' + f[0] === k)[1] + ' skinfold' : k.startsWith('gr_') ? AN_GIRTHS.find(f => 'gr_' + f[0] === k)[1] + ' girth' : AN_SIZES.find(s => s[0] === k)[1]; return `<tr><td>${lbl}</td><td class="num">${t.value != null ? (Math.round(t.value * 100) / 100) + ' ' + unit(k) : '—'}</td><td>${t.fixed ? 'fixed' : (cur.a.raw[k] || []).filter(x => x !== '' && x != null).length + '×'}</td><td>${t.fixed ? '<span class="muted">from the player\'s profile</span>' : t.singleMeasure ? '<span class="muted">single measure</span>' : t.out ? '<span class="tag-chip">difference above ' + (AN_TOL(k) * 100) + ' %</span>' : '<span class="muted">ok</span>'}</td></tr>`; }).join('')}</table></div></div>`;
     }
     const done = list.map(x => ({ x, f: anFull(p.id, x) })).reverse();
     body += `<div class="card"><h2>All assessments</h2><div class="hist-full"><table><tr><th>Date</th><th>Age</th><th>Body mass</th><th>Σ6 (mm)</th><th>Fat % (Yuhasz)</th><th>Muscle (kg)</th></tr>${done.map(({ x, f }) => `<tr class="an-row" data-sel="${x.id}"><td>${escapeHtml(longDateSafe(x.date))}</td><td>${f.age != null ? f.age.toFixed(1) : '—'}</td><td>${f.v.mass != null ? f.v.mass + ' kg' : '—'}</td><td>${f.R ? f.R.sum6.toFixed(1) : '—'}</td><td>${f.R ? f.R.yuhaszPct.toFixed(1) : '—'}</td><td>${f.R ? f.R.muscleKg.toFixed(1) : '—'}</td></tr>`).join('')}</table></div></div>`;
@@ -2435,26 +2456,34 @@ function anOverlay(inner) {
 }
 function anProfileForm(pid) {
   const p = roster.find(x => x.id === pid), cur = anthroProfiles[pid] || {};
-  const o = anOverlay(`<h3>Profile: ${escapeHtml(p.name)}</h3><div class="save-note" style="margin-bottom:12px;">Personal data stays in your database only. It is used for age, fat and muscle estimates.</div>
+  const num = v => v == null || v === '' ? '' : v;
+  const o = anOverlay(`<h3>Profile: ${escapeHtml(p.name)}</h3><div class="save-note" style="margin-bottom:12px;">Personal data stays in your database only. Date of birth, sex and ethnicity are fixed, and so are height, sitting height and arm span once measured: change them only if they were measured again. Assessments keep their own copy of the fixed measures, so past results do not change.</div>
     <div class="imp-grid" style="grid-template-columns:repeat(3,1fr);"><div><label>Date of birth</label><input type="date" id="pfDob" value="${escapeHtml(cur.dob || '')}"></div>
       <div><label>Sex</label><select id="pfSex"><option value="">—</option>${['Male', 'Female'].map(s => `<option${cur.sex === s ? ' selected' : ''}>${s}</option>`).join('')}</select></div>
-      <div><label>Ethnicity (used by the muscle equation)</label><select id="pfEth"><option value="">—</option>${Object.keys(AN_ETHNICITY).map(s => `<option${cur.ethnicity === s ? ' selected' : ''}>${s}</option>`).join('')}</select></div></div>
+      <div><label>Ethnicity (used by the muscle equation)</label><select id="pfEth"><option value="">—</option>${Object.keys(AN_ETHNICITY).map(s => `<option${cur.ethnicity === s ? ' selected' : ''}>${s}</option>`).join('')}</select></div>
+      ${AN_FIXED.map(([k, lbl, unit]) => `<div><label>${lbl} (${unit})</label><input type="number" step="any" inputmode="decimal" id="pf_${k}" value="${num(cur[k])}"></div>`).join('')}
+      <div><label>Fixed measures taken on</label><input type="date" id="pfFixedDate" value="${escapeHtml(cur.fixedDate || '')}"></div></div>
     <div class="imp-foot"><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Save</button></div>`);
   o.querySelector('.modal-cancel').addEventListener('click', () => o.remove());
   o.querySelector('.modal-ok').addEventListener('click', async () => {
-    const prof = { dob: o.querySelector('#pfDob').value || '', sex: o.querySelector('#pfSex').value || '', ethnicity: o.querySelector('#pfEth').value || '' };
+    const n = id => { const x = parseFloat(o.querySelector(id).value); return isNaN(x) ? null : x; };
+    const prof = { dob: o.querySelector('#pfDob').value || '', sex: o.querySelector('#pfSex').value || '', ethnicity: o.querySelector('#pfEth').value || '', height: n('#pf_height'), sitting: n('#pf_sitting'), span: n('#pf_span'), fixedDate: o.querySelector('#pfFixedDate').value || '' };
     const next = await mutateSetting('anthro_profiles', all => { all[pid] = prof; });
     if (!next) return;
     anthroProfiles = next; o.remove(); toast('Profile saved'); renderAnthro();
   });
 }
 function anAssessmentForm(pid, a) {
-  const p = roster.find(x => x.id === pid);
-  const groups = [['Basic measures', AN_SIZES.map(s => [s[0], s[1], s[2]])], ['Skinfolds (mm)', AN_FOLDS.map(f => ['sf_' + f[0], f[1], 'mm'])], ['Girths (cm)', AN_GIRTHS.map(f => ['gr_' + f[0], f[1], 'cm'])]];
+  const p = roster.find(x => x.id === pid), fixedAll = AN_FIXED, fixedNow = anFixedFor(pid, a);
+  const groups = [['Body mass', AN_SIZES.filter(s => s[0] === 'mass').map(s => [s[0], s[1], s[2]])], ['Skinfolds (mm)', AN_FOLDS.map(f => ['sf_' + f[0], f[1], 'mm'])], ['Girths (cm)', AN_GIRTHS.map(f => ['gr_' + f[0], f[1], 'cm'])]];
   const val = (k, i) => a && a.raw[k] && a.raw[k][i] != null ? a.raw[k][i] : '';
   const o = anOverlay(`<h3>${a ? 'Edit' : 'New'} assessment: ${escapeHtml(p.name)}</h3>
-    <div class="save-note" style="margin-bottom:10px;">Enter each measure once, twice or three times. Two readings use the harmonic mean, three use the median; a warning shows when the first two differ by more than 1 % (basic measures and girths) or 5 % (skinfolds).</div>
+    <div class="save-note" style="margin-bottom:10px;">Enter each skinfold, girth and the body mass once, twice or three times. Two readings use the harmonic mean, three use the median; a warning shows when the first two differ by more than 1 % (body mass and girths) or 5 % (skinfolds).</div>
     <div class="imp-grid" style="grid-template-columns:200px 1fr;margin-bottom:6px;"><div><label>Date of the assessment</label><input type="date" id="asDate" value="${escapeHtml(a ? a.date : todayStr())}"></div></div>
+    <details class="an-fixed" ${fixedAll.every(([k]) => fixedNow[k] != null) ? '' : 'open'}><summary>Fixed measures: ${fixedAll.map(([k, l, u]) => l.toLowerCase() + ' ' + (fixedNow[k] != null ? fixedNow[k] + ' ' + u : 'missing')).join(' · ')}</summary>
+      <div class="imp-grid" style="grid-template-columns:repeat(3,1fr);margin-top:8px;">${fixedAll.map(([k, l, u]) => `<div><label>${l} (${u})</label><input type="number" step="any" inputmode="decimal" id="asFx_${k}" value="${fixedNow[k] != null ? fixedNow[k] : ''}"></div>`).join('')}</div>
+      <label class="an-check"><input type="checkbox" id="asFxProfile" ${fixedAll.some(([k]) => (anthroProfiles[pid] || {})[k] == null) ? 'checked' : ''}> Also save these as the player's fixed values</label>
+      <div class="save-note">They come from the player's profile; change them only if they were measured again.</div></details>
     ${groups.map(([title, items]) => `<h3 style="font-size:13px;margin:14px 0 6px;">${title}</h3>${items.map(([k, lbl, unit]) => `<div class="an-field" data-k="${k}"><span class="an-lbl">${lbl}</span>${[0, 1, 2].map(i => `<input type="number" step="any" inputmode="decimal" data-i="${i}" placeholder="${i === 2 ? '3rd (opt.)' : i === 0 ? '1st' : '2nd'}" value="${val(k, i)}">`).join('')}<span class="an-used" aria-live="polite"></span></div>`).join('')}`).join('')}
     <div class="imp-foot"><span class="save-note" id="asNote"></span><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Save</button></div>`);
   const refresh = () => o.querySelectorAll('.an-field').forEach(row => {
@@ -2474,7 +2503,13 @@ function anAssessmentForm(pid, a) {
       if (vals.some(x => x != null && !isNaN(x))) raw[row.dataset.k] = vals.map(x => (x == null || isNaN(x)) ? null : x);
     });
     if (!Object.keys(raw).length) { o.querySelector('#asNote').textContent = 'Enter at least one measure.'; return; }
-    const rec = { id: a ? a.id : uid(), date, raw };
+    const fixed = {};
+    AN_FIXED.forEach(([k]) => { const x = parseFloat(o.querySelector('#asFx_' + k).value); fixed[k] = isNaN(x) ? null : x; });
+    const rec = { id: a ? a.id : uid(), date, raw, fixed };
+    if (o.querySelector('#asFxProfile').checked && AN_FIXED.some(([k]) => fixed[k] != null && fixed[k] !== (anthroProfiles[pid] || {})[k])) {
+      const np = await mutateSetting('anthro_profiles', all => { all[pid] = { ...(all[pid] || {}), ...Object.fromEntries(AN_FIXED.filter(([k]) => fixed[k] != null).map(([k]) => [k, fixed[k]])), fixedDate: date }; });
+      if (np) anthroProfiles = np;
+    }
     const next = await mutateSetting('anthro_assessments', all => {
       const list = (all[pid] = all[pid] || []);
       const i = list.findIndex(x => x.id === rec.id);
