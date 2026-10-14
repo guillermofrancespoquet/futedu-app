@@ -508,7 +508,7 @@
             <button class="btn js-reset-checkins">Reset check-ins</button>
           </div>
           <div class="note" id="backupNote"></div>
-          <div class="note">Exports download to this device and contain player data: store them somewhere private and never put them in a repository. Check-ins are stored per device.</div>
+          <div class="note">Exports download to this device and contain player data: store them somewhere private and never put them in a repository. Check-ins are shared across devices.</div>
         </div>
       </section>
 
@@ -541,7 +541,7 @@ let thresholds = {...DEFAULT_THRESHOLDS};
 let rounds = [];            // all rounds, oldest first
 let currentRound = null;    // the open round
 let measurements = {};      // round id -> { player id -> reading }
-let checkins = {};          // player id -> true (per device, only matters during a session)
+let checkins = {};          // player id -> true (shared across devices, stored in the settings table)
 
 function slugify(name) {
   return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
@@ -575,13 +575,28 @@ function previousFor(id) {
   return null;
 }
 
-// ---- per-device check-ins (localStorage, optional) ----
-function loadCheckins() {
-  try { checkins = JSON.parse(localStorage.getItem('futedu_checkins') || '{}'); } catch(e) { checkins = {}; }
+// Check-ins live in the settings table (key 'checkins') so every device sees the same list.
+// Each change reads the stored list first and merges into it, so two devices rarely overwrite each other.
+async function persistCheckins(mutate) {
+  const cur = await sb.from('settings').select('value').eq('key', 'checkins');
+  if (cur.error) { showError(cur.error); return false; }
+  const next = { ...((cur.data[0] && cur.data[0].value) || {}) };
+  mutate(next);
+  const { error } = await sb.from('settings').upsert({ key: 'checkins', value: next });
+  if (error) { showError(error); return false; }
+  checkins = next;
+  roster.forEach(p => { p.checkedIn = !!checkins[p.id]; });
+  return true;
 }
-function saveCheckins() {
-  try { localStorage.setItem('futedu_checkins', JSON.stringify(checkins)); } catch(e) { /* ignore */ }
+async function refreshCheckins() {
+  if (!sb || document.getElementById('app').classList.contains('hidden')) return;
+  const r = await sb.from('settings').select('value').eq('key', 'checkins');
+  if (r.error) return;
+  checkins = (r.data[0] && r.data[0].value) || {};
+  roster.forEach(p => { p.checkedIn = !!checkins[p.id]; });
+  renderAll();
 }
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshCheckins(); });
 
 // ---- row <-> reading mapping ----
 function rowToReading(m) {
@@ -654,8 +669,8 @@ async function loadAll() {
   const failed = [pl, rd, ms, st].find(x => x.error);
   if (failed) { showError(failed.error); return; }
 
-  loadCheckins();
   const setting = k => { const row = st.data.find(x => x.key === k); return row ? row.value : undefined; };
+  checkins = setting('checkins') || {};
   tagsMap = setting('player_tags') || {};
   roster = pl.data.map(p => ({ id: p.id, name: p.name, checkedIn: !!checkins[p.id], tags: Array.isArray(tagsMap[p.id]) ? tagsMap[p.id] : [] }));
   notes = setting('player_notes');
@@ -778,7 +793,7 @@ async function removePlayer(id) {
   const { error } = await sb.from('players').update({ active: false }).eq('id', id);
   if (error) { showError(error); return; }
   roster = roster.filter(p => p.id !== id);
-  delete checkins[id]; saveCheckins();
+  await persistCheckins(c => { delete c[id]; });
   renderAll();
 }
 
@@ -794,11 +809,13 @@ async function renamePlayer(id) {
   renderAll();
 }
 
-function toggleCheckin(id) {
+async function toggleCheckin(id) {
   const player = roster.find(p => p.id === id);
-  player.checkedIn = !player.checkedIn;
-  if (player.checkedIn) checkins[id] = true; else delete checkins[id];
-  saveCheckins();
+  const on = !player.checkedIn;
+  player.checkedIn = on;            // optimistic: show it straight away
+  renderAll();
+  const ok = await persistCheckins(c => { if (on) c[id] = true; else delete c[id]; });
+  if (!ok) { player.checkedIn = !on; renderAll(); return; }
   renderAll();
 }
 
@@ -852,8 +869,7 @@ function showPlayer(name) {
 document.querySelectorAll('.js-reset-checkins').forEach(btn => btn.addEventListener('click', async () => {
   const ok = await customConfirm('Reset check-ins for everyone? (measurement values are kept)');
   if (!ok) return;
-  roster.forEach(p => { p.checkedIn = false; });
-  checkins = {}; saveCheckins();
+  if (!await persistCheckins(c => { Object.keys(c).forEach(k => delete c[k]); })) return;
   renderAll();
 }));
 
@@ -870,8 +886,7 @@ document.querySelectorAll('.js-archive').forEach(btn => btn.addEventListener('cl
   const { data, error: e2 } = await sb.from('rounds').insert({ label: 'In progress' }).select().single();
   if (e2) { showError(e2); return; }
   currentRound = data; rounds.push(data);
-  roster.forEach(p => { p.checkedIn = false; });
-  checkins = {}; saveCheckins();
+  await persistCheckins(c => { Object.keys(c).forEach(k => delete c[k]); });
   renderAll();
 }));
 

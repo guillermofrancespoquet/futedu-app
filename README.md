@@ -19,7 +19,8 @@ Publish this folder from a **separate public repository that contains only these
 - **Compare**: any two rounds, any measure, optionally per group, with group average.
 - **Import report**: photos/screenshots (JPG, PNG, WebP) and PDFs of Arboleaf reports (summary screen or full "Body Composition Analysis" report). Text is read on the device with OCR (Tesseract.js and PDF.js are loaded from a CDN the first time; files are never uploaded), values are cross-checked, and you review and correct everything before saving.
 - **Settings**: thresholds, rounds (archive), **CSV import** (with preview), CSV/JSON export.
+- **Check-ins** are shared across devices (stored in the `settings` table, key `checkins`) and cleared when a round is archived.
 - Responsive layout with a mobile drawer menu.
 
 ## Notes on data storage
-No database updates are ever needed after setup: dated health notes and player tags are stored in the existing `settings` table (keys `player_notes` and `player_tags`). The first time the app loads, it carries over each player's old single health note automatically. Both are included in the JSON export.
+No database updates are ever needed after setup: dated health notes, player tags and check-ins are stored in the existing `settings` table (keys `player_notes`, `player_tags` and `checkins`). The first time the app loads, it carries over each player's old single health note automatically. Both are included in the JSON export.
