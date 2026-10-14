@@ -393,6 +393,11 @@
   .an-lbl { font-size:13px; font-weight:600; }
   .an-used { font-size:12px; color:var(--ink-3); }
   .an-used.warn { color:var(--notice-ink); font-weight:600; }
+  .an-fixed { margin:12px 0 4px; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--card-2); }
+  .an-fixed summary { cursor:pointer; font-size:12.5px; font-weight:600; color:var(--ink-2); }
+  .an-check { display:flex; gap:8px; align-items:center; font-size:12.5px; margin:10px 0 4px; }
+  .an-check input { width:auto; height:auto; }
+  .an-imp-ass { border-top:1px solid var(--line); padding-top:10px; margin-top:10px; }
   @media (max-width: 700px) { .an-field { grid-template-columns:1fr repeat(3, 1fr); } .an-used { grid-column:1 / -1; } }
 
   /* ---------- polish ---------- */
@@ -630,7 +635,9 @@
 
       <!-- ANTHROPOMETRY -->
       <section id="view-anthro" class="view hidden">
-        <div class="page-head"><div><h1>Anthropometry</h1><div class="sub">Skinfolds, girths and basic measures: body composition, muscle development and proportions.</div></div></div>
+        <div class="page-head"><div><h1>Anthropometry</h1><div class="sub">Skinfolds, girths and basic measures: body composition, muscle development and proportions.</div></div>
+          <div class="actions"><button class="btn" id="anImportBtn">Import past assessments</button></div></div>
+        <input type="file" id="anFile" accept=".xlsx,.xlsm,.xls,application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple class="hidden">
         <div class="kpis" id="anKpis"></div>
         <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><input type="search" id="anSearch" placeholder="Search players" aria-label="Search players"></div></div>
         <div class="card hist-full" id="anTable"></div>
@@ -2160,8 +2167,11 @@ window.addEventListener('drop', e => {
   e.preventDefault();
   dragDepth = 0; document.body.classList.remove('dragging');
   if (document.getElementById('app').classList.contains('hidden')) return;
-  const files = [...e.dataTransfer.files].filter(f => /^image\//.test(f.type) || /\.pdf$/i.test(f.name) || f.type === 'application/pdf');
-  if (!files.length) { toast('Only JPG, PNG, WebP or PDF files can be imported', 'err'); return; }
+  const all = [...e.dataTransfer.files];
+  const sheets = all.filter(f => /\.(xlsx|xlsm|xls)$/i.test(f.name));
+  if (sheets.length) { navigate('anthro'); anImportFiles(sheets); return; }
+  const files = all.filter(f => /^image\//.test(f.type) || /\.pdf$/i.test(f.name) || f.type === 'application/pdf');
+  if (!files.length) { toast('Only JPG, PNG, WebP or PDF reports (or Excel anthropometry files) can be imported', 'err'); return; }
   importReports(files);
 });
 // "/" jumps to the player search
@@ -2183,23 +2193,32 @@ document.getElementById('reportFile').addEventListener('change', e => {
 const AN_SIZES = [['mass', 'Body mass', 'kg', 0.05], ['height', 'Height', 'cm', 0.1], ['sitting', 'Sitting height', 'cm', 0.1], ['span', 'Arm span', 'cm', 0.1]];
 const AN_FOLDS = [['triceps', 'Triceps'], ['subscapular', 'Subscapular'], ['supraspinal', 'Supraspinal'], ['abdominal', 'Abdominal'], ['thigh', 'Thigh'], ['calf', 'Calf']];
 const AN_GIRTHS = [['armRelaxed', 'Relaxed arm'], ['armFlexed', 'Flexed and contracted arm'], ['thigh', 'Mid-thigh'], ['calf', 'Calf']];
+const AN_FIXED = [['height', 'Height', 'cm'], ['sitting', 'Sitting height', 'cm'], ['span', 'Arm span', 'cm']];   // fixed per player (profile); an assessment keeps its own copy
 const AN_KEYS = [...AN_SIZES.map(x => x[0]), ...AN_FOLDS.map(x => 'sf_' + x[0]), ...AN_GIRTHS.map(x => 'gr_' + x[0])];
 const AN_TOL = k => k.startsWith('sf_') ? 0.05 : 0.01;   // ISAK: 5 % for skinfolds, 1 % for sizes and girths
 
 function anHarmean(a, b) { return 2 / ((1 / a) + (1 / b)); }
-// One measure taken 1-3 times: single -> as is; two -> harmonic mean; three -> median. Flags a first-vs-second difference above the tolerance.
+// One measure taken 1-3 times (the academy's rule): with all three readings the mean is used, otherwise only the first.
+// A first-vs-second difference above the tolerance is still flagged so a third reading can be taken.
 function anTriple(list, tol) {
   const n = (list || []).map(v => (v === '' || v == null) ? NaN : parseFloat(v));
   const [m1, m2, m3] = n;
   if (isNaN(m1)) return { value: null, pctDiff: null, out: false, singleMeasure: false };
   if (isNaN(m2)) return { value: m1, pctDiff: 0, out: false, singleMeasure: true };
   const pctDiff = (m2 - m1) / anHarmean(m1, m2);
-  const value = isNaN(m3) ? anHarmean(m1, m2) : [m1, m2, m3].sort((a, b) => a - b)[1];
-  return { value, pctDiff, out: Math.abs(pctDiff) > tol, singleMeasure: false };
+  const value = isNaN(m3) ? m1 : (m1 + m2 + m3) / 3;
+  return { value, pctDiff, out: Math.abs(pctDiff) > tol, singleMeasure: false, threeReadings: !isNaN(m3) };
 }
-function anResolve(raw) {
+function anResolve(raw, fixed) {
   const v = {}, flags = {};
-  AN_KEYS.forEach(k => { const t = anTriple((raw || {})[k], AN_TOL(k)); v[k] = t.value; flags[k] = t; });
+  AN_KEYS.forEach(k => {
+    if (AN_FIXED.some(f => f[0] === k)) {
+      const val = fixed && fixed[k] != null && !isNaN(fixed[k]) ? fixed[k] : null;
+      v[k] = val; flags[k] = { value: val, pctDiff: 0, out: false, singleMeasure: true, fixed: true };
+      return;
+    }
+    const t = anTriple((raw || {})[k], AN_TOL(k)); v[k] = t.value; flags[k] = t;
+  });
   return { v, flags };
 }
 function anAge(dateISO, dobISO) {
@@ -2266,13 +2285,22 @@ async function mutateSetting(key, mutate) {
   return next;
 }
 function anList(pid) { return (anthroData[pid] || []).slice().sort((a, b) => (a.date || '').localeCompare(b.date || '')); }
+// fixed measures of an assessment: its own saved copy, else the player's profile (older records may have them among the raw readings)
+function anFixedFor(pid, a) {
+  const prof = anthroProfiles[pid] || {}, out = {};
+  AN_FIXED.forEach(([k]) => {
+    const old = a && a.raw && a.raw[k] ? a.raw[k].filter(x => x != null)[0] : null;
+    out[k] = a && a.fixed && a.fixed[k] != null ? a.fixed[k] : (old != null ? old : (prof[k] != null ? prof[k] : null));
+  });
+  return out;
+}
 function anFull(pid, a) {
-  const prof = anthroProfiles[pid], { v, flags } = anResolve(a.raw);
+  const prof = anthroProfiles[pid], { v, flags } = anResolve(a.raw, anFixedFor(pid, a));
   const age = prof && prof.dob ? anAge(a.date, prof.dob) : null;
   return { a, v, flags, age, R: anCompute(v, prof, age) };
 }
 function anMissing(pid, a) {
-  const prof = anthroProfiles[pid] || {}, { v } = anResolve(a.raw), m = [];
+  const prof = anthroProfiles[pid] || {}, { v } = anResolve(a.raw, anFixedFor(pid, a)), m = [];
   if (!prof.dob) m.push('date of birth'); if (!prof.sex) m.push('sex'); if (!prof.ethnicity) m.push('ethnicity');
   const label = k => k.startsWith('sf_') ? AN_FOLDS.find(f => 'sf_' + f[0] === k)[1] + ' skinfold' : k.startsWith('gr_') ? AN_GIRTHS.find(f => 'gr_' + f[0] === k)[1] + ' girth' : AN_SIZES.find(s => s[0] === k)[1];
   AN_KEYS.forEach(k => { if (v[k] == null) m.push(label(k)); });
@@ -2368,7 +2396,7 @@ function renderAnthroList() {
   document.getElementById('anTable').innerHTML = `<table><tr><th>Player</th><th>Age</th><th>Last assessment</th><th>Σ6 (mm)</th><th>Fat % (Yuhasz)</th><th>Muscle % (Lee)</th><th>BMI</th></tr>
     ${rows.map(p => {
       const list = anList(p.id), last = list[list.length - 1], f = last ? anFull(p.id, last) : null, age = anAgeText(p.id);
-      const need = !(anthroProfiles[p.id] && anthroProfiles[p.id].dob && anthroProfiles[p.id].sex && anthroProfiles[p.id].ethnicity);
+      const pf = anthroProfiles[p.id] || {}, need = !(pf.dob && pf.sex && pf.ethnicity && pf.height && pf.sitting && pf.span);
       return `<tr class="an-row" data-open="${p.id}"><td><span class="attn-name">${escapeHtml(p.name)}</span>${need ? ' <span class="tag-chip">profile needed</span>' : ''}</td>
         <td>${age != null ? age.toFixed(1) : '—'}</td><td>${last ? escapeHtml(last.date) : '<span class="muted">none</span>'}</td>
         <td>${f && f.R ? f.R.sum6.toFixed(1) : '—'}</td><td>${f && f.R ? f.R.yuhaszPct.toFixed(1) : '—'}</td><td>${f && f.R ? f.R.musclePct.toFixed(1) : '—'}</td><td>${f && f.R ? f.R.bmi.toFixed(1) : '—'}</td></tr>`;
@@ -2389,12 +2417,12 @@ function renderAnthroPlayer() {
   let prev = null; for (let i = idx - 1; i >= 0 && !prev; i--) { const f = anFull(p.id, list[i]); if (f.R) prev = f; }
   const rows = anGroupRows(), R = cur && cur.R, pR = prev && prev.R;
   const age = anAgeText(p.id);
-  const profText = prof && prof.dob ? `Born ${escapeHtml(longDateSafe(prof.dob))} · ${escapeHtml(prof.sex || 'sex not set')} · ${escapeHtml(prof.ethnicity || 'ethnicity not set')}${age != null ? ' · age ' + age.toFixed(1) : ''}` : 'Profile incomplete: date of birth, sex and ethnicity are needed for the calculations.';
+  const profText = prof && prof.dob ? `Born ${escapeHtml(longDateSafe(prof.dob))} · ${escapeHtml(prof.sex || 'sex not set')} · ${escapeHtml(prof.ethnicity || 'ethnicity not set')}${age != null ? ' · age ' + age.toFixed(1) : ''}${prof.height ? ' · height ' + prof.height + ' cm' : ''}${prof.sitting ? ' · sitting height ' + prof.sitting + ' cm' : ''}${prof.span ? ' · arm span ' + prof.span + ' cm' : ''}` : 'Profile incomplete: date of birth, sex, ethnicity, height, sitting height and arm span are needed for the calculations.';
   const kpi = (label, key, sub) => `<div class="kpi"><div class="k-label">${label}</div><div class="k-value">${R ? anFmt(key, R[key]).replace(/ (mm|%|kg)$/, '<small> $1</small>') : '—'}</div>${sub || ''}</div>`;
   const trow = (k, extra) => R && R[k] != null ? `<tr><td>${AN_VARS[k].label}</td><td class="num">${anFmt(k, R[k])}</td><td>${anChangeHtml(k, R, pR)}</td><td>${anGroupHtml(anGroupStat(rows, k, p.id), k, R)}</td></tr>` : '';
   const tbl = keys => `<div class="hist-full"><table><tr><th>Variable</th><th>Value</th><th>Change vs previous</th><th>Academy group</th></tr>${keys.map(trow).join('')}</table></div>`;
   let body = '';
-  if (!prof || !prof.dob || !prof.sex || !prof.ethnicity) body += `<div class="card"><div class="empty-state"><strong>Add the player's profile first</strong>Date of birth, sex and ethnicity are needed to calculate age, fat and muscle mass.<br><button class="btn primary" style="margin-top:12px;" id="anEditProfile2">Edit profile</button></div></div>`;
+  if (!prof || !prof.dob || !prof.sex || !prof.ethnicity) body += `<div class="card"><div class="empty-state"><strong>Add the player's profile first</strong>Date of birth, sex and ethnicity (and the fixed measures: height, sitting height, arm span) are needed for the calculations.<br><button class="btn primary" style="margin-top:12px;" id="anEditProfile2">Edit profile</button></div></div>`;
   if (!a) body += `<div class="card"><div class="empty-state"><strong>No assessments yet</strong>Add the first one to see the results.<br><button class="btn primary" style="margin-top:12px;" id="anNew2">New assessment</button></div></div>`;
   else {
     body += `<div class="card"><div class="row" style="justify-content:space-between;"><div class="row"><label class="save-note" for="anSel">Assessment</label><select id="anSel" style="width:auto;">${list.slice().reverse().map(x => `<option value="${x.id}"${x.id === anSelected ? ' selected' : ''}>${escapeHtml(longDateSafe(x.date))}</option>`).join('')}</select></div>
@@ -2409,7 +2437,7 @@ function renderAnthroPlayer() {
         <div class="card"><h2>Muscle development</h2>${tbl(['corrArm', 'corrThigh', 'corrCalf', 'areaArm', 'areaThigh', 'areaCalf', 'shareArm', 'shareThigh', 'shareCalf', 'flexDiff'])}</div>
         <div class="card"><h2>Proportions</h2>${tbl(['height', 'cormic', 'relSpan', 'fatDist'])}</div>`;
       const unit = k => k.startsWith('sf_') ? 'mm' : k.startsWith('gr_') ? 'cm' : (AN_SIZES.find(s => s[0] === k) || [0, 0, ''])[2];
-      body += `<div class="card"><h2>Measurements used</h2><div class="hist-full"><table><tr><th>Measure</th><th>Value used</th><th>Taken</th><th>Check</th></tr>${AN_KEYS.map(k => { const t = cur.flags[k]; const lbl = k.startsWith('sf_') ? AN_FOLDS.find(f => 'sf_' + f[0] === k)[1] + ' skinfold' : k.startsWith('gr_') ? AN_GIRTHS.find(f => 'gr_' + f[0] === k)[1] + ' girth' : AN_SIZES.find(s => s[0] === k)[1]; return `<tr><td>${lbl}</td><td class="num">${t.value != null ? (Math.round(t.value * 100) / 100) + ' ' + unit(k) : '—'}</td><td>${(cur.a.raw[k] || []).filter(x => x !== '' && x != null).length}×</td><td>${t.singleMeasure ? '<span class="muted">single measure</span>' : t.out ? '<span class="tag-chip">difference above ' + (AN_TOL(k) * 100) + ' %</span>' : '<span class="muted">ok</span>'}</td></tr>`; }).join('')}</table></div></div>`;
+      body += `<div class="card"><h2>Measurements used</h2><div class="hist-full"><table><tr><th>Measure</th><th>Value used</th><th>Taken</th><th>Check</th></tr>${AN_KEYS.map(k => { const t = cur.flags[k]; const lbl = k.startsWith('sf_') ? AN_FOLDS.find(f => 'sf_' + f[0] === k)[1] + ' skinfold' : k.startsWith('gr_') ? AN_GIRTHS.find(f => 'gr_' + f[0] === k)[1] + ' girth' : AN_SIZES.find(s => s[0] === k)[1]; return `<tr><td>${lbl}</td><td class="num">${t.value != null ? (Math.round(t.value * 100) / 100) + ' ' + unit(k) : '—'}</td><td>${t.fixed ? 'fixed' : (cur.a.raw[k] || []).filter(x => x !== '' && x != null).length + '×'}</td><td>${t.fixed ? '<span class="muted">from the player\'s profile</span>' : t.singleMeasure ? '<span class="muted">single measure</span>' : t.out ? '<span class="tag-chip">difference above ' + (AN_TOL(k) * 100) + ' %</span>' : '<span class="muted">' + (t.threeReadings ? 'mean of 3' : 'first reading used') + '</span>'}</td></tr>`; }).join('')}</table></div></div>`;
     }
     const done = list.map(x => ({ x, f: anFull(p.id, x) })).reverse();
     body += `<div class="card"><h2>All assessments</h2><div class="hist-full"><table><tr><th>Date</th><th>Age</th><th>Body mass</th><th>Σ6 (mm)</th><th>Fat % (Yuhasz)</th><th>Muscle (kg)</th></tr>${done.map(({ x, f }) => `<tr class="an-row" data-sel="${x.id}"><td>${escapeHtml(longDateSafe(x.date))}</td><td>${f.age != null ? f.age.toFixed(1) : '—'}</td><td>${f.v.mass != null ? f.v.mass + ' kg' : '—'}</td><td>${f.R ? f.R.sum6.toFixed(1) : '—'}</td><td>${f.R ? f.R.yuhaszPct.toFixed(1) : '—'}</td><td>${f.R ? f.R.muscleKg.toFixed(1) : '—'}</td></tr>`).join('')}</table></div></div>`;
@@ -2435,33 +2463,41 @@ function anOverlay(inner) {
 }
 function anProfileForm(pid) {
   const p = roster.find(x => x.id === pid), cur = anthroProfiles[pid] || {};
-  const o = anOverlay(`<h3>Profile: ${escapeHtml(p.name)}</h3><div class="save-note" style="margin-bottom:12px;">Personal data stays in your database only. It is used for age, fat and muscle estimates.</div>
+  const num = v => v == null || v === '' ? '' : v;
+  const o = anOverlay(`<h3>Profile: ${escapeHtml(p.name)}</h3><div class="save-note" style="margin-bottom:12px;">Personal data stays in your database only. Date of birth, sex and ethnicity are fixed, and so are height, sitting height and arm span once measured: change them only if they were measured again. Assessments keep their own copy of the fixed measures, so past results do not change.</div>
     <div class="imp-grid" style="grid-template-columns:repeat(3,1fr);"><div><label>Date of birth</label><input type="date" id="pfDob" value="${escapeHtml(cur.dob || '')}"></div>
       <div><label>Sex</label><select id="pfSex"><option value="">—</option>${['Male', 'Female'].map(s => `<option${cur.sex === s ? ' selected' : ''}>${s}</option>`).join('')}</select></div>
-      <div><label>Ethnicity (used by the muscle equation)</label><select id="pfEth"><option value="">—</option>${Object.keys(AN_ETHNICITY).map(s => `<option${cur.ethnicity === s ? ' selected' : ''}>${s}</option>`).join('')}</select></div></div>
+      <div><label>Ethnicity (used by the muscle equation)</label><select id="pfEth"><option value="">—</option>${Object.keys(AN_ETHNICITY).map(s => `<option${cur.ethnicity === s ? ' selected' : ''}>${s}</option>`).join('')}</select></div>
+      ${AN_FIXED.map(([k, lbl, unit]) => `<div><label>${lbl} (${unit})</label><input type="number" step="any" inputmode="decimal" id="pf_${k}" value="${num(cur[k])}"></div>`).join('')}
+      <div><label>Fixed measures taken on</label><input type="date" id="pfFixedDate" value="${escapeHtml(cur.fixedDate || '')}"></div></div>
     <div class="imp-foot"><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Save</button></div>`);
   o.querySelector('.modal-cancel').addEventListener('click', () => o.remove());
   o.querySelector('.modal-ok').addEventListener('click', async () => {
-    const prof = { dob: o.querySelector('#pfDob').value || '', sex: o.querySelector('#pfSex').value || '', ethnicity: o.querySelector('#pfEth').value || '' };
+    const n = id => { const x = parseFloat(o.querySelector(id).value); return isNaN(x) ? null : x; };
+    const prof = { dob: o.querySelector('#pfDob').value || '', sex: o.querySelector('#pfSex').value || '', ethnicity: o.querySelector('#pfEth').value || '', height: n('#pf_height'), sitting: n('#pf_sitting'), span: n('#pf_span'), fixedDate: o.querySelector('#pfFixedDate').value || '' };
     const next = await mutateSetting('anthro_profiles', all => { all[pid] = prof; });
     if (!next) return;
     anthroProfiles = next; o.remove(); toast('Profile saved'); renderAnthro();
   });
 }
 function anAssessmentForm(pid, a) {
-  const p = roster.find(x => x.id === pid);
-  const groups = [['Basic measures', AN_SIZES.map(s => [s[0], s[1], s[2]])], ['Skinfolds (mm)', AN_FOLDS.map(f => ['sf_' + f[0], f[1], 'mm'])], ['Girths (cm)', AN_GIRTHS.map(f => ['gr_' + f[0], f[1], 'cm'])]];
+  const p = roster.find(x => x.id === pid), fixedAll = AN_FIXED, fixedNow = anFixedFor(pid, a);
+  const groups = [['Body mass', AN_SIZES.filter(s => s[0] === 'mass').map(s => [s[0], s[1], s[2]])], ['Skinfolds (mm)', AN_FOLDS.map(f => ['sf_' + f[0], f[1], 'mm'])], ['Girths (cm)', AN_GIRTHS.map(f => ['gr_' + f[0], f[1], 'cm'])]];
   const val = (k, i) => a && a.raw[k] && a.raw[k][i] != null ? a.raw[k][i] : '';
   const o = anOverlay(`<h3>${a ? 'Edit' : 'New'} assessment: ${escapeHtml(p.name)}</h3>
-    <div class="save-note" style="margin-bottom:10px;">Enter each measure once, twice or three times. Two readings use the harmonic mean, three use the median; a warning shows when the first two differ by more than 1 % (basic measures and girths) or 5 % (skinfolds).</div>
+    <div class="save-note" style="margin-bottom:10px;">Enter each skinfold, girth and the body mass once, or three times. With three readings the mean is used; otherwise only the first reading counts. A warning shows when the first two differ by more than 1 % (body mass and girths) or 5 % (skinfolds), as a hint to take a third reading.</div>
     <div class="imp-grid" style="grid-template-columns:200px 1fr;margin-bottom:6px;"><div><label>Date of the assessment</label><input type="date" id="asDate" value="${escapeHtml(a ? a.date : todayStr())}"></div></div>
+    <details class="an-fixed" ${fixedAll.every(([k]) => fixedNow[k] != null) ? '' : 'open'}><summary>Fixed measures: ${fixedAll.map(([k, l, u]) => l.toLowerCase() + ' ' + (fixedNow[k] != null ? fixedNow[k] + ' ' + u : 'missing')).join(' · ')}</summary>
+      <div class="imp-grid" style="grid-template-columns:repeat(3,1fr);margin-top:8px;">${fixedAll.map(([k, l, u]) => `<div><label>${l} (${u})</label><input type="number" step="any" inputmode="decimal" id="asFx_${k}" value="${fixedNow[k] != null ? fixedNow[k] : ''}"></div>`).join('')}</div>
+      <label class="an-check"><input type="checkbox" id="asFxProfile" ${fixedAll.some(([k]) => (anthroProfiles[pid] || {})[k] == null) ? 'checked' : ''}> Also save these as the player's fixed values</label>
+      <div class="save-note">They come from the player's profile; change them only if they were measured again.</div></details>
     ${groups.map(([title, items]) => `<h3 style="font-size:13px;margin:14px 0 6px;">${title}</h3>${items.map(([k, lbl, unit]) => `<div class="an-field" data-k="${k}"><span class="an-lbl">${lbl}</span>${[0, 1, 2].map(i => `<input type="number" step="any" inputmode="decimal" data-i="${i}" placeholder="${i === 2 ? '3rd (opt.)' : i === 0 ? '1st' : '2nd'}" value="${val(k, i)}">`).join('')}<span class="an-used" aria-live="polite"></span></div>`).join('')}`).join('')}
     <div class="imp-foot"><span class="save-note" id="asNote"></span><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Save</button></div>`);
   const refresh = () => o.querySelectorAll('.an-field').forEach(row => {
     const k = row.dataset.k, t = anTriple([...row.querySelectorAll('input')].map(i => i.value), AN_TOL(k));
     const used = row.querySelector('.an-used');
     used.className = 'an-used' + (t.out ? ' warn' : '');
-    used.textContent = t.value == null ? '' : (Math.round(t.value * 100) / 100) + (t.out ? ' · difference ' + (Math.abs(t.pctDiff) * 100).toFixed(1) + ' % (limit ' + AN_TOL(k) * 100 + ' %): check the measure' : t.singleMeasure ? ' · single measure' : '');
+    used.textContent = t.value == null ? '' : (Math.round(t.value * 100) / 100) + (t.out ? ' · difference ' + (Math.abs(t.pctDiff) * 100).toFixed(1) + ' % (limit ' + AN_TOL(k) * 100 + ' %): check the measure' : t.singleMeasure ? ' · single measure' : (t.threeReadings ? ' · mean of 3' : ' · first reading used'));
   });
   o.addEventListener('input', refresh); refresh();
   o.querySelector('.modal-cancel').addEventListener('click', () => o.remove());
@@ -2474,7 +2510,13 @@ function anAssessmentForm(pid, a) {
       if (vals.some(x => x != null && !isNaN(x))) raw[row.dataset.k] = vals.map(x => (x == null || isNaN(x)) ? null : x);
     });
     if (!Object.keys(raw).length) { o.querySelector('#asNote').textContent = 'Enter at least one measure.'; return; }
-    const rec = { id: a ? a.id : uid(), date, raw };
+    const fixed = {};
+    AN_FIXED.forEach(([k]) => { const x = parseFloat(o.querySelector('#asFx_' + k).value); fixed[k] = isNaN(x) ? null : x; });
+    const rec = { id: a ? a.id : uid(), date, raw, fixed };
+    if (o.querySelector('#asFxProfile').checked && AN_FIXED.some(([k]) => fixed[k] != null && fixed[k] !== (anthroProfiles[pid] || {})[k])) {
+      const np = await mutateSetting('anthro_profiles', all => { all[pid] = { ...(all[pid] || {}), ...Object.fromEntries(AN_FIXED.filter(([k]) => fixed[k] != null).map(([k]) => [k, fixed[k]])), fixedDate: date }; });
+      if (np) anthroProfiles = np;
+    }
     const next = await mutateSetting('anthro_assessments', all => {
       const list = (all[pid] = all[pid] || []);
       const i = list.findIndex(x => x.id === rec.id);
@@ -2491,6 +2533,179 @@ async function anDeleteAssessment(pid, a) {
   anthroData = next; anSelected = null; toast('Assessment deleted'); renderAnthro();
 }
 function renderAnthro() { renderAnthroList(); if (ui.view === 'anthrop') renderAnthroPlayer(); }
+
+// ---- anthropometry: import past assessments from the Excel workbook (read on this device, nothing is uploaded) ----
+const XLSX_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+// rows of the first sheet of the workbook, and the same order for the "previous assessment" block (rows + 24)
+const AN_XL_ROWS = [['mass', 28], ['height', 29], ['sitting', 30], ['span', 31], ['sf_triceps', 32], ['sf_subscapular', 33], ['sf_supraspinal', 34], ['sf_abdominal', 35], ['sf_thigh', 36], ['sf_calf', 37], ['gr_armRelaxed', 38], ['gr_armFlexed', 39], ['gr_thigh', 40], ['gr_calf', 41]];
+const AN_RANGES = { mass: [30, 140], height: [120, 215], sitting: [60, 120], span: [120, 230], sf: [2, 60], gr: [15, 80] };
+function anParseSheet(ws, ssf) {
+  const pad = n => String(n).padStart(2, '0');
+  const cell = a => ws[a];
+  const val = a => { const c = cell(a); return c && c.v != null && c.v !== '' ? c.v : null; };
+  const text = a => { const v = val(a); return v == null ? '' : String(v).trim(); };
+  const num = a => { const v = val(a); if (v == null) return null; const x = typeof v === 'number' ? v : parseFloat(String(v).replace(',', '.')); return isNaN(x) ? null : x; };
+  const typedNum = a => (cell(a) && !cell(a).f) ? num(a) : null;   // a cell that only copies the first reading (a formula) is not a reading
+  const dateOf = a => {
+    const c = cell(a);
+    if (!c || c.v == null) return null;
+    if (typeof c.v === 'number') { const d = ssf.parse_date_code(c.v); return d ? d.y + '-' + pad(d.m) + '-' + pad(d.d) : null; }
+    const m = String(c.v).match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+    return m ? (m[3].length === 2 ? '20' + m[3] : m[3]) + '-' + pad(m[2]) + '-' + pad(m[1]) : null;
+  };
+  const sexRaw = text('C9').toLowerCase(), ethRaw = text('C8').toLowerCase();
+  const out = {
+    name: [text('C5'), text('C6')].filter(Boolean).join(' '),
+    sex: /^(h|m(?!uj)|male)/.test(sexRaw) && !/muj|female/.test(sexRaw) ? 'Male' : /muj|female|^f/.test(sexRaw) ? 'Female' : '',
+    ethnicity: /cauc/.test(ethRaw) ? 'Caucasian' : /negr|black/.test(ethRaw) ? 'Black' : /asi/.test(ethRaw) ? 'Asian' : '',
+    dob: dateOf('C24'), assessments: [],
+  };
+  const cur = { label: 'Assessment', date: dateOf('C23'), raw: {}, fixed: {} };
+  AN_XL_ROWS.forEach(([k, r]) => {
+    const first = num('C' + r);
+    if (first == null) return;
+    const reads = [first];
+    const second = typedNum('D' + r), third = typedNum('E' + r);
+    if (second != null) { reads.push(second); if (third != null) reads.push(third); }
+    if (AN_FIXED.some(f => f[0] === k)) cur.fixed[k] = first; else cur.raw[k] = reads;
+  });
+  if (Object.keys(cur.raw).length || Object.keys(cur.fixed).length) out.assessments.push(cur);
+  // previous assessment block (single values)
+  const prevDate = dateOf('C49');
+  if (prevDate) {
+    const prev = { label: 'Previous assessment', date: prevDate, raw: {}, fixed: {} };
+    AN_XL_ROWS.forEach(([k, r]) => { const x = num('C' + (r + 24)); if (x == null) return; if (AN_FIXED.some(f => f[0] === k)) prev.fixed[k] = x; else prev.raw[k] = [x]; });
+    if (Object.keys(prev.raw).length) out.assessments.unshift(prev);
+  }
+  return out;
+}
+function anPlausibility(k, x) {
+  if (x == null) return null;
+  const r = k.startsWith('sf_') ? AN_RANGES.sf : k.startsWith('gr_') ? AN_RANGES.gr : AN_RANGES[k];
+  return r && (x < r[0] || x > r[1]) ? 'outside the usual range (' + r[0] + '-' + r[1] + ')' : null;
+}
+async function anImportFiles(files) {
+  const xl = files.filter(f => /\.(xlsx|xlsm|xls)$/i.test(f.name));
+  if (files.length > xl.length) toast('Only Excel files (.xlsx, .xlsm) can be imported here for now', 'err');
+  if (!xl.length) return;
+  const prog = progressModal('Reading ' + xl.length + ' file' + (xl.length === 1 ? '' : 's') + '…');
+  const records = [];
+  try {
+    await loadScript(XLSX_SRC);
+    for (const f of xl) {
+      try {
+        const wb = XLSX.read(await f.arrayBuffer(), { type: 'array', cellFormula: true });
+        const rec = anParseSheet(wb.Sheets[wb.SheetNames[0]], XLSX.SSF);
+        rec.file = f.name;
+        records.push(rec);
+      } catch (e) { records.push({ file: f.name, error: e.message || String(e), assessments: [] }); }
+    }
+  } catch (e) { prog.close(); await customConfirm(e.message || String(e)); return; }
+  prog.close();
+  const plan = await anReviewImport(records);
+  if (!plan) return;
+  await anApplyImport(plan);
+}
+function anReviewImport(records) {
+  return new Promise(resolve => {
+    const FIELDS = [['mass', 'Body mass (kg)'], ...AN_FIXED.map(f => [f[0], f[1] + ' (' + f[2] + ')']), ...AN_FOLDS.map(f => ['sf_' + f[0], f[1] + ' (mm)']), ...AN_GIRTHS.map(f => ['gr_' + f[0], f[1] + ' girth (cm)'])];
+    const cards = records.map((r, i) => {
+      if (r.error || !r.assessments.length) return `<div class="imp-card"><div class="imp-top"><span class="fname">${escapeHtml(r.file)}</span></div><div class="imp-msg err">${r.error ? 'Could not read this file: ' + escapeHtml(r.error) : 'No measurements were found in the first sheet of this file.'}</div></div>`;
+      const pid = matchPlayer(r.name), prof = (pid && anthroProfiles[pid]) || {};
+      const dob = prof.dob || r.dob || '', sex = prof.sex || r.sex || '', eth = prof.ethnicity || r.ethnicity || '';
+      const msgs = [];
+      if (!pid) msgs.push(r.name ? 'Could not match "' + escapeHtml(r.name) + '" to a player: choose one.' : 'No name found: choose the player.');
+      if (!dob) msgs.push('Date of birth is missing.');
+      const ass = r.assessments.map((a, j) => {
+        const exists = pid && anList(pid).some(x => x.date === a.date);
+        const vals = { ...a.fixed };
+        Object.keys(a.raw).forEach(k => { vals[k] = a.raw[k][0]; });
+        return `<div class="an-imp-ass" data-j="${j}"><div class="imp-top"><label class="save-note"><input type="checkbox" class="aiInc" checked style="width:auto;height:auto;"> ${escapeHtml(a.label)}</label>
+          <input type="date" class="aiDate" value="${escapeHtml(a.date || '')}">
+          <select class="aiMode" ${exists ? '' : 'disabled'}><option value="skip"${exists ? ' selected' : ''}>${exists ? 'Already exists: skip' : 'New'}</option><option value="replace">${exists ? 'Replace the existing one' : 'New'}</option></select></div>
+          <div class="imp-grid" style="grid-template-columns:repeat(4,1fr);">${FIELDS.map(([k, lbl]) => { const w = anPlausibility(k, vals[k]); return `<div><label>${lbl}</label><input type="number" step="any" data-k="${k}" value="${vals[k] != null ? vals[k] : ''}" class="${w ? 'warn' : ''}" title="${w || ''}"></div>`; }).join('')}</div>
+          ${a.raw && Object.values(a.raw).some(x => x.length > 1) ? '<div class="save-note" style="margin-top:6px;">This file has 2nd/3rd readings: they are kept; with three readings the mean is used, otherwise the first.</div>' : ''}</div>`;
+      }).join('');
+      return `<div class="imp-card" data-i="${i}">
+        <div class="imp-top"><label class="save-note"><input type="checkbox" class="aiFile" checked style="width:auto;height:auto;"> Import</label><span class="fname">${escapeHtml(r.file)}</span>
+          <select class="aiPlayer"><option value="">— choose player —</option>${roster.map(x => `<option value="${x.id}"${x.id === pid ? ' selected' : ''}>${escapeHtml(x.name)}</option>`).join('')}</select></div>
+        <div class="imp-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px;"><div><label>Date of birth</label><input type="date" class="aiDob" value="${escapeHtml(dob)}"></div>
+          <div><label>Sex</label><select class="aiSex"><option value="">—</option>${['Male', 'Female'].map(x => `<option${sex === x ? ' selected' : ''}>${x}</option>`).join('')}</select></div>
+          <div><label>Ethnicity</label><select class="aiEth"><option value="">—</option>${Object.keys(AN_ETHNICITY).map(x => `<option${eth === x ? ' selected' : ''}>${x}</option>`).join('')}</select></div></div>
+        ${ass}${msgs.length ? `<div class="imp-msg">${msgs.join('<br>')}</div>` : ''}
+        ${pid && Object.keys(prof).length ? '<div class="save-note" style="margin-top:6px;">The player already has a profile: its values are shown here and will not be overwritten with the file\'s.</div>' : ''}</div>`;
+    }).join('');
+    const o = anOverlay(`<h3>Review imported assessments</h3><div class="save-note">Check each value against the file. The first reading is used (or the mean when there are three). Fat, muscle and the other results are calculated by the app, not imported.</div>${cards}
+      <div class="imp-foot"><span class="save-note" id="aiCount"></span><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Import</button></div>`);
+    const update = () => {
+      let n = 0;
+      o.querySelectorAll('.imp-card[data-i]').forEach(c => {
+        const on = c.querySelector('.aiFile').checked && c.querySelector('.aiPlayer').value;
+        c.classList.toggle('skip', !c.querySelector('.aiFile').checked);
+        c.querySelectorAll('.an-imp-ass').forEach(a => { if (on && a.querySelector('.aiInc').checked && !(a.querySelector('.aiMode').value === 'skip' && !a.querySelector('.aiMode').disabled)) n++; });
+      });
+      o.querySelector('#aiCount').textContent = n + ' assessment' + (n === 1 ? '' : 's') + ' to import';
+    };
+    o.addEventListener('change', update); update();
+    const done = v => { o.remove(); resolve(v); };
+    o.querySelector('.modal-cancel').addEventListener('click', () => done(null));
+    o.querySelector('.modal-ok').addEventListener('click', () => {
+      const plan = [];
+      o.querySelectorAll('.imp-card[data-i]').forEach(c => {
+        const pid = c.querySelector('.aiPlayer').value;
+        if (!c.querySelector('.aiFile').checked || !pid) return;
+        const rec = records[+c.dataset.i], item = { pid, profile: { dob: c.querySelector('.aiDob').value, sex: c.querySelector('.aiSex').value, ethnicity: c.querySelector('.aiEth').value }, assessments: [] };
+        c.querySelectorAll('.an-imp-ass').forEach(a => {
+          if (!a.querySelector('.aiInc').checked) return;
+          const mode = a.querySelector('.aiMode'), date = a.querySelector('.aiDate').value;
+          if (!date || (!mode.disabled && mode.value === 'skip')) return;
+          const orig = rec.assessments[+a.dataset.j], raw = {}, fixed = {};
+          a.querySelectorAll('.imp-grid input').forEach(inp => {
+            const x = inp.value === '' ? null : parseFloat(inp.value); if (x == null || isNaN(x)) return;
+            const k = inp.dataset.k;
+            if (AN_FIXED.some(f => f[0] === k)) fixed[k] = x;
+            else raw[k] = orig.raw[k] && orig.raw[k][0] === x ? orig.raw[k] : [x];   // keep 2nd/3rd readings when the first was not edited
+          });
+          item.assessments.push({ date, raw, fixed, replace: !mode.disabled && mode.value === 'replace' });
+        });
+        if (item.assessments.length) plan.push(item);
+      });
+      done(plan);
+    });
+  });
+}
+async function anApplyImport(plan) {
+  if (!plan.length) { toast('Nothing to import'); return; }
+  const profs = await mutateSetting('anthro_profiles', all => {
+    plan.forEach(it => {
+      const cur = all[it.pid] || {}, latest = it.assessments.slice().sort((a, b) => a.date.localeCompare(b.date)).pop();
+      const next = { ...cur };
+      ['dob', 'sex', 'ethnicity'].forEach(k => { if (!next[k] && it.profile[k]) next[k] = it.profile[k]; });
+      AN_FIXED.forEach(([k]) => { if (next[k] == null && latest.fixed[k] != null) next[k] = latest.fixed[k]; });
+      if (!next.fixedDate && AN_FIXED.some(([k]) => next[k] != null)) next.fixedDate = latest.date;
+      all[it.pid] = next;
+    });
+  });
+  if (!profs) return;
+  anthroProfiles = profs;
+  let added = 0, replaced = 0;
+  const data = await mutateSetting('anthro_assessments', all => {
+    plan.forEach(it => {
+      const list = (all[it.pid] = all[it.pid] || []);
+      it.assessments.forEach(a => {
+        const rec = { id: uid(), date: a.date, raw: a.raw, fixed: a.fixed };
+        const i = list.findIndex(x => x.date === a.date);
+        if (i >= 0) { if (a.replace) { rec.id = list[i].id; list[i] = rec; replaced++; } } else { list.push(rec); added++; }
+      });
+    });
+  });
+  if (!data) return;
+  anthroData = data;
+  renderAnthro();
+  toast('Imported ' + added + ' new' + (replaced ? ' and replaced ' + replaced : '') + ' assessment' + (added + replaced === 1 ? '' : 's'));
+}
+document.getElementById('anImportBtn').addEventListener('click', () => document.getElementById('anFile').click());
+document.getElementById('anFile').addEventListener('change', e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) anImportFiles(fs); });
 
 // ---- anthropometry: printable report (one A4 page) ----
 function anSpacing(histRows) {
