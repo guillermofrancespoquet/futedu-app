@@ -13,5 +13,12 @@ Single-file web app (`index.html`) backed by Supabase. **No player data lives in
 Publish this folder from a **separate public repository that contains only these files** (`index.html`, `schema.sql`, `README.md`). Do not make the main FUTEDU repo public: its Git history still holds player data.
 
 ## Features
-- Side menu: **Dashboard** (KPIs, players needing attention, team average body fat by round, classification overview, pending list), **Bioimpedance** (search, filters, sort, check-ins, manual entry, health notes, per-player History with changes vs. the previous round) and **Settings** (thresholds, rounds, CSV/JSON export).
-- Login (Supabase auth), rounds (archive a round to start a new one), responsive layout with a mobile drawer menu.
+- **Dashboard**: KPIs, players needing attention, team average body fat by round, results by group (tags), classification overview, pending list, backup reminder.
+- **Bioimpedance**: search, filters (pending / measured / flagged / health notes), group filter, sort, check-ins, per-player cards, **Quick entry** table for typing many players at once.
+- **Player profile** (`#player/<id>`): evolution charts (body fat, fat-free mass, hydration), all measurements, dated health notes, tags and a **printable PDF report** (browser print dialog; health notes are optional).
+- **Compare**: any two rounds, any measure, optionally per group, with group average.
+- **Settings**: thresholds, rounds (archive), **CSV import** (with preview), CSV/JSON export.
+- Responsive layout with a mobile drawer menu.
+
+## Notes on data storage
+No database updates are ever needed after setup: dated health notes and player tags are stored in the existing `settings` table (keys `player_notes` and `player_tags`). The first time the app loads, it carries over each player's old single health note automatically. Both are included in the JSON export.

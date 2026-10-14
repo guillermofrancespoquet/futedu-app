@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FUTEDU — Bioimpedance</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#ff5405">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FUTEDU">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
   :root {
     --orange:#ff5405; --orange-d:#e64a00; --orange-soft:#fff1e8;
@@ -191,6 +200,71 @@
   .round-row .r-meta { margin-left:auto; color:var(--ink-3); font-size:12px; }
   .tag { font-size:11px; font-weight:700; padding:2px 8px; border-radius:7px; background:var(--orange-soft); color:var(--orange-d); }
 
+  .tag-chip { font-size:11px; font-weight:600; padding:2px 8px; border-radius:7px; background:#eceef3; color:#4a5068; }
+  .tags-line { display:flex; gap:5px; flex-wrap:wrap; }
+  .banner { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:12px 16px; border-radius:12px; margin-bottom:16px; font-size:13px; background:var(--orange-soft); color:#8a3200; }
+  .banner.warn { background:#fff6d9; color:#7a5b00; }
+  .banner .btn { margin-left:auto; }
+  .note-item { margin-top:10px; background:#eef6fb; border-left:3px solid var(--info); border-radius:10px; padding:10px 14px; font-size:12px; color:#2c5f82; line-height:1.55; }
+  .note-item .n-head { display:flex; align-items:center; gap:8px; margin-bottom:3px; }
+  .note-item .n-date { font-weight:700; text-transform:uppercase; letter-spacing:.4px; font-size:10px; color:var(--info); }
+  .note-item .n-acts { margin-left:auto; display:flex; gap:10px; }
+  .note-item .n-acts button { background:none; border:none; font-size:11.5px; color:var(--info); cursor:pointer; font-weight:600; }
+  .note-item .n-acts button.del { color:var(--bad); }
+  textarea { width:100%; min-height:90px; padding:10px 12px; border:1px solid var(--line); border-radius:var(--r-in); font-size:14px; resize:vertical; margin-bottom:10px; }
+  textarea:focus { outline:none; border-color:var(--orange); box-shadow:0 0 0 3px rgba(255,84,5,.15); }
+  .modal-box label { display:block; font-size:12px; color:var(--ink-3); font-weight:600; margin-bottom:4px; }
+
+  .charts { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
+  .chart-box h3 { font-size:13px; font-weight:700; margin-bottom:6px; color:var(--ink-2); }
+  .chart-box svg { width:100%; height:auto; display:block; }
+  .chart-empty { font-size:12.5px; color:var(--ink-3); padding:30px 0; text-align:center; }
+  .back { margin-bottom:10px; }
+  .hist-full { overflow-x:auto; }
+  .hist-full table { width:100%; border-collapse:collapse; font-size:13px; min-width:620px; }
+  .hist-full th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--ink-3); padding:0 10px 8px 0; border-bottom:1px solid var(--line); }
+  .hist-full td { padding:8px 10px 8px 0; border-bottom:1px solid var(--line); color:var(--ink-2); }
+  .hist-full tr:last-child td { border-bottom:none; }
+
+  #printArea { display:none; }
+  @media print {
+    @page { size:A4; margin:14mm; }
+    body { background:#fff; }
+    .login-wrap, .shell, .modal-overlay { display:none !important; }
+    #printArea { display:block !important; color:#1c1c1e; font-size:12px; }
+    #printArea .p-head { display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid var(--orange); padding-bottom:10px; margin-bottom:16px; }
+    #printArea .p-head img { width:150px; }
+    #printArea h1 { font-size:22px; margin-bottom:2px; }
+    #printArea h2 { font-size:14px; margin:18px 0 8px; }
+    #printArea .p-sub { color:#6a6a6e; font-size:11px; }
+    #printArea table { width:100%; border-collapse:collapse; }
+    #printArea th { text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.5px; color:#6a6a6e; padding:0 8px 6px 0; border-bottom:1px solid #ccc; }
+    #printArea td { padding:6px 8px 6px 0; border-bottom:1px solid #e3e3e6; }
+    #printArea .p-charts { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
+    #printArea .p-charts h3 { font-size:11px; margin-bottom:4px; }
+    #printArea .p-note { border-left:3px solid #3a8fd1; padding:4px 10px; margin-bottom:6px; background:#f3f8fc; }
+    #printArea .p-foot { margin-top:22px; padding-top:8px; border-top:1px solid #ccc; font-size:10px; color:#6a6a6e; line-height:1.5; }
+    #printArea svg { width:100%; height:auto; }
+    #printArea * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+
+  .quick { overflow-x:auto; }
+  .quick table { width:100%; border-collapse:collapse; font-size:13px; min-width:880px; }
+  .quick th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-3); padding:0 6px 8px 0; border-bottom:1px solid var(--line); white-space:nowrap; }
+  .quick td { padding:5px 6px 5px 0; border-bottom:1px solid var(--line); }
+  .quick td.q-name { font-weight:600; white-space:nowrap; padding-right:12px; }
+  .quick input { height:32px; font-size:13px; padding:0 8px; width:78px; }
+  .quick .q-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+  .quick .q-bar input { width:auto; }
+  .cmp-controls { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:16px; }
+  .cmp-controls label { display:block; font-size:12px; color:var(--ink-3); font-weight:600; margin-bottom:4px; }
+  .cmp table { width:100%; border-collapse:collapse; font-size:14px; }
+  .cmp th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--ink-3); padding:0 10px 8px 0; border-bottom:1px solid var(--line); }
+  .cmp td { padding:9px 10px 9px 0; border-bottom:1px solid var(--line); }
+  .cmp tr.total td { font-weight:700; background:var(--bg); }
+  .d-good { color:var(--good); font-weight:700; } .d-bad { color:var(--bad); font-weight:700; } .d-flat { color:var(--ink-3); font-weight:600; }
+  .import-list { font-size:12.5px; color:var(--ink-2); margin:8px 0; max-height:140px; overflow:auto; line-height:1.6; }
+
   /* ---------- modal ---------- */
   .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.4); backdrop-filter:blur(3px); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; }
   .modal-box { background:#fff; border-radius:16px; padding:22px; max-width:360px; width:100%; box-shadow:0 20px 50px rgba(0,0,0,.3); }
@@ -209,7 +283,9 @@
 
   /* ---------- responsive ---------- */
   @media (max-width: 1000px) {
+    .charts { grid-template-columns:1fr; }
     .kpis, .dash-grid { grid-template-columns:1fr 1fr; }
+    .cmp-controls { grid-template-columns:1fr 1fr; }
     .settings-grid { grid-template-columns:1fr 1fr; }
     .manual-grid { grid-template-columns:1fr 1fr; }
     .grid-2 { grid-template-columns:1fr; }
@@ -262,6 +338,10 @@
         Bioimpedance
         <span class="badge" id="navPending"></span>
       </button>
+      <button class="nav-item" data-view="compare">
+        <svg viewBox="0 0 24 24"><line x1="6" y1="20" x2="6" y2="11"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/></svg>
+        Compare
+      </button>
       <button class="nav-item" data-view="settings">
         <svg viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="9" cy="7" r="2.4" fill="#fff"/><circle cx="15" cy="17" r="2.4" fill="#fff"/></svg>
         Settings
@@ -287,11 +367,13 @@
           <div><h1>Dashboard</h1><div class="sub" id="dashSub"></div></div>
           <div class="actions"><button class="btn primary" data-goto="summary">Open measurements</button></div>
         </div>
+        <div id="dashBanners"></div>
         <div class="kpis" id="kpis"></div>
         <div class="grid-2">
           <div class="card"><h2>Needs attention <span class="muted" id="attnCount"></span></h2><div id="attnList"></div></div>
           <div class="card"><h2>Team average body fat <span class="muted">by round</span></h2><div id="trendList"></div><div class="note" id="trendNote"></div></div>
         </div>
+        <div class="card hidden" id="groupCard"><h2>By group <span class="muted">current round</span></h2><div id="groupList"></div></div>
         <div class="card"><h2>Classification overview <span class="muted">current round</span></h2><div class="dash-grid" id="dashGrid"></div></div>
         <div class="card"><h2>Pending measurement <span class="muted" id="pendCount"></span></h2><div id="pendList"></div></div>
       </section>
@@ -301,6 +383,7 @@
         <div class="page-head">
           <div><h1>Bioimpedance</h1><div class="sub" id="sumSub"></div></div>
           <div class="actions">
+            <div class="seg" id="modeSeg"><button data-mode="cards" class="on">Cards</button><button data-mode="table">Quick entry</button></div>
             <button class="btn js-reset-checkins">Reset check-ins</button>
             <button class="btn primary js-archive">Archive round</button>
           </div>
@@ -317,6 +400,7 @@
             <button data-filter="flagged">Flagged</button>
             <button data-filter="notes">Health notes</button>
           </div>
+          <select id="tagSel" aria-label="Group" class="hidden"></select>
           <select id="sortSel" aria-label="Sort">
             <option value="name">Sort: Name</option>
             <option value="bf-desc">Sort: Body fat high → low</option>
@@ -330,8 +414,24 @@
           </div>
           <div class="save-note" id="checkinCount"></div>
           <div id="playerList"></div>
+          <div id="quickEntry" class="quick hidden"></div>
         </div>
       </section>
+
+      <!-- COMPARE -->
+      <section id="view-compare" class="view hidden">
+        <div class="page-head"><div><h1>Compare rounds</h1><div class="sub">See how each player and the group changed between two rounds.</div></div></div>
+        <div class="cmp-controls">
+          <div><label>From</label><select id="cmpA"></select></div>
+          <div><label>To</label><select id="cmpB"></select></div>
+          <div><label>Measure</label><select id="cmpMetric"></select></div>
+          <div><label>Group</label><select id="cmpTag"></select></div>
+        </div>
+        <div class="card cmp" id="cmpTable"></div>
+      </section>
+
+      <!-- PLAYER PROFILE -->
+      <section id="view-player" class="view hidden"></section>
 
       <!-- SETTINGS -->
       <section id="view-settings" class="view hidden">
@@ -363,12 +463,22 @@
         </div>
 
         <div class="card">
+          <h2>Import measurements <span class="muted">CSV into the current round</span></h2>
+          <div class="row">
+            <input type="file" id="csvFile" accept=".csv,text/csv" style="height:auto;padding:8px;max-width:320px;">
+            <button class="btn" id="csvTemplateBtn">Download template</button>
+          </div>
+          <div class="note">Columns: <b>player</b> (name), <b>date</b> (YYYY-MM-DD, optional) and any of body_fat_percent, subcutaneous_fat_percent, total_body_water_percent, bmi, fat_free_mass_kg, visceral_fat, skeletal_muscle_mass_kg, weight_kg. Commas or semicolons both work. You will see a preview before anything is saved.</div>
+        </div>
+
+        <div class="card">
           <h2>Data</h2>
           <div class="row">
             <button class="btn" id="exportCsvBtn">Export CSV</button>
             <button class="btn" id="exportHistoryBtn">Export JSON</button>
             <button class="btn js-reset-checkins">Reset check-ins</button>
           </div>
+          <div class="note" id="backupNote"></div>
           <div class="note">Exports download to this device and contain player data: store them somewhere private and never put them in a repository. Check-ins are stored per device.</div>
         </div>
       </section>
@@ -376,6 +486,8 @@
     </div>
   </div>
 </div>
+
+<div id="printArea"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -392,8 +504,9 @@ const DEFAULT_THRESHOLDS = { bodyFat:12.5, subFat:10.5, hydMin:60, bmiMin:18.5, 
 const CONFIGURED = !SUPABASE_URL.includes('YOUR-PROJECT-REF') && !SUPABASE_ANON_KEY.includes('YOUR-ANON-KEY');
 const sb = CONFIGURED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-let roster = [];            // [{id, name, checkedIn}]
-let notes = {};             // player id -> health note
+let roster = [];            // [{id, name, checkedIn, tags}]
+let notes = {};             // player id -> [{id, note, noted_on}] (newest first, stored in the settings table)
+let tagsMap = {};           // player id -> [tag] (stored in the settings table)
 let thresholds = {...DEFAULT_THRESHOLDS};
 let rounds = [];            // all rounds, oldest first
 let currentRound = null;    // the open round
@@ -412,7 +525,12 @@ function escapeHtml(s) {
   div.textContent = String(s == null ? '' : s);
   return div.innerHTML;
 }
-function noteFor(id) { return notes[id] || null; }
+function notesFor(id) { return notes[id] || []; }
+function hasNotes(id) { return notesFor(id).length > 0; }
+function tagsOf(id) { const p = roster.find(x => x.id === id); return p ? p.tags : []; }
+function allTags() { return [...new Set(roster.flatMap(p => p.tags))].sort((a, b) => a.localeCompare(b)); }
+function uid() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function todayStr() { return new Date().toISOString().slice(0, 10); }
 function readingFor(id) {
   return (currentRound && measurements[currentRound.id] && measurements[currentRound.id][id]) || null;
 }
@@ -461,7 +579,7 @@ function showError(msg) {
 }
 
 // ---- auth ----
-const ui = { view: 'dashboard', filter: 'all', search: '', sort: 'name' };
+const ui = { view: 'dashboard', filter: 'all', search: '', sort: 'name', tag: '', mode: 'cards' };
 const openPanels = new Set();   // ids of expanded manual-entry / history panels (survive re-renders)
 
 function showLogin() {
@@ -474,7 +592,7 @@ function showApp() {
   sb.auth.getSession().then(({ data }) => {
     document.getElementById('whoAmI').textContent = (data.session && data.session.user && data.session.user.email) || '';
   });
-  navigate(location.hash.replace('#', '') || ui.view, true);
+  navigate(decodeURIComponent(location.hash.replace('#', '')) || ui.view, true);
 }
 async function doLogin() {
   const err = document.getElementById('loginErr');
@@ -501,21 +619,30 @@ async function loadAll() {
     sb.from('players').select('*').eq('active', true),
     sb.from('rounds').select('*').order('created_at', { ascending: true }),
     sb.from('measurements').select('*'),
-    sb.from('settings').select('*').eq('key', 'thresholds'),
+    sb.from('settings').select('*'),
   ]);
   const failed = [pl, rd, ms, st].find(x => x.error);
   if (failed) { showError(failed.error); return; }
 
   loadCheckins();
-  roster = pl.data.map(p => ({ id: p.id, name: p.name, checkedIn: !!checkins[p.id] }));
-  notes = {};
-  pl.data.forEach(p => { if (p.health_note) notes[p.id] = p.health_note; });
+  const setting = k => { const row = st.data.find(x => x.key === k); return row ? row.value : undefined; };
+  tagsMap = setting('player_tags') || {};
+  roster = pl.data.map(p => ({ id: p.id, name: p.name, checkedIn: !!checkins[p.id], tags: Array.isArray(tagsMap[p.id]) ? tagsMap[p.id] : [] }));
+  notes = setting('player_notes');
+  if (!notes) {
+    // First run: bring over the single health note each player had before dated notes existed
+    notes = {};
+    pl.data.forEach(p => { if (p.health_note) notes[p.id] = [{ id: uid(), note: p.health_note, noted_on: null }]; });
+    const { error } = await sb.from('settings').upsert({ key: 'player_notes', value: notes });
+    if (error) console.error(error);
+  }
   rounds = rd.data;
   measurements = {};
   ms.data.forEach(m => {
     (measurements[m.round_id] = measurements[m.round_id] || {})[m.player_id] = rowToReading(m);
   });
-  thresholds = (st.data[0] && st.data[0].value) ? { ...DEFAULT_THRESHOLDS, ...st.data[0].value } : {...DEFAULT_THRESHOLDS};
+  const th = setting('thresholds');
+  thresholds = th ? { ...DEFAULT_THRESHOLDS, ...th } : { ...DEFAULT_THRESHOLDS };
 
   currentRound = rounds.filter(r => !r.closed).pop() || null;
   if (!currentRound) {
@@ -646,13 +773,18 @@ function toggleCheckin(id) {
 }
 
 // ---- navigation ----
-const VIEWS = ['dashboard', 'summary', 'settings'];
-function navigate(view, silent) {
+const VIEWS = ['dashboard', 'summary', 'compare', 'player', 'settings'];
+function navigate(route, silent) {
+  let [view, param] = String(route || '').split('/');
   if (!VIEWS.includes(view)) view = 'dashboard';
+  if (view === 'player' && !(param && roster.some(p => p.id === param))) view = 'summary';
   ui.view = view;
+  ui.playerId = view === 'player' ? param : null;
   VIEWS.forEach(v => document.getElementById('view-' + v).classList.toggle('hidden', v !== view));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === view));
-  if (!silent) history.replaceState(null, '', '#' + view);
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === (view === 'player' ? 'summary' : view)));
+  if (!silent) history.replaceState(null, '', '#' + (view === 'player' ? 'player/' + param : view));
+  if (view === 'player') renderProfile();
+  if (view === 'compare') renderCompare();
   closeMenu();
   window.scrollTo(0, 0);
 }
@@ -667,10 +799,11 @@ document.getElementById('menuBtn').addEventListener('click', () => {
   document.getElementById('scrim').classList.add('open');
 });
 document.getElementById('scrim').addEventListener('click', closeMenu);
-window.addEventListener('hashchange', () => { if (!document.getElementById('app').classList.contains('hidden')) navigate(location.hash.replace('#', ''), true); });
+window.addEventListener('hashchange', () => { if (!document.getElementById('app').classList.contains('hidden')) navigate(decodeURIComponent(location.hash.replace('#', '')), true); });
 
 // ---- summary filters ----
 document.getElementById('searchInput').addEventListener('input', e => { ui.search = e.target.value; renderSummary(); });
+document.getElementById('tagSel').addEventListener('change', e => { ui.tag = e.target.value; renderSummary(); });
 document.getElementById('sortSel').addEventListener('change', e => { ui.sort = e.target.value; renderSummary(); });
 document.querySelectorAll('#filterSeg button').forEach(b => b.addEventListener('click', () => {
   ui.filter = b.dataset.filter;
@@ -713,13 +846,16 @@ document.querySelectorAll('.js-archive').forEach(btn => btn.addEventListener('cl
 }));
 
 async function fetchEverything() {
-  const [pl, rd, ms] = await Promise.all([
-    sb.from('players').select('*'), sb.from('rounds').select('*'), sb.from('measurements').select('*'),
+  const [pl, rd, ms, st] = await Promise.all([
+    sb.from('players').select('*'), sb.from('rounds').select('*'), sb.from('measurements').select('*'), sb.from('settings').select('*'),
   ]);
-  const failed = [pl, rd, ms].find(x => x.error);
+  const failed = [pl, rd, ms, st].find(x => x.error);
   if (failed) { showError(failed.error); return null; }
-  return { players: pl.data, rounds: rd.data, measurements: ms.data };
+  return { players: pl.data, rounds: rd.data, measurements: ms.data, settings: st.data };
 }
+function lastBackup() { try { return localStorage.getItem('futedu_last_backup'); } catch (e) { return null; } }
+function markBackup() { try { localStorage.setItem('futedu_last_backup', todayStr()); } catch (e) { /* ignore */ } renderAll(); }
+function daysSince(d) { return Math.floor((Date.now() - new Date(d + 'T00:00:00').getTime()) / 86400000); }
 function download(name, text, type) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([text], { type }));
@@ -729,7 +865,7 @@ function download(name, text, type) {
 }
 document.getElementById('exportHistoryBtn').addEventListener('click', async () => {
   const all = await fetchEverything();
-  if (all) download('futedu-bioimpedance-export.json', JSON.stringify(all, null, 2), 'application/json');
+  if (all) { download('futedu-bioimpedance-export.json', JSON.stringify(all, null, 2), 'application/json'); markBackup(); }
 });
 document.getElementById('exportCsvBtn').addEventListener('click', async () => {
   const all = await fetchEverything();
@@ -744,6 +880,7 @@ document.getElementById('exportCsvBtn').addEventListener('click', async () => {
     .sort((a, b) => (a.measured_on || '').localeCompare(b.measured_on || '') || (names[a.player_id] || '').localeCompare(names[b.player_id] || ''))
     .forEach(m => lines.push([esc(labels[m.round_id]), esc(m.measured_on), esc(names[m.player_id] || m.player_id), ...cols.map(c => esc(m[c]))].join(',')));
   download('futedu-bioimpedance-export.csv', lines.join('\n'), 'text/csv');
+  markBackup();
 });
 
 function historyFor(id) {
@@ -864,6 +1001,22 @@ function renderDashboard() {
   const flagged = roster.map(p => ({ p, flags: flagsFor(readingFor(p.id)) })).filter(x => x.flags.length)
     .sort((a, b) => b.flags.length - a.flags.length);
 
+  const lb = lastBackup();
+  const banners = [];
+  if (!lb || daysSince(lb) > 30) banners.push(`<div class="banner">${lb ? 'Last backup was ' + daysSince(lb) + ' days ago.' : 'No backup exported from this device yet.'} Export a copy of your data and keep it somewhere private.<button class="btn sm primary" data-goto-settings>Go to export</button></div>`);
+  document.getElementById('dashBanners').innerHTML = banners.join('');
+  document.querySelectorAll('[data-goto-settings]').forEach(b => b.addEventListener('click', () => navigate('settings')));
+
+  const tagList = allTags();
+  document.getElementById('groupCard').classList.toggle('hidden', !tagList.length);
+  document.getElementById('groupList').innerHTML = tagList.map(t => {
+    const members = roster.filter(p => p.tags.includes(t));
+    const vals = members.map(p => readingFor(p.id)).filter(Boolean).map(r => r.body_fat_percent).filter(v => v != null);
+    const a = avg(vals);
+    return `<div class="trend-row"><span class="t-label">${escapeHtml(t)}</span><div class="trend-bar">${a != null ? `<span style="width:${Math.min(100, a / Math.max(thresholds.bodyFat * 1.4, a) * 100).toFixed(1)}%"></span>` : ''}</div><span class="t-val">${a != null ? a.toFixed(1) + '%' : '—'}</span></div>
+      <div class="note" style="margin:-2px 0 6px;">${members.length} players · ${vals.length} measured</div>`;
+  }).join('');
+
   document.getElementById('dashSub').textContent = (currentRound && currentRound.label ? currentRound.label : 'Current round') + ' · ' + measured.length + ' of ' + total + ' players measured';
 
   let deltaHtml = '<div class="k-sub">No previous round</div>';
@@ -943,7 +1096,8 @@ function matchesFilter(p) {
   if (ui.filter === 'pending' && r) return false;
   if (ui.filter === 'measured' && !r) return false;
   if (ui.filter === 'flagged' && !flagsFor(r).length) return false;
-  if (ui.filter === 'notes' && !noteFor(p.id)) return false;
+  if (ui.filter === 'notes' && !hasNotes(p.id)) return false;
+  if (ui.tag && !p.tags.includes(ui.tag)) return false;
   const q = ui.search.trim().toLowerCase();
   if (q && !p.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(q.normalize('NFD').replace(/[̀-ͯ]/g, ''))) return false;
   return true;
@@ -966,9 +1120,19 @@ function renderSummary() {
   document.getElementById('sumSub').textContent = roster.filter(p => readingFor(p.id)).length + ' of ' + roster.length + ' measured · ' + (currentRound && currentRound.label ? currentRound.label : '');
   document.getElementById('checkinCount').textContent = checkedCount + ' / ' + roster.length + ' checked in';
 
+  const tags = allTags();
+  const tagSel = document.getElementById('tagSel');
+  tagSel.classList.toggle('hidden', !tags.length);
+  tagSel.innerHTML = '<option value="">All groups</option>' + tags.map(t => `<option value="${escapeHtml(t)}"${t === ui.tag ? ' selected' : ''}>${escapeHtml(t)}</option>`).join('');
+  if (ui.tag && !tags.includes(ui.tag)) ui.tag = '';
+
   const list = document.getElementById('playerList');
   list.innerHTML = '';
   const visible = sortList(roster.filter(matchesFilter));
+  const tableMode = ui.mode === 'table';
+  list.classList.toggle('hidden', tableMode);
+  document.getElementById('quickEntry').classList.toggle('hidden', !tableMode);
+  if (tableMode) { renderQuickEntry(visible); return; }
   const measured = visible.filter(p => readingFor(p.id));
   const pending = visible.filter(p => !readingFor(p.id));
 
@@ -1000,7 +1164,9 @@ function renderSummary() {
     open ? openPanels.add(key) : openPanels.delete(key);
   }));
   list.querySelectorAll('[data-save-manual]').forEach(btn => btn.addEventListener('click', () => saveManualEntry(btn.dataset.saveManual)));
-  list.querySelectorAll('.note-edit').forEach(btn => btn.addEventListener('click', () => editNote(btn.dataset.id)));
+  list.querySelectorAll('.profile').forEach(btn => btn.addEventListener('click', () => navigate('player/' + btn.dataset.id)));
+  bindNoteActions(list);
+  list.querySelectorAll('.tags-edit').forEach(btn => btn.addEventListener('click', () => editTags(btn.dataset.id)));
   list.querySelectorAll('.rename').forEach(btn => btn.addEventListener('click', () => renamePlayer(btn.dataset.id)));
   list.querySelectorAll('.remove').forEach(btn => btn.addEventListener('click', () => removePlayer(btn.dataset.id)));
 }
@@ -1011,6 +1177,8 @@ function renderSettings() {
     return `<div class="round-row"><strong>${escapeHtml(r.label)}</strong>${r.closed ? '' : '<span class="tag">Current</span>'}
       <span class="r-meta">${n} players${r.closed_on ? ' · closed ' + escapeHtml(r.closed_on) : ''}</span></div>`;
   });
+  const lbk = lastBackup();
+  document.getElementById('backupNote').textContent = lbk ? 'Last export from this device: ' + lbk + ' (' + daysSince(lbk) + ' days ago).' : 'No export made from this device yet.';
   document.getElementById('roundList').innerHTML = rows.join('') || '<div class="empty">No rounds yet.</div>';
 }
 
@@ -1022,6 +1190,10 @@ function renderAll() {
   renderDashboard();
   renderSummary();
   renderSettings();
+  if (ui.view === 'compare') renderCompare();
+  if (ui.view === 'player') {
+    if (roster.some(p => p.id === ui.playerId)) renderProfile(); else navigate('summary');
+  }
 }
 
 function renderPlayerCard(p) {
@@ -1035,13 +1207,15 @@ function renderPlayerCard(p) {
         <div class="check-circle ${p.checkedIn ? 'on' : ''}" data-checkin="${p.id}">
           <svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <span class="player-name">${escapeHtml(p.name)}</span>
+        <span class="player-name">${escapeHtml(p.name)}${p.tags.length ? ` <span class="tags-line" style="display:inline-flex;margin-left:6px;">${p.tags.map(t => `<span class="tag-chip">${escapeHtml(t)}</span>`).join('')}</span>` : ''}</span>
         <span class="status-pill ${r ? 'status-done' : 'status-none'}">${r ? 'Data in' : 'No data'}</span>
       </div>
       <div class="player-actions">
+        <button class="btn-sm profile" data-id="${p.id}">Profile</button>
         <button class="btn-sm manual-toggle" data-id="${p.id}">Edit values</button>
         ${historyFor(p.id).length ? `<button class="btn-sm hist hist-toggle" data-id="${p.id}">History (${historyFor(p.id).length})</button>` : ''}
-        <button class="btn-sm note-edit" data-id="${p.id}">${noteFor(p.id) ? 'Edit note' : 'Add note'}</button>
+        <button class="btn-sm note-add" data-id="${p.id}">Add note</button>
+        <button class="btn-sm tags-edit" data-id="${p.id}">Tags</button>
         <button class="btn-sm rename" data-id="${p.id}">Rename</button>
         <button class="btn-sm remove" data-id="${p.id}">Remove</button>
       </div>
@@ -1057,9 +1231,10 @@ function renderPlayerCard(p) {
       ${balanceRowHtml(r && r.muscle_balance)}
       ${previousHtml(p.id)}
       ${historyPanelHtml(p.id)}
-      ${noteFor(p.id) ? `<div class="health-note"><span class="hn-label">Health note</span>${escapeHtml(noteFor(p.id))}</div>` : ''}
+      ${notesHtml(p.id)}
       <div class="manual-form${openPanels.has('manual-'+p.id) ? ' open' : ''}" id="manual-${p.id}">
         <div class="manual-grid">
+          <div><label>Measured on</label><input type="date" id="m-date-${p.id}" value="${r && r.date ? r.date : todayStr()}"></div>
           <div><label>Body fat %</label><input type="number" step="0.1" id="m-bodyFat-${p.id}" value="${r && r.body_fat_percent != null ? r.body_fat_percent : ''}"></div>
           <div><label>Subcutaneous fat %</label><input type="number" step="0.1" id="m-subFat-${p.id}" value="${r && r.subcutaneous_fat_percent != null ? r.subcutaneous_fat_percent : ''}"></div>
           <div><label>Hydration (TBW) %</label><input type="number" step="0.1" id="m-hyd-${p.id}" value="${r && r.total_body_water_percent != null ? r.total_body_water_percent : ''}"></div>
@@ -1076,17 +1251,396 @@ function renderPlayerCard(p) {
     return div;
 }
 
-async function editNote(id) {
+// ---- dated health notes ----
+function notesHtml(id) {
+  const list = notesFor(id);
+  if (!list.length) return '';
+  return list.map(n => `<div class="note-item"><div class="n-head"><span class="n-date">Health note${n.noted_on ? ' · ' + escapeHtml(n.noted_on) : ''}</span>
+      ${n.legacy ? '' : `<span class="n-acts"><button data-note-edit="${n.id}" data-pid="${id}">Edit</button><button class="del" data-note-del="${n.id}" data-pid="${id}">Delete</button></span>`}</div>${escapeHtml(n.note)}</div>`).join('');
+}
+function bindNoteActions(root) {
+  root.querySelectorAll('.note-add').forEach(b => b.addEventListener('click', () => addNote(b.dataset.id)));
+  root.querySelectorAll('[data-note-edit]').forEach(b => b.addEventListener('click', () => editNote(b.dataset.pid, b.dataset.noteEdit)));
+  root.querySelectorAll('[data-note-del]').forEach(b => b.addEventListener('click', () => deleteNote(b.dataset.pid, b.dataset.noteDel)));
+}
+function noteModal(title, note, date) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `<div class="modal-box"><p><strong>${escapeHtml(title)}</strong></p>
+      <label>Note</label><textarea>${escapeHtml(note || '')}</textarea>
+      <label>Date</label><input type="date" value="${escapeHtml(date || todayStr())}">
+      <div class="modal-actions"><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Save</button></div></div>`;
+    document.body.appendChild(overlay);
+    const ta = overlay.querySelector('textarea'), di = overlay.querySelector('input');
+    ta.focus();
+    const done = r => { overlay.remove(); resolve(r); };
+    overlay.querySelector('.modal-cancel').addEventListener('click', () => done(null));
+    overlay.querySelector('.modal-ok').addEventListener('click', () => { const t = ta.value.trim(); done(t ? { note: t, noted_on: di.value || null } : null); });
+    overlay.addEventListener('click', e => { if (e.target === overlay) done(null); });
+  });
+}
+async function persistNotes() {
+  const { error } = await sb.from('settings').upsert({ key: 'player_notes', value: notes });
+  if (error) { showError(error); return false; }
+  return true;
+}
+async function addNote(id) {
   const player = roster.find(p => p.id === id);
-  if (!player) return;
-  const current = noteFor(id) || '';
-  const newNote = await customPrompt('Health note for ' + player.name + ' (leave blank to remove):', current);
-  if (newNote === null) return; // cancelled
-  const value = newNote.trim() === '' ? null : newNote.trim();
-  const { error } = await sb.from('players').update({ health_note: value }).eq('id', id);
-  if (error) { showError(error); return; }
-  if (value) notes[id] = value; else delete notes[id];
+  const v = await noteModal('Health note for ' + player.name, '', todayStr());
+  if (!v) return;
+  const before = notesFor(id);
+  notes[id] = [{ id: uid(), ...v }, ...before].sort(noteOrder);
+  if (!await persistNotes()) { notes[id] = before; return; }
   renderAll();
+}
+async function editNote(id, noteId) {
+  const cur = notesFor(id).find(n => n.id === noteId);
+  if (!cur) return;
+  const v = await noteModal('Edit note', cur.note, cur.noted_on);
+  if (!v) return;
+  const old = { note: cur.note, noted_on: cur.noted_on };
+  Object.assign(cur, v);
+  if (!await persistNotes()) { Object.assign(cur, old); return; }
+  notes[id].sort(noteOrder);
+  renderAll();
+}
+async function deleteNote(id, noteId) {
+  if (!await customConfirm('Delete this note?')) return;
+  const before = notesFor(id);
+  notes[id] = before.filter(n => n.id !== noteId);
+  if (!await persistNotes()) { notes[id] = before; return; }
+  renderAll();
+}
+function noteOrder(a, b) { return (b.noted_on || '').localeCompare(a.noted_on || ''); }
+
+// ---- tags ----
+async function editTags(id) {
+  const p = roster.find(x => x.id === id);
+  const raw = await customPrompt('Tags for ' + p.name + ' (comma separated, e.g. U17, Goalkeeper):', p.tags.join(', '));
+  if (raw === null) return;
+  const tags = [...new Set(raw.split(',').map(t => t.trim()).filter(Boolean))];
+  const next = { ...tagsMap, [id]: tags };
+  if (!tags.length) delete next[id];
+  const { error } = await sb.from('settings').upsert({ key: 'player_tags', value: next });
+  if (error) { showError(error); return; }
+  tagsMap = next;
+  p.tags = tags;
+  renderAll();
+}
+
+// ---- quick entry (table) ----
+const QFIELDS = [
+  ['body_fat_percent', 'Body fat %', '0.1'], ['subcutaneous_fat_percent', 'Subcut. %', '0.1'], ['total_body_water_percent', 'Hydration %', '0.1'],
+  ['bmi', 'BMI', '0.1'], ['fat_free_mass_kg', 'FFM kg', '0.1'], ['visceral_fat', 'Visceral', '1'], ['skeletal_muscle_mass_kg', 'Skel. kg', '0.1'], ['weight_kg', 'Weight kg', '0.05'],
+];
+function setMode(mode) {
+  ui.mode = mode;
+  document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  renderSummary();
+}
+document.querySelectorAll('#modeSeg button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+function renderQuickEntry(visible) {
+  const box = document.getElementById('quickEntry');
+  const prevDate = document.getElementById('qDate') ? document.getElementById('qDate').value : '';
+  box.innerHTML = `<div class="q-bar"><label class="save-note">Measurement date</label><input type="date" id="qDate" value="${prevDate || todayStr()}">
+      <button class="btn primary" id="qSave">Save changes</button><span class="save-note" id="qNote">Type values for as many players as you like, then save once (players that already have a reading keep their date). Enter moves down a row.</span></div>
+    <table><tr><th>Player</th>${QFIELDS.map(f => `<th>${f[1]}</th>`).join('')}</tr>
+    ${visible.map(p => { const r = readingFor(p.id) || {}; return `<tr><td class="q-name">${escapeHtml(p.name)}</td>${QFIELDS.map(([k, , step]) => `<td><input type="number" step="${step}" data-q="${k}" data-pid="${p.id}" value="${r[k] != null ? r[k] : ''}"></td>`).join('')}</tr>`; }).join('')}</table>`;
+  box.querySelectorAll('input[data-q]').forEach(inp => inp.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const same = [...box.querySelectorAll(`input[data-q="${inp.dataset.q}"]`)];
+    const nxt = same[same.indexOf(inp) + 1];
+    if (nxt) { nxt.focus(); nxt.select(); }
+  }));
+  document.getElementById('qSave').addEventListener('click', saveQuickEntry);
+}
+async function saveQuickEntry() {
+  const date = document.getElementById('qDate').value || todayStr();
+  const rows = [];
+  roster.forEach(p => {
+    const inputs = document.querySelectorAll(`#quickEntry input[data-pid="${p.id}"]`);
+    if (!inputs.length) return;
+    const cur = readingFor(p.id) || {};
+    const vals = {};
+    let changed = false, any = false;
+    inputs.forEach(inp => {
+      const v = inp.value === '' ? null : parseFloat(inp.value);
+      vals[inp.dataset.q] = isNaN(v) ? null : v;
+      if (vals[inp.dataset.q] != null) any = true;
+      if ((vals[inp.dataset.q] ?? null) !== (cur[inp.dataset.q] ?? null)) changed = true;
+    });
+    if (!any || !changed) return;
+    const b = cur.muscle_balance || {};
+    rows.push({ round_id: currentRound.id, player_id: p.id, measured_on: cur.date || date, ...vals,
+      balance_upper: b.upper || null, balance_lower: b.lower || null, balance_overall: b.overall || null });
+  });
+  const note = document.getElementById('qNote');
+  if (!rows.length) { note.textContent = 'Nothing to save.'; return; }
+  const { error } = await sb.from('measurements').upsert(rows, { onConflict: 'round_id,player_id' });
+  if (error) { showError(error); return; }
+  rows.forEach(r => { (measurements[currentRound.id] = measurements[currentRound.id] || {})[r.player_id] = rowToReading(r); });
+  renderAll();
+  document.getElementById('qNote').textContent = 'Saved ' + rows.length + ' player' + (rows.length === 1 ? '' : 's') + '.';
+}
+
+// ---- CSV import ----
+function parseCSV(text) {
+  text = text.replace(/^﻿/, '');
+  const first = text.split(/\r?\n/)[0] || '';
+  const delim = (first.match(/;/g) || []).length > (first.match(/,/g) || []).length ? ';' : ',';
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) { if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === delim) { row.push(cur); cur = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cur); cur = ''; if (row.some(c => c.trim() !== '')) rows.push(row); row = []; }
+    else cur += ch;
+  }
+  row.push(cur); if (row.some(c => c.trim() !== '')) rows.push(row);
+  return { rows, delim };
+}
+const CSV_ALIASES = {
+  player: ['player', 'name', 'playername', 'jugador', 'nombre'],
+  date: ['date', 'measuredon', 'fecha'],
+  body_fat_percent: ['bodyfatpercent', 'bodyfat', 'bf', 'fat', 'grasa', 'grasacorporal'],
+  subcutaneous_fat_percent: ['subcutaneousfatpercent', 'subcutaneousfat', 'subcutaneous', 'subfat'],
+  total_body_water_percent: ['totalbodywaterpercent', 'totalbodywater', 'hydration', 'tbw', 'water', 'hidratacion'],
+  bmi: ['bmi', 'imc'],
+  fat_free_mass_kg: ['fatfreemasskg', 'fatfreemass', 'ffm', 'masalibredegrasa'],
+  visceral_fat: ['visceralfat', 'visceral'],
+  skeletal_muscle_mass_kg: ['skeletalmusclemasskg', 'skeletalmusclemass', 'skeletalmuscle', 'smm', 'musculoesqueletico'],
+  weight_kg: ['weightkg', 'weight', 'peso'],
+};
+function csvToRows(text) {
+  const { rows, delim } = parseCSV(text);
+  if (rows.length < 2) return { error: 'The file has no data rows.' };
+  const norm = h => h.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+  const cols = {};
+  rows[0].forEach((h, i) => { const n = norm(h); for (const [k, al] of Object.entries(CSV_ALIASES)) if (al.includes(n) && !(k in cols)) cols[k] = i; });
+  if (!('player' in cols)) return { error: 'No "player" column found.' };
+  const num = v => { if (v == null || v.trim() === '') return null; const x = parseFloat(delim === ';' ? v.replace(',', '.') : v); return isNaN(x) ? null : x; };
+  const bySlug = Object.fromEntries(roster.map(p => [slugify(p.name), p]));
+  const matched = [], unmatched = [];
+  rows.slice(1).forEach(r => {
+    const nm = (r[cols.player] || '').trim();
+    const p = roster.find(x => x.id === nm) || bySlug[slugify(nm)];
+    if (!p) { if (nm) unmatched.push(nm); return; }
+    const o = { player_id: p.id, name: p.name, measured_on: (cols.date != null && /^\d{4}-\d{2}-\d{2}$/.test((r[cols.date] || '').trim())) ? r[cols.date].trim() : todayStr() };
+    let any = false;
+    Object.keys(CSV_ALIASES).forEach(k => { if (k !== 'player' && k !== 'date' && k in cols) { o[k] = num(r[cols[k]]); if (o[k] != null) any = true; } });
+    if (any) matched.push(o); else unmatched.push(nm + ' (no values)');
+  });
+  return { matched, unmatched };
+}
+document.getElementById('csvFile').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const res = csvToRows(await f.text());
+  e.target.value = '';
+  if (res.error) { await customConfirm(res.error); return; }
+  if (!res.matched.length) { await customConfirm('No rows could be matched to players.' + (res.unmatched.length ? ' Not matched: ' + res.unmatched.join(', ') : '')); return; }
+  const overwrite = res.matched.filter(m => readingFor(m.player_id)).length;
+  const msg = res.matched.length + ' player(s) will be saved into the current round' + (overwrite ? ' (' + overwrite + ' will overwrite existing values)' : '') + '.'
+    + (res.unmatched.length ? ' Not matched and skipped: ' + res.unmatched.join(', ') + '.' : '');
+  if (!await customConfirm(msg)) return;
+  const rows = res.matched.map(m => {
+    const { name, ...rest } = m;
+    const cur = readingFor(m.player_id), b = (cur && cur.muscle_balance) || {};
+    // blank cells in the CSV keep the value already stored
+    Object.keys(rest).forEach(k => { if (rest[k] == null && cur && cur[k] != null) rest[k] = cur[k]; });
+    return { round_id: currentRound.id, ...rest, balance_upper: b.upper || null, balance_lower: b.lower || null, balance_overall: b.overall || null };
+  });
+  const { error } = await sb.from('measurements').upsert(rows, { onConflict: 'round_id,player_id' });
+  if (error) { showError(error); return; }
+  rows.forEach(r => { (measurements[currentRound.id] = measurements[currentRound.id] || {})[r.player_id] = rowToReading(r); });
+  renderAll();
+  await customConfirm('Imported ' + rows.length + ' measurement(s).');
+});
+document.getElementById('csvTemplateBtn').addEventListener('click', () => {
+  const head = ['player', 'date', ...Object.keys(CSV_ALIASES).filter(k => k !== 'player' && k !== 'date')];
+  const lines = [head.join(',')].concat(roster.map(p => '"' + p.name.replace(/"/g, '""') + '"' + ','.repeat(head.length - 1)));
+  download('futedu-import-template.csv', lines.join('\n'), 'text/csv');
+});
+
+// ---- compare rounds ----
+const CMP_METRICS = [
+  ['body_fat_percent', 'Body fat (%)', '%', 'down'], ['fat_free_mass_kg', 'Fat-free mass (kg)', ' kg', 'up'],
+  ['total_body_water_percent', 'Hydration (%)', '%', 'up'], ['subcutaneous_fat_percent', 'Subcutaneous fat (%)', '%', 'down'],
+  ['skeletal_muscle_mass_kg', 'Skeletal muscle (kg)', ' kg', 'up'], ['weight_kg', 'Weight (kg)', ' kg', null],
+  ['bmi', 'BMI', '', null], ['visceral_fat', 'Visceral fat', '', 'down'],
+];
+const cmp = { a: '', b: '', metric: 'body_fat_percent', tag: '', sort: 'name' };
+function roundLabel(r) { return r.closed ? r.label : (r.label && r.label !== 'In progress' ? r.label : 'Current'); }
+function renderCompare() {
+  const withData = rounds.filter(r => Object.keys(measurements[r.id] || {}).length);
+  const opts = (sel) => rounds.map(r => `<option value="${r.id}"${r.id === sel ? ' selected' : ''}>${escapeHtml(roundLabel(r))}</option>`).join('');
+  if (!rounds.some(r => r.id === cmp.b)) cmp.b = (withData[withData.length - 1] || rounds[rounds.length - 1] || {}).id || '';
+  if (!rounds.some(r => r.id === cmp.a) || cmp.a === cmp.b) {
+    const idx = withData.findIndex(r => r.id === cmp.b);
+    cmp.a = ((idx > 0 ? withData[idx - 1] : withData.find(r => r.id !== cmp.b)) || {}).id || '';
+  }
+  document.getElementById('cmpA').innerHTML = opts(cmp.a);
+  document.getElementById('cmpB').innerHTML = opts(cmp.b);
+  document.getElementById('cmpMetric').innerHTML = CMP_METRICS.map(m => `<option value="${m[0]}"${m[0] === cmp.metric ? ' selected' : ''}>${m[1]}</option>`).join('');
+  const tags = allTags();
+  document.getElementById('cmpTag').innerHTML = '<option value="">All players</option>' + tags.map(t => `<option value="${escapeHtml(t)}"${t === cmp.tag ? ' selected' : ''}>${escapeHtml(t)}</option>`).join('');
+
+  const m = CMP_METRICS.find(x => x[0] === cmp.metric);
+  const dec = x => Math.round(x * 100) / 100;
+  const rowsAll = roster.filter(p => !cmp.tag || p.tags.includes(cmp.tag)).map(p => {
+    const ra = measurements[cmp.a] && measurements[cmp.a][p.id], rb = measurements[cmp.b] && measurements[cmp.b][p.id];
+    const va = ra ? ra[cmp.metric] : null, vb = rb ? rb[cmp.metric] : null;
+    return { p, va: va ?? null, vb: vb ?? null, d: va != null && vb != null ? vb - va : null };
+  });
+  const both = rowsAll.filter(x => x.d != null);
+  const cls = d => {
+    if (d == null || Math.abs(d) < 0.05) return 'd-flat';
+    if (!m[3]) return 'd-flat';
+    return (m[3] === 'down') === (d < 0) ? 'd-good' : 'd-bad';
+  };
+  const sortFn = { name: null, 'delta-asc': (x, y) => x.d - y.d, 'delta-desc': (x, y) => y.d - x.d }[cmp.sort];
+  let list = both.slice();
+  if (sortFn) list.sort(sortFn);
+  const tot = both.length ? { a: avg(both.map(x => x.va)), b: avg(both.map(x => x.vb)) } : null;
+  const missing = rowsAll.length - both.length;
+  document.getElementById('cmpTable').innerHTML = !cmp.a || !cmp.b || cmp.a === cmp.b
+    ? '<div class="empty">Pick two different rounds that have measurements.</div>'
+    : both.length ? `<div class="row" style="justify-content:space-between;margin-bottom:10px;"><h2 style="margin:0;">${m[1]}: ${escapeHtml(roundLabel(rounds.find(r => r.id === cmp.a)))} → ${escapeHtml(roundLabel(rounds.find(r => r.id === cmp.b)))}</h2>
+        <select id="cmpSort" style="width:auto;"><option value="name">Sort: Name</option><option value="delta-asc">Sort: Change low → high</option><option value="delta-desc">Sort: Change high → low</option></select></div>
+      <table><tr><th>Player</th><th>From</th><th>To</th><th>Change</th></tr>
+      ${list.map(x => `<tr><td><button class="attn-name" data-open="${x.p.id}">${escapeHtml(x.p.name)}</button></td><td>${x.va}${m[2]}</td><td>${x.vb}${m[2]}</td><td class="${cls(x.d)}">${signed(x.d, m[2])}</td></tr>`).join('')}
+      <tr class="total"><td>Group average (${both.length})</td><td>${dec(tot.a)}${m[2]}</td><td>${dec(tot.b)}${m[2]}</td><td class="${cls(tot.b - tot.a)}">${signed(tot.b - tot.a, m[2])}</td></tr></table>
+      ${missing ? `<div class="note">${missing} player(s) are not shown because they are missing a value in one of the two rounds.</div>` : ''}`
+    : '<div class="empty">No players have this measure in both rounds.</div>';
+  const sortSel = document.getElementById('cmpSort');
+  if (sortSel) { sortSel.value = cmp.sort; sortSel.addEventListener('change', e => { cmp.sort = e.target.value; renderCompare(); }); }
+  document.querySelectorAll('#cmpTable [data-open]').forEach(b => b.addEventListener('click', () => navigate('player/' + b.dataset.open)));
+}
+['cmpA', 'cmpB', 'cmpMetric', 'cmpTag'].forEach(id => document.getElementById(id).addEventListener('change', e => {
+  cmp[{ cmpA: 'a', cmpB: 'b', cmpMetric: 'metric', cmpTag: 'tag' }[id]] = e.target.value;
+  renderCompare();
+}));
+
+// ---- series + charts ----
+function seriesFor(id) {
+  return rounds
+    .map(rd => ({ round: rd, r: measurements[rd.id] && measurements[rd.id][id] }))
+    .filter(x => x.r)
+    .map(x => ({ label: x.round.closed ? x.round.label : (x.round.label && x.round.label !== 'In progress' ? x.round.label : 'Current'), date: x.r.date || x.round.closed_on || '', r: x.r }));
+}
+function lineChart(points, o) {
+  o = o || {};
+  const W = 360, H = 175, L = 38, R = 14, T = 18, B = 30;
+  const pts = points.filter(p => p.v != null);
+  if (!pts.length) return '<div class="chart-empty">No data yet</div>';
+  const vals = pts.map(p => p.v).concat(o.target != null ? [o.target] : []);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (hi - lo < 1) { lo -= 1; hi += 1; }
+  const pad = (hi - lo) * 0.18; lo -= pad; hi += pad;
+  const x = i => pts.length === 1 ? (L + (W - L - R) / 2) : L + i * (W - L - R) / (pts.length - 1);
+  const y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+  const dec = o.decimals != null ? o.decimals : 1;
+  let g = '';
+  for (let k = 0; k < 3; k++) {
+    const v = lo + (hi - lo) * k / 2;
+    g += `<line x1="${L}" x2="${W - R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="#e8e8ed" stroke-width="1"/><text x="${L - 6}" y="${(y(v) + 3.5).toFixed(1)}" font-size="9.5" fill="#8e8e93" text-anchor="end">${v.toFixed(dec)}</text>`;
+  }
+  if (o.target != null) g += `<line x1="${L}" x2="${W - R}" y1="${y(o.target).toFixed(1)}" y2="${y(o.target).toFixed(1)}" stroke="#1c1c1e" stroke-width="1.2" stroke-dasharray="4 3"/><text x="${W - R}" y="${(y(o.target) - 4).toFixed(1)}" font-size="9" fill="#1c1c1e" text-anchor="end">${o.targetLabel || 'target'}</text>`;
+  const path = pts.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p.v).toFixed(1)).join(' ');
+  const line = pts.length > 1 ? `<path d="${path}" fill="none" stroke="#ff5405" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>` : '';
+  const dots = pts.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="4" fill="#fff" stroke="#ff5405" stroke-width="2.2"/>
+    <text x="${x(i).toFixed(1)}" y="${(y(p.v) - 9).toFixed(1)}" font-size="10" font-weight="700" fill="#1c1c1e" text-anchor="middle">${p.v.toFixed(dec)}</text>
+    <text x="${x(i).toFixed(1)}" y="${H - 10}" font-size="9.5" fill="#8e8e93" text-anchor="${pts.length > 1 && i === 0 ? 'start' : pts.length > 1 && i === pts.length - 1 ? 'end' : 'middle'}">${escapeHtml(p.label.length > 14 ? p.label.slice(0, 13) + '…' : p.label)}</text>`).join('');
+  const desc = (o.title || 'Chart') + ': ' + pts.map(p => p.label + ' ' + p.v.toFixed(dec) + (o.unit || '')).join(', ');
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeHtml(desc)}">${g}${line}${dots}</svg>`;
+}
+function chartsHtml(id, cls) {
+  const ser = seriesFor(id);
+  const mk = (title, key, unit, o) => `<div class="chart-box"><h3>${title}</h3>${lineChart(ser.map(x => ({ label: x.label, v: x.r[key] })), { ...o, unit, title })}</div>`;
+  return `<div class="${cls}">
+    ${mk('Body fat (%)', 'body_fat_percent', '%', { target: thresholds.bodyFat, targetLabel: 'target ' + thresholds.bodyFat + '%' })}
+    ${mk('Fat-free mass (kg)', 'fat_free_mass_kg', ' kg', thresholds.ffmMin != null ? { target: thresholds.ffmMin, targetLabel: 'min ' + thresholds.ffmMin } : {})}
+    ${mk('Hydration (%)', 'total_body_water_percent', '%', { target: thresholds.hydMin, targetLabel: 'min ' + thresholds.hydMin + '%' })}
+  </div>`;
+}
+function historyTable(id) {
+  const ser = seriesFor(id).slice().reverse();
+  if (!ser.length) return '<div class="empty">No measurements yet.</div>';
+  return `<div class="hist-full"><table><tr><th>Round</th><th>Date</th><th>Body fat</th><th>Subcut.</th><th>Hydration</th><th>BMI</th><th>FFM</th><th>Visc.</th><th>Skel. muscle</th><th>Weight</th></tr>
+    ${ser.map(x => `<tr><td>${escapeHtml(x.label)}</td><td>${escapeHtml(x.date || '—')}</td><td>${fmtN(x.r.body_fat_percent, '%')}</td><td>${fmtN(x.r.subcutaneous_fat_percent, '%')}</td><td>${fmtN(x.r.total_body_water_percent, '%')}</td><td>${fmtN(x.r.bmi)}</td><td>${fmtN(x.r.fat_free_mass_kg, ' kg')}</td><td>${fmtN(x.r.visceral_fat)}</td><td>${fmtN(x.r.skeletal_muscle_mass_kg, ' kg')}</td><td>${fmtN(x.r.weight_kg, ' kg')}</td></tr>`).join('')}</table></div>`;
+}
+
+// ---- player profile ----
+function renderProfile() {
+  const p = roster.find(x => x.id === ui.playerId);
+  const el = document.getElementById('view-player');
+  if (!p) { el.innerHTML = ''; return; }
+  const ser = seriesFor(p.id);
+  const last = ser[ser.length - 1], prev = ser[ser.length - 2];
+  const c = last ? classify(last.r) : {};
+  const kpi = (label, key, unit, flag) => {
+    const v = last && last.r[key];
+    let sub = '';
+    if (v != null && prev && prev.r[key] != null) sub = `<div class="k-sub">${signed(v - prev.r[key], unit)} vs ${escapeHtml(prev.label)}</div>`;
+    return `<div class="kpi"><div class="k-label">${label}</div><div class="k-value" style="${flag === 'bad' ? 'color:var(--bad)' : flag === 'watch' ? 'color:var(--orange-d)' : ''}">${v != null ? v : '—'}<small>${v != null ? unit : ''}</small></div>${sub}</div>`;
+  };
+  el.innerHTML = `
+    <button class="btn sm back" id="backBtn">← Bioimpedance</button>
+    <div class="page-head">
+      <div><h1>${escapeHtml(p.name)}</h1>
+        <div class="sub">${last ? 'Latest: ' + escapeHtml(last.label) + (last.date ? ' · ' + escapeHtml(last.date) : '') : 'No measurements yet'}</div>
+        ${p.tags.length ? `<div class="tags-line" style="margin-top:8px;">${p.tags.map(t => `<span class="tag-chip">${escapeHtml(t)}</span>`).join('')}</div>` : ''}</div>
+      <div class="actions">
+        <button class="btn" id="pfTags">Tags</button>
+        <button class="btn" id="pfRename">Rename</button>
+        <button class="btn primary" id="pfPrint">Print report</button>
+      </div>
+    </div>
+    <div class="kpis">${kpi('Body fat', 'body_fat_percent', '%', c.bodyFat)}${kpi('Fat-free mass', 'fat_free_mass_kg', ' kg', c.ffm)}${kpi('Hydration', 'total_body_water_percent', '%', c.hydration)}${kpi('BMI', 'bmi', '', c.bmi)}</div>
+    <div class="card"><h2>Evolution</h2>${chartsHtml(p.id, 'charts')}</div>
+    <div class="card"><h2>All measurements</h2>${historyTable(p.id)}</div>
+    <div class="card"><div class="row" style="justify-content:space-between;margin-bottom:6px;"><h2 style="margin:0;">Health notes</h2><button class="btn sm note-add" data-id="${p.id}">Add note</button></div>
+      ${notesHtml(p.id) || '<div class="empty">No notes.</div>'}</div>`;
+  document.getElementById('backBtn').addEventListener('click', () => navigate('summary'));
+  document.getElementById('pfTags').addEventListener('click', () => editTags(p.id));
+  document.getElementById('pfRename').addEventListener('click', () => renamePlayer(p.id));
+  document.getElementById('pfPrint').addEventListener('click', () => printReport(p.id));
+  bindNoteActions(el);
+}
+
+// ---- printable report (browser print dialog -> Save as PDF) ----
+async function printReport(id) {
+  const p = roster.find(x => x.id === id);
+  const ser = seriesFor(id);
+  if (!ser.length) { await customConfirm('This player has no measurements yet.'); return; }
+  const withNotes = hasNotes(id) ? await customConfirm('Include the health notes in the report? They are sensitive: leave them out if the report is going to anyone other than the family or the staff who need them.') : false;
+  const last = ser[ser.length - 1], r = last.r, c = classify(r);
+  const st = f => f === 'bad' ? 'Above target' : f === 'watch' ? 'Keep an eye on' : f === 'good' ? 'Within range' : '';
+  const row = (label, val, ref, flag) => val == null ? '' : `<tr><td>${label}</td><td><strong>${val}</strong></td><td>${ref}</td><td>${st(flag)}</td></tr>`;
+  const t = thresholds;
+  const smPct = r.skeletal_muscle_mass_kg != null && r.weight_kg ? (r.skeletal_muscle_mass_kg / r.weight_kg * 100).toFixed(1) : null;
+  document.getElementById('printArea').innerHTML = `
+    <div class="p-head"><div><h1>${escapeHtml(p.name)}</h1><div class="p-sub">Bioimpedance report · ${escapeHtml(last.label)}${last.date ? ' · measured ' + escapeHtml(last.date) : ''}${p.tags.length ? ' · ' + p.tags.map(escapeHtml).join(', ') : ''}</div></div><img src="${LOGO_SRC}" alt="FUTEDU Team"></div>
+    <h2>Latest measurement</h2>
+    <table><tr><th>Measure</th><th>Result</th><th>Reference used</th><th>Reading</th></tr>
+      ${row('Body fat', fmtN(r.body_fat_percent, '%'), '≤ ' + t.bodyFat + '%', c.bodyFat)}
+      ${row('Subcutaneous fat', fmtN(r.subcutaneous_fat_percent, '%'), '< ' + t.subFat + '%', c.subFat)}
+      ${row('Hydration', fmtN(r.total_body_water_percent, '%'), '≥ ' + t.hydMin + '%', c.hydration)}
+      ${row('BMI', fmtN(r.bmi), t.bmiMin + '–' + t.bmiMax, c.bmi)}
+      ${row('Fat-free mass', fmtN(r.fat_free_mass_kg, ' kg'), t.ffmMin != null ? '≥ ' + t.ffmMin + ' kg' : '—', c.ffm)}
+      ${row('Visceral fat', fmtN(r.visceral_fat), '< 10', c.visceralFat)}
+      ${row('Skeletal muscle', smPct != null ? smPct + '% (' + r.skeletal_muscle_mass_kg + ' kg)' : fmtN(r.skeletal_muscle_mass_kg, ' kg'), t.smMin != null ? '≥ ' + t.smMin + '%' : '—', c.smPercent)}
+      ${row('Weight', fmtN(r.weight_kg, ' kg'), '—', '')}
+    </table>
+    <h2>Evolution</h2>${chartsHtml(id, 'p-charts')}
+    <h2>All measurements</h2>${historyTable(id)}
+    ${withNotes ? `<h2>Health notes</h2>${notesFor(id).map(n => `<div class="p-note">${n.noted_on ? '<strong>' + escapeHtml(n.noted_on) + '</strong> · ' : ''}${escapeHtml(n.note)}</div>`).join('')}` : ''}
+    <div class="p-foot">FUTEDU Academy · Nutrition. Confidential: contains health data of a minor; share it only with the player's family or the staff who need it. Bioimpedance values are estimates and the reference values are internal targets for the group, not a medical diagnosis. For any health concern, consult a doctor.</div>`;
+  setTimeout(() => window.print(), 80);
 }
 
 async function saveManualEntry(id) {
@@ -1098,7 +1652,7 @@ async function saveManualEntry(id) {
   const row = {
     round_id: currentRound.id,
     player_id: id,
-    measured_on: new Date().toISOString().slice(0, 10),
+    measured_on: document.getElementById('m-date-' + id).value || todayStr(),
     body_fat_percent: val('m-bodyFat-' + id),
     subcutaneous_fat_percent: val('m-subFat-' + id),
     total_body_water_percent: val('m-hyd-' + id),
