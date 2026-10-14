@@ -265,6 +265,27 @@
   .d-good { color:var(--good); font-weight:700; } .d-bad { color:var(--bad); font-weight:700; } .d-flat { color:var(--ink-3); font-weight:600; }
   .import-list { font-size:12.5px; color:var(--ink-2); margin:8px 0; max-height:140px; overflow:auto; line-height:1.6; }
 
+  .logo-img { border-radius:14px; }
+  .modal-overlay.imp-overlay { align-items:flex-start; overflow-y:auto; }
+  .modal-box.imp-box { max-width:880px; max-height:none; margin:20px auto; }
+  .imp-box h3 { font-size:17px; margin-bottom:4px; }
+  .imp-card { border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin:12px 0; }
+  .imp-card.skip { opacity:.55; }
+  .imp-top { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .imp-top .fname { font-size:12px; color:var(--ink-3); flex:1; min-width:140px; word-break:break-all; }
+  .imp-top select { width:auto; min-width:200px; }
+  .imp-top input[type=date] { width:auto; }
+  .imp-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; }
+  .imp-grid label { display:block; font-size:11.5px; color:var(--ink-3); font-weight:600; margin-bottom:3px; }
+  .imp-grid input { height:34px; font-size:13px; padding:0 10px; }
+  .imp-grid input.warn { border-color:var(--orange); background:var(--orange-soft); }
+  .imp-msg { font-size:12px; color:#8a3200; margin-top:8px; line-height:1.5; }
+  .imp-msg.err { color:var(--bad); }
+  .imp-card details { margin-top:8px; font-size:12px; color:var(--ink-3); }
+  .imp-card pre { white-space:pre-wrap; font-size:11px; max-height:160px; overflow:auto; background:var(--bg); padding:8px; border-radius:8px; margin-top:6px; }
+  .imp-foot { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; flex-wrap:wrap; align-items:center; }
+  .imp-foot .save-note { margin-right:auto; }
+
   /* ---------- modal ---------- */
   .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.4); backdrop-filter:blur(3px); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; }
   .modal-box { background:#fff; border-radius:16px; padding:22px; max-width:360px; width:100%; box-shadow:0 20px 50px rgba(0,0,0,.3); }
@@ -286,6 +307,7 @@
     .charts { grid-template-columns:1fr; }
     .kpis, .dash-grid { grid-template-columns:1fr 1fr; }
     .cmp-controls { grid-template-columns:1fr 1fr; }
+    .imp-grid { grid-template-columns:1fr 1fr; }
     .settings-grid { grid-template-columns:1fr 1fr; }
     .manual-grid { grid-template-columns:1fr 1fr; }
     .grid-2 { grid-template-columns:1fr; }
@@ -383,6 +405,7 @@
         <div class="page-head">
           <div><h1>Bioimpedance</h1><div class="sub" id="sumSub"></div></div>
           <div class="actions">
+            <button class="btn js-import-report">Import report</button>
             <div class="seg" id="modeSeg"><button data-mode="cards" class="on">Cards</button><button data-mode="table">Quick entry</button></div>
             <button class="btn js-reset-checkins">Reset check-ins</button>
             <button class="btn primary js-archive">Archive round</button>
@@ -463,6 +486,12 @@
         </div>
 
         <div class="card">
+          <h2>Import from photo or PDF <span class="muted">Arboleaf reports</span></h2>
+          <div class="row"><button class="btn primary js-import-report">Choose images or PDFs</button></div>
+          <div class="note">Reads JPG, PNG, WebP and PDF reports on this device (nothing is uploaded; only the reader code and its language file are downloaded the first time). You review and correct every value before anything is saved.</div>
+        </div>
+
+        <div class="card">
           <h2>Import measurements <span class="muted">CSV into the current round</span></h2>
           <div class="row">
             <input type="file" id="csvFile" accept=".csv,text/csv" style="height:auto;padding:8px;max-width:320px;">
@@ -488,6 +517,7 @@
 </div>
 
 <div id="printArea"></div>
+<input type="file" id="reportFile" accept="image/*,application/pdf,.pdf" multiple class="hidden">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -1524,6 +1554,321 @@ function renderCompare() {
   cmp[{ cmpA: 'a', cmpB: 'b', cmpMetric: 'metric', cmpTag: 'tag' }[id]] = e.target.value;
   renderCompare();
 }));
+
+// ---- bioimpedance report parsing (text produced by OCR) ----
+// Understands two Arboleaf layouts: the one-screen summary and the full "Body Composition Analysis" report.
+function parseBioText(raw) {
+  const text = String(raw || '').replace(/[–—−]/g, '-').replace(/\r/g, '');
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const out = { format: null, name: null, date: null, height_cm: null, values: {}, calculated: [], notes: [] };
+  const numIn = s => { const m = String(s).replace(/(\d)\s+(?=[\d.])/g, '$1').replace(/(\d)\s*\.\s*(\d)/g, '$1.$2').match(/\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : null; };
+
+  const d = text.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
+  if (d) {
+    let day = +d[1], mon = +d[2];
+    if (mon > 12 && day <= 12) { const t = day; day = mon; mon = t; }   // dd/mm/yyyy is the Arboleaf default
+    out.date = d[3] + '-' + String(mon).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+  }
+  const hm = text.match(/Height:\s*(\d{3})\s*cm/i);
+  if (hm) out.height_cm = +hm[1];
+
+  const full = /Body Composition Analysis|Height:\s*\d{3}\s*cm/i.test(text);
+  out.format = full ? 'full' : 'summary';
+  const v = out.values;
+
+  if (full) {
+    const nm = text.match(/ID:\s*(.+?)\s+Height/i) || text.match(/ID:\s*(.+)/i);
+    if (nm) out.name = nm[1].trim();
+    let m;
+    if ((m = text.match(/(\d{3,4})\s*kcal/i))) v.bmr = +m[1];
+    if ((m = text.match(/Subcutaneous[\s\S]{0,60}?(\d+(?:\.\d+)?)\s*%/i))) v.subcutaneous_fat_percent = +m[1];
+    if ((m = text.match(/Fat-?\s*free\s*Body[\s\S]{0,14}?(\d+(?:\.\d+)?)\s*kg/i))) v.fat_free_mass_kg = +m[1];
+    if ((m = text.match(/Skeletal\s*\n?\s*Muscle[\s\S]{0,14}?(\d+(?:\.\d+)?)\s*kg/i))) v.skeletal_muscle_mass_kg = +m[1];
+    if ((m = text.match(/Visceral\s*Fat[\s\S]{0,40}?(?:-+\s*|\n\s*)(\d{1,2})\s*(?:\n|$)/i))) v.visceral_fat = +m[1];
+    // weight, BMI and body fat are cross-checked against each other: fat mass = weight - fat-free mass, BMI = weight / height^2
+    const toks = [...new Set((text.match(/\b\d{1,3}(?:\.\d{1,2})?\b/g) || []).map(Number))];
+    const has = (x, tol) => toks.some(t => Math.abs(t - x) <= tol);
+    const ffm = v.fat_free_mass_kg, h = out.height_cm ? out.height_cm / 100 : null;
+    if (ffm != null) {
+      const cands = toks.filter(t => t > ffm + 1 && t < 220 && /\./.test(String(t)) || (t > ffm + 1 && t < 220 && String(t).length >= 2 && false));
+      let best = null;
+      cands.forEach(W => {
+        const pbf = (W - ffm) / W * 100;
+        if (pbf < 3 || pbf > 50) return;
+        const okP = has(pbf, 0.16);
+        const okB = h ? has(W / (h * h), 0.16) : true;
+        const score = (okP ? 2 : 0) + (okB ? 1 : 0);
+        if (okP && (!best || score > best.score)) best = { W, pbf, score };
+      });
+      if (best) {
+        v.weight_kg = best.W;
+        const closest = (x) => toks.filter(t => Math.abs(t - x) <= 0.16).sort((p, q) => Math.abs(p - x) - Math.abs(q - x))[0];
+        const near = closest(best.pbf);
+        v.body_fat_percent = near != null ? near : Math.round(best.pbf * 10) / 10;
+        if (h) { const b = closest(best.W / (h * h)); v.bmi = b != null ? b : Math.round(best.W / (h * h) * 10) / 10; if (b == null) out.calculated.push('bmi'); }
+      }
+    }
+    if (v.weight_kg == null) out.notes.push('Weight and body fat could not be cross-checked; please fill them in.');
+  } else {
+    out.name = lines.find(l => /^[A-Za-zÀ-ſ][A-Za-zÀ-ſ'.\- ]{2,}$/.test(l) && !/sufficient|arboleaf|weight|scan|join/i.test(l)) || null;
+    const isNoise = l => /^(in)?sufficient$/i.test(l) || /^\W*$/.test(l) || /^[\w$&@|]{1,2}$/.test(l) || /^of\b/i.test(l);
+    // the value shown just above/before a label
+    const valueFor = (labelRe, opts) => {
+      opts = opts || {};
+      for (let i = 0; i < lines.length; i++) {
+        if (!labelRe.test(lines[i])) continue;
+        for (let j = i - 1; j >= Math.max(0, i - 4); j--) {
+          if (isNoise(lines[j])) continue;
+          if (opts.unit && !opts.unit.test(lines[j])) continue;
+          const n = numIn(lines[j]);
+          if (n != null) return n;
+          break;
+        }
+      }
+      return null;
+    };
+    const set = (k, val) => { if (val != null) v[k] = val; };
+    set('weight_kg', valueFor(/^Weight$/i));
+    if (v.weight_kg == null) { const m = text.match(/(\d(?:\s*\d)*\s*\.\s*\d(?:\s*\d)*)\s*kg/i); if (m) v.weight_kg = numIn(m[1]); }
+    set('body_fat_percent', valueFor(/^Body\s*Fat$/i, { unit: /%/ }));
+    set('bmi', valueFor(/^BMI$/i));
+    set('bmr', valueFor(/^BMR$/i));
+    set('fat_free_mass_kg', valueFor(/^Fat-?\s*free\s*Body\s*Weight$/i));
+    set('subcutaneous_fat_percent', valueFor(/^Subcutaneous/i, { unit: /%/ }));
+    set('total_body_water_percent', valueFor(/^Body\s*Water$/i, { unit: /%/ }));
+    if (v.body_fat_percent == null && v.weight_kg != null && v.fat_free_mass_kg != null) {
+      v.body_fat_percent = Math.round((v.weight_kg - v.fat_free_mass_kg) / v.weight_kg * 1000) / 10;
+      out.calculated.push('body_fat_percent');
+    }
+  }
+  return out;
+}
+// Plausibility checks shown next to each imported value
+function checkBioValues(v) {
+  const bad = {};
+  const rng = (k, lo, hi) => { if (v[k] != null && (v[k] < lo || v[k] > hi)) bad[k] = 'out of the usual range'; };
+  rng('weight_kg', 30, 160); rng('body_fat_percent', 3, 45); rng('subcutaneous_fat_percent', 2, 40);
+  rng('total_body_water_percent', 40, 75); rng('bmi', 14, 40); rng('fat_free_mass_kg', 25, 110);
+  rng('visceral_fat', 1, 30); rng('skeletal_muscle_mass_kg', 15, 70);
+  if (v.weight_kg != null && v.fat_free_mass_kg != null && v.body_fat_percent != null) {
+    const exp = (v.weight_kg - v.fat_free_mass_kg) / v.weight_kg * 100;
+    if (Math.abs(exp - v.body_fat_percent) > 0.6) bad.body_fat_percent = 'does not match weight and fat-free mass';
+  }
+  return bad;
+}
+
+// ---- import from photo / PDF (OCR runs in the browser; files never leave this device) ----
+const OCR_LIBS = {
+  tesseract: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js',
+  pdfjs: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+  pdfWorker: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
+  lang: 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng/4.0.0_best_int',
+};
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector('script[data-lib="' + src + '"]')) { resolve(); return; }
+    const el = document.createElement('script');
+    el.src = src; el.dataset.lib = src;
+    el.onload = () => resolve();
+    el.onerror = () => reject(new Error('Could not load the reader. Check your internet connection and try again.'));
+    document.head.appendChild(el);
+  });
+}
+let ocrWorker = null;
+async function getOcrWorker() {
+  await loadScript(OCR_LIBS.tesseract);
+  if (!ocrWorker) {
+    ocrWorker = await Tesseract.createWorker('eng', 1, { langPath: OCR_LIBS.lang, gzip: true });
+    await ocrWorker.setParameters({ tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT, preserve_interword_spaces: '1' });
+  }
+  return ocrWorker;
+}
+async function fileToCanvases(file) {
+  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+  if (isPdf) {
+    await loadScript(OCR_LIBS.pdfjs);
+    pdfjsLib.GlobalWorkerOptions.workerSrc = OCR_LIBS.pdfWorker;
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const out = [];
+    for (let n = 1; n <= Math.min(pdf.numPages, 10); n++) {
+      const page = await pdf.getPage(n);
+      const base = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({ scale: 1900 / base.width });
+      const c = document.createElement('canvas');
+      c.width = Math.round(viewport.width); c.height = Math.round(viewport.height);
+      await page.render({ canvasContext: c.getContext('2d'), viewport }).promise;
+      out.push({ canvas: c, label: pdf.numPages > 1 ? file.name + ' (page ' + n + ')' : file.name });
+    }
+    return out;
+  }
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('This image format cannot be opened (HEIC? export it as JPG).')); i.src = url; });
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    c.getContext('2d').drawImage(img, 0, 0);
+    return [{ canvas: c, label: file.name }];
+  } finally { URL.revokeObjectURL(url); }
+}
+// Remove the white margin around a report so relative positions are stable
+function trimCanvas(c) {
+  const ctx = c.getContext('2d'), w = c.width, h = c.height;
+  const px = ctx.getImageData(0, 0, w, h).data;
+  let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y += 2) for (let x = 0; x < w; x += 2) {
+    const i = (y * w + x) * 4;
+    if (px[i] < 245 || px[i + 1] < 245 || px[i + 2] < 245) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  }
+  if (x1 < 0) return c;
+  const t = document.createElement('canvas');
+  t.width = x1 - x0 + 1; t.height = y1 - y0 + 1;
+  t.getContext('2d').drawImage(c, x0, y0, t.width, t.height, 0, 0, t.width, t.height);
+  return t;
+}
+// Full report only: the body water (litres) sits in a blue table that confuses the main pass, so it is read separately
+async function readWaterLitres(canvas, worker) {
+  const t = trimCanvas(canvas);
+  const sx = Math.round(.105 * t.width), sy = Math.round(.13 * t.height), sw = Math.round(.095 * t.width), sh = Math.round(.14 * t.height);
+  const c = document.createElement('canvas');
+  c.width = sw * 3; c.height = sh * 3;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(t, sx, sy, sw, sh, 0, 0, c.width, c.height);
+  const img = ctx.getImageData(0, 0, c.width, c.height), d = img.data;
+  for (let i = 0; i < d.length; i += 4) { const l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; const v = l < 95 ? 0 : 255; d[i] = d[i + 1] = d[i + 2] = v; }
+  ctx.putImageData(img, 0, 0);
+  await worker.setParameters({ tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK, tessedit_char_whitelist: '0123456789. ' });
+  const { data } = await worker.recognize(c);
+  await worker.setParameters({ tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT, tessedit_char_whitelist: '' });
+  const m = data.text.match(/\d+(?:\.\d+)?/);
+  return m ? parseFloat(m[0]) : null;
+}
+function matchPlayer(name) {
+  if (!name) return null;
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter(Boolean);
+  const det = norm(name);
+  const exact = roster.filter(p => slugify(p.name) === slugify(name));
+  if (exact.length === 1) return exact[0].id;
+  const cand = roster.filter(p => { const t = norm(p.name); return t.length >= 2 && t.every(x => det.includes(x)); });
+  return cand.length === 1 ? cand[0].id : null;
+}
+function progressModal(text) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = '<div class="modal-box"><p id="progText"></p><div class="progress"><span id="progBar" style="width:5%"></span></div></div>';
+  document.body.appendChild(overlay);
+  const t = overlay.querySelector('#progText'), b = overlay.querySelector('#progBar');
+  t.textContent = text;
+  return { update: (msg, pct) => { t.textContent = msg; if (pct != null) b.style.width = Math.max(5, Math.min(100, pct)) + '%'; }, close: () => overlay.remove() };
+}
+async function importReports(files) {
+  const prog = progressModal('Preparing the reader… (the first time it downloads about 10 MB)');
+  const records = [];
+  try {
+    const worker = await getOcrWorker();
+    let done = 0;
+    for (const f of files) {
+      prog.update('Reading ' + f.name + ' (' + (done + 1) + ' of ' + files.length + ')…', 10 + done / files.length * 85);
+      try {
+        for (const { canvas, label } of await fileToCanvases(f)) {
+          const { data } = await worker.recognize(canvas);
+          const parsed = parseBioText(data.text);
+          if (parsed.format === 'full' && parsed.values.weight_kg != null && parsed.values.total_body_water_percent == null) {
+            try {
+              const litres = await readWaterLitres(canvas, worker);
+              const pct = litres != null ? Math.round(litres / parsed.values.weight_kg * 1000) / 10 : null;
+              if (pct != null && pct >= 40 && pct <= 75) { parsed.values.total_body_water_percent = pct; parsed.calculated.push('total_body_water_percent'); }
+            } catch (e) { console.warn(e); }
+          }
+          records.push({ label, text: data.text, parsed });
+        }
+      } catch (e) { records.push({ label: f.name, error: e.message || String(e) }); }
+      done++;
+    }
+  } catch (e) {
+    prog.close();
+    await customConfirm(e.message || String(e));
+    return;
+  }
+  prog.close();
+  const rows = await reviewImport(records);
+  if (!rows) return;
+  if (!rows.length) { await customConfirm('Nothing to save.'); return; }
+  const { error } = await sb.from('measurements').upsert(rows, { onConflict: 'round_id,player_id' });
+  if (error) { showError(error); return; }
+  rows.forEach(r => { (measurements[currentRound.id] = measurements[currentRound.id] || {})[r.player_id] = rowToReading(r); });
+  renderAll();
+  await customConfirm('Saved ' + rows.length + ' measurement(s) into the current round.');
+}
+const IMPORT_FIELDS = [
+  ['weight_kg', 'Weight (kg)', '0.01'], ['body_fat_percent', 'Body fat %', '0.1'], ['subcutaneous_fat_percent', 'Subcutaneous %', '0.1'],
+  ['total_body_water_percent', 'Hydration %', '0.1'], ['bmi', 'BMI', '0.1'], ['fat_free_mass_kg', 'Fat-free mass (kg)', '0.1'],
+  ['visceral_fat', 'Visceral fat', '1'], ['skeletal_muscle_mass_kg', 'Skeletal muscle (kg)', '0.1'],
+];
+function reviewImport(records) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay imp-overlay';
+    const cards = records.map((r, i) => {
+      if (r.error) return `<div class="imp-card"><div class="imp-top"><span class="fname">${escapeHtml(r.label)}</span></div><div class="imp-msg err">Could not read this file: ${escapeHtml(r.error)}</div></div>`;
+      const p = r.parsed, bad = checkBioValues(p.values), pid = matchPlayer(p.name);
+      const found = Object.keys(p.values).filter(k => IMPORT_FIELDS.some(f => f[0] === k)).length;
+      const msgs = [];
+      if (!pid) msgs.push(p.name ? 'Could not match "' + escapeHtml(p.name) + '" to a player: choose one.' : 'No name found: choose the player.');
+      if (!found) msgs.push('No values were recognised in this file. Check the image is a clear, full Arboleaf report.');
+      if (p.calculated.length) msgs.push('Calculated from other values: ' + p.calculated.map(k => (IMPORT_FIELDS.find(f => f[0] === k) || [k, k])[1]).join(', ') + '.');
+      Object.keys(bad).forEach(k => msgs.push((IMPORT_FIELDS.find(f => f[0] === k) || [k, k])[1] + ': ' + bad[k] + '.'));
+      p.notes.forEach(n => msgs.push(escapeHtml(n)));
+      const missing = IMPORT_FIELDS.filter(f => p.values[f[0]] == null).map(f => f[1]);
+      return `<div class="imp-card" data-i="${i}">
+        <div class="imp-top">
+          <label class="save-note"><input type="checkbox" class="imp-inc" checked style="width:auto;height:auto;"> Import</label>
+          <span class="fname">${escapeHtml(r.label)}</span>
+          <select class="imp-player"><option value="">— choose player —</option>${roster.map(x => `<option value="${x.id}"${x.id === pid ? ' selected' : ''}>${escapeHtml(x.name)}</option>`).join('')}</select>
+          <input type="date" class="imp-date" value="${escapeHtml(p.date || todayStr())}">
+        </div>
+        <div class="imp-grid">${IMPORT_FIELDS.map(([k, label, step]) => `<div><label>${label}</label><input type="number" step="${step}" data-k="${k}" value="${p.values[k] != null ? p.values[k] : ''}" class="${bad[k] ? 'warn' : ''}"></div>`).join('')}</div>
+        ${msgs.length ? `<div class="imp-msg">${msgs.join('<br>')}</div>` : ''}
+        ${missing.length && found ? `<div class="save-note" style="margin-top:6px;">Not in this report (left as they are): ${missing.join(', ')}.</div>` : ''}
+        <details><summary>Text read from the file</summary><pre>${escapeHtml(r.text || '')}</pre></details>
+      </div>`;
+    }).join('');
+    overlay.innerHTML = `<div class="modal-box imp-box"><h3>Review imported reports</h3>
+      <div class="save-note">Check every value against the report. Saved into the current round; empty fields keep the value already stored.</div>
+      ${cards}
+      <div class="imp-foot"><span class="save-note" id="impCount"></span><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Save</button></div></div>`;
+    document.body.appendChild(overlay);
+    const update = () => {
+      const n = [...overlay.querySelectorAll('.imp-card[data-i]')].filter(c => c.querySelector('.imp-inc').checked && c.querySelector('.imp-player').value).length;
+      overlay.querySelector('#impCount').textContent = n + ' report(s) ready to save';
+      overlay.querySelectorAll('.imp-card[data-i]').forEach(c => c.classList.toggle('skip', !c.querySelector('.imp-inc').checked));
+    };
+    overlay.addEventListener('change', update); update();
+    const done = v => { overlay.remove(); resolve(v); };
+    overlay.querySelector('.modal-cancel').addEventListener('click', () => done(null));
+    overlay.querySelector('.modal-ok').addEventListener('click', () => {
+      const byPlayer = {};
+      overlay.querySelectorAll('.imp-card[data-i]').forEach(c => {
+        if (!c.querySelector('.imp-inc').checked) return;
+        const pid = c.querySelector('.imp-player').value;
+        if (!pid) return;
+        const cur = readingFor(pid), b = (cur && cur.muscle_balance) || {};
+        const row = { round_id: currentRound.id, player_id: pid, measured_on: c.querySelector('.imp-date').value || todayStr(), balance_upper: b.upper || null, balance_lower: b.lower || null, balance_overall: b.overall || null };
+        c.querySelectorAll('.imp-grid input').forEach(inp => {
+          const val = inp.value === '' ? null : parseFloat(inp.value);
+          row[inp.dataset.k] = (val == null || isNaN(val)) ? (cur && cur[inp.dataset.k] != null ? cur[inp.dataset.k] : null) : val;
+        });
+        byPlayer[pid] = row;   // if two files are for the same player, the last one wins
+      });
+      done(Object.values(byPlayer));
+    });
+  });
+}
+document.querySelectorAll('.js-import-report').forEach(b => b.addEventListener('click', () => document.getElementById('reportFile').click()));
+document.getElementById('reportFile').addEventListener('change', e => {
+  const files = [...e.target.files];
+  e.target.value = '';
+  if (files.length) importReports(files);
+});
 
 // ---- series + charts ----
 function seriesFor(id) {

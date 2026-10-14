@@ -17,6 +17,7 @@ Publish this folder from a **separate public repository that contains only these
 - **Bioimpedance**: search, filters (pending / measured / flagged / health notes), group filter, sort, check-ins, per-player cards, **Quick entry** table for typing many players at once.
 - **Player profile** (`#player/<id>`): evolution charts (body fat, fat-free mass, hydration), all measurements, dated health notes, tags and a **printable PDF report** (browser print dialog; health notes are optional).
 - **Compare**: any two rounds, any measure, optionally per group, with group average.
+- **Import report**: photos/screenshots (JPG, PNG, WebP) and PDFs of Arboleaf reports (summary screen or full "Body Composition Analysis" report). Text is read on the device with OCR (Tesseract.js and PDF.js are loaded from a CDN the first time; files are never uploaded), values are cross-checked, and you review and correct everything before saving.
 - **Settings**: thresholds, rounds (archive), **CSV import** (with preview), CSV/JSON export.
 - Responsive layout with a mobile drawer menu.
 
