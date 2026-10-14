@@ -22,6 +22,7 @@ Publish this folder from a **separate public repository that contains only these
 - **Settings**: thresholds, rounds (archive), **CSV import** (with preview), CSV/JSON export.
 - **Check-ins** are shared across devices (stored in the `settings` table, key `checkins`) and cleared when a round is archived.
 - **Light, dark or automatic theme** (toggle in the side menu; remembered on the device; printed reports are always light), toast notifications, drag-and-drop import anywhere, and a `/` shortcut to search players.
+- **App shell**: dark theme by default (light and automatic available), a loading screen on start-up (with a hint and a Reload button if the connection is slow), **refresh by pulling down** on a phone or **scrolling up at the top** on a computer (reloads the data; refuses if Quick entry has unsaved values), a **Recipes** section (placeholder for now) and **Install app** (Windows via Edge/Chrome, Android, desktop; manual steps shown for iPhone).
 - Responsive layout with a mobile drawer menu.
 
 ## Notes on data storage
