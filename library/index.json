@@ -5,6 +5,13 @@
       "title": "Fudgy Banana-Oat Brownies: Recovery Treat, No Refined Sugar",
       "files": [
         {
+          "name": "futedu-banana-oat-brownies.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card",
+          "path": "library/recipes/banana-oat-brownies/futedu-banana-oat-brownies.pdf"
+        },
+        {
           "name": "futedu-banana-oat-brownies-workshop-session.md",
           "kind": "session",
           "kindLabel": "Session guide",
@@ -25,6 +32,13 @@
       "title": "No-Bake Peanut Butter & Cocoa Energy Balls: Pre-Training Fuel",
       "files": [
         {
+          "name": "futedu-energy-balls.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card",
+          "path": "library/recipes/energy-balls/futedu-energy-balls.pdf"
+        },
+        {
           "name": "futedu-energy-balls-workshop-session.md",
           "kind": "session",
           "kindLabel": "Session guide",
@@ -44,6 +58,13 @@
       "slug": "granola",
       "title": "Granola: Batch Snack, Energy",
       "files": [
+        {
+          "name": "futedu-granola.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card",
+          "path": "library/recipes/granola/futedu-granola.pdf"
+        },
         {
           "name": "futedu-granola-workshop-session.md",
           "kind": "session",
@@ -71,6 +92,20 @@
       "slug": "overnight-oats",
       "title": "Overnight Oats: Pre-Workout Breakfast (2 variations)",
       "files": [
+        {
+          "name": "futedu-overnight-oats-card-blackberry-walnut.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card: blackberry walnut",
+          "path": "library/recipes/overnight-oats/futedu-overnight-oats-card-blackberry-walnut.pdf"
+        },
+        {
+          "name": "futedu-overnight-oats-card-blueberry-almond-pb.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card: blueberry almond pb",
+          "path": "library/recipes/overnight-oats/futedu-overnight-oats-card-blueberry-almond-pb.pdf"
+        },
         {
           "name": "futedu-overnight-oats-workshop-session.md",
           "kind": "session",
