@@ -688,6 +688,7 @@
             <button data-filter="notes">Health notes</button>
           </div>
           <select id="tagSel" aria-label="Group" class="hidden"></select>
+          <select id="ageSel" class="age-sel" aria-label="Age group"></select>
           <select id="sortSel" aria-label="Sort">
             <option value="name">Sort: Name</option>
             <option value="bf-desc">Sort: Body fat high → low</option>
@@ -726,7 +727,7 @@
           <div class="actions"><button class="btn" id="anRoundReportBtn">Round report</button><button class="btn" id="anPendingBtn">Pending list</button><button class="btn" id="anImportBtn">Import past assessments</button></div></div>
         <input type="file" id="anFile" accept=".xlsx,.xlsm,.xls,application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple class="hidden">
         <div class="kpis" id="anKpis"></div>
-        <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><input type="search" id="anSearch" placeholder="Search players" aria-label="Search players"></div><select id="anSort" aria-label="Sort players" style="width:auto;"><option value="name">Sort: Name</option><option value="pending">Sort: Pending first</option><option value="age">Sort: Age (oldest)</option><option value="last">Sort: Last assessment (oldest)</option></select><div class="seg" id="anFilter" role="group" aria-label="Round status"><button data-f="all" class="on">All</button><button data-f="pending">Pending</button><button data-f="done">Done</button></div></div>
+        <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><input type="search" id="anSearch" placeholder="Search players" aria-label="Search players"></div><select id="anAge" class="age-sel" aria-label="Age group" style="width:auto;"></select><select id="anSort" aria-label="Sort players" style="width:auto;"><option value="name">Sort: Name</option><option value="pending">Sort: Pending first</option><option value="age">Sort: Age (oldest)</option><option value="last">Sort: Last assessment (oldest)</option></select><div class="seg" id="anFilter" role="group" aria-label="Round status"><button data-f="all" class="on">All</button><button data-f="pending">Pending</button><button data-f="done">Done</button></div></div>
         <div class="an-round" id="anRound"></div>
         <div class="card hist-full" id="anTable"></div>
       </section>
@@ -940,7 +941,7 @@ if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEven
 applyTheme(currentTheme());
 
 // ---- auth ----
-const ui = { view: 'dashboard', filter: 'all', search: '', sort: 'name', tag: '', mode: 'cards' };
+const ui = { view: 'dashboard', filter: 'all', search: '', sort: 'name', tag: '', mode: 'cards', age: '' };
 const openPanels = new Set();   // ids of expanded manual-entry / history panels (survive re-renders)
 
 // ---- loading screen ----
@@ -1638,6 +1639,20 @@ function renderAnthroDash() {
   due.classList.toggle('hidden', !pend);
 }
 
+// Age groups come from the shared date of birth: U18 = under 18, U23 = 18 to 22 (age today)
+function ageGroupOf(pid) {
+  const pf = anthroProfiles[pid]; if (!pf || !pf.dob) return 'nodob';
+  const a = anAge(todayStr(), pf.dob); if (a == null) return 'nodob';
+  return a < 18 ? 'U18' : a < 23 ? 'U23' : 'older';
+}
+const AGE_LABEL = { U18: 'U18', U23: 'U23', older: '23 and over', nodob: 'no date of birth' };
+function scopedRoster() { return roster.filter(p => !ui.age || ageGroupOf(p.id) === ui.age); }
+function renderAgeSelects() {
+  const n = g => roster.filter(p => ageGroupOf(p.id) === g).length;
+  const opts = [['', 'All ages'], ['U18', 'U18 (under 18) · ' + n('U18')], ['U23', 'U23 (18 to 22) · ' + n('U23')], ...(n('older') ? [['older', '23 and over · ' + n('older')]] : []), ['nodob', 'No date of birth · ' + n('nodob')]];
+  ['ageSel', 'anAge'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = opts.map(([v, l]) => `<option value="${v}"${v === ui.age ? ' selected' : ''}>${l}</option>`).join(''); });
+}
+document.addEventListener('change', e => { if (e.target.classList && e.target.classList.contains('age-sel')) { ui.age = e.target.value; renderAgeSelects(); renderSummary(); renderAnthroList(); } });
 function matchesFilter(p) {
   const r = readingFor(p.id);
   if (ui.filter === 'pending' && r) return false;
@@ -1645,6 +1660,7 @@ function matchesFilter(p) {
   if (ui.filter === 'flagged' && !flagsFor(r).length) return false;
   if (ui.filter === 'notes' && !hasNotes(p.id)) return false;
   if (ui.tag && !p.tags.includes(ui.tag)) return false;
+  if (ui.age && ageGroupOf(p.id) !== ui.age) return false;
   const q = ui.search.trim().toLowerCase();
   if (q && !p.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(q.normalize('NFD').replace(/[̀-ͯ]/g, ''))) return false;
   return true;
@@ -1663,6 +1679,7 @@ function sortList(list) {
 }
 
 function renderSummary() {
+  renderAgeSelects();
   const checkedCount = roster.filter(p => p.checkedIn).length;
   document.getElementById('sumSub').textContent = roster.filter(p => readingFor(p.id)).length + ' of ' + roster.length + ' measured · ' + (currentRound && currentRound.label ? currentRound.label : '');
   document.getElementById('checkinCount').textContent = checkedCount + ' / ' + roster.length + ' checked in';
@@ -2632,9 +2649,10 @@ const AN_CAVEAT = 'BMI does not tell muscle from fat, which matters in athletes.
 // ---- anthropometry: pages ----
 function anAgeText(pid) { const p = anthroProfiles[pid]; return p && p.dob ? anAge(todayStr(), p.dob) : null; }
 function renderAnthroList() {
+  renderAgeSelects();
   const q = (document.getElementById('anSearch').value || '').toLowerCase();
-  const start = anRoundStart(), doneN = roster.filter(p => anDoneThisRound(p.id)).length, pendN = roster.length - doneN;
-  const rows = roster.filter(p => (!q || p.name.toLowerCase().includes(q)) && (anFilter === 'all' || (anFilter === 'done') === anDoneThisRound(p.id)));
+  const scope = scopedRoster(), start = anRoundStart(), doneN = scope.filter(p => anDoneThisRound(p.id)).length, pendN = scope.length - doneN;
+  const rows = roster.filter(p => (!q || p.name.toLowerCase().includes(q)) && (anFilter === 'all' || (anFilter === 'done') === anDoneThisRound(p.id)) && (!ui.age || ageGroupOf(p.id) === ui.age));
   const ageOf = p => { const a = anAgeText(p.id); return a == null ? -1 : a; }, lastOf = p => { const l = anList(p.id); return l.length ? l[l.length - 1].date : ''; };
   if (anSort === 'pending') rows.sort((a, b) => (anDoneThisRound(a.id) - anDoneThisRound(b.id)) || a.name.localeCompare(b.name));
   else if (anSort === 'age') rows.sort((a, b) => ageOf(b) - ageOf(a) || a.name.localeCompare(b.name));
@@ -2651,7 +2669,7 @@ function renderAnthroList() {
   const avgOf = k => { const v = group.map(g => g.R[k]); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
   const withData = roster.filter(p => anList(p.id).length).length;
   document.getElementById('anKpis').innerHTML = `
-    <div class="kpi"><div class="k-label">Assessed this round</div><div class="k-value">${doneN}<small> / ${roster.length}</small></div><div class="progress"><span style="width:${roster.length ? Math.round(doneN / roster.length * 100) : 0}%"></span></div><div class="k-sub">${pendN ? pendN + ' pending' : 'Everyone is done'} · ${withData} with any past assessment</div></div>
+    <div class="kpi"><div class="k-label">Assessed this round${ui.age ? ' · ' + AGE_LABEL[ui.age] : ''}</div><div class="k-value">${doneN}<small> / ${scope.length}</small></div><div class="progress"><span style="width:${scope.length ? Math.round(doneN / scope.length * 100) : 0}%"></span></div><div class="k-sub">${pendN ? pendN + ' pending' : 'Everyone is done'} · ${withData} with any past assessment</div></div>
     <div class="kpi"><div class="k-label">Group mean · sum of 6 skinfolds</div><div class="k-value">${group.length ? avgOf('sum6').toFixed(1) : '—'}<small>${group.length ? ' mm' : ''}</small></div><div class="k-sub">${group.length} complete assessments</div></div>
     <div class="kpi"><div class="k-label">Group mean · fat (Yuhasz)</div><div class="k-value">${group.length ? avgOf('yuhaszPct').toFixed(1) : '—'}<small>${group.length ? ' %' : ''}</small></div></div>
     <div class="kpi"><div class="k-label">Group mean · muscle (Lee)</div><div class="k-value">${group.length ? avgOf('musclePct').toFixed(1) : '—'}<small>${group.length ? ' %' : ''}</small></div></div>`;
@@ -3060,7 +3078,7 @@ function anPrint(pid, aid) {
 // ---- anthropometry: round report (whole academy, current round) and pending list ----
 function anRoundData() {
   const start = anRoundStart(), done = [], incomplete = [], pending = [];
-  roster.forEach(p => {
+  scopedRoster().forEach(p => {
     const list = anList(p.id), inRound = list.filter(a => a.date >= start);
     if (!inRound.length) { pending.push({ p, last: list.length ? list[list.length - 1].date : '' }); return; }
     const a = inRound[inRound.length - 1], f = anFull(p.id, a), idx = list.indexOf(a);
@@ -3082,15 +3100,15 @@ function anRoundReportHtml() {
   const cmp = done.filter(d => d.pR).map(d => anChange('sum6', d.R, d.pR)).filter(Boolean);
   const up = cmp.filter(c => c.beyond && c.diff > 0).length, down = cmp.filter(c => c.beyond && c.diff < 0).length;
   const lines = [];
-  if (n) lines.push(`<strong>Group.</strong> ${n} of ${roster.length} players have a complete assessment in this round. Mean sum of 6 skinfolds ${st.sum6.mean.toFixed(1)} mm (range ${st.sum6.min.toFixed(1)} to ${st.sum6.max.toFixed(1)}); mean estimated fat ${st.yuhaszPct.mean.toFixed(1)} % (Yuhasz); mean estimated muscle ${st.musclePct.mean.toFixed(1)} % (Lee).`);
+  if (n) lines.push(`<strong>Group.</strong> ${n} of ${scopedRoster().length} players have a complete assessment in this round. Mean sum of 6 skinfolds ${st.sum6.mean.toFixed(1)} mm (range ${st.sum6.min.toFixed(1)} to ${st.sum6.max.toFixed(1)}); mean estimated fat ${st.yuhaszPct.mean.toFixed(1)} % (Yuhasz); mean estimated muscle ${st.musclePct.mean.toFixed(1)} % (Lee).`);
   if (cmp.length) lines.push(`<strong>Evolution.</strong> ${cmp.length} players have an earlier assessment to compare with. Their sum of 6 skinfolds showed a substantial change in ${up + down} of them (${up} higher, ${down} lower); in the other ${cmp.length - up - down} the change was not substantial.`);
   else if (n) lines.push('<strong>Evolution.</strong> No player has an earlier complete assessment to compare with yet.');
   if (pending.length) lines.push(`<strong>Pending (${pending.length}).</strong> ${pending.map(x => escapeHtml(x.p.name)).join(', ')}.`);
   if (incomplete.length) lines.push(`<strong>Incomplete (${incomplete.length}).</strong> ${incomplete.map(x => escapeHtml(x.p.name) + ' (missing ' + x.missing.slice(0, 3).map(escapeHtml).join(', ') + (x.missing.length > 3 ? '…' : '') + ')').join('; ')}.`);
   return `<div class="fr fr-an fr-anr" style="--g:8px;--sp:9px;--spx:14px;--bp:14px;--td:${td.toFixed(1)}px;--fs:${fs.toFixed(1)}px">
     <div class="fr-band"><img src="${LOGO_SRC}" alt="FUTEDU Team"><div class="fr-kicker">FUTEDU Academy · Nutrition Department</div>
-      <h1>Anthropometry round report</h1>
-      <div class="fr-sub">Assessments dated ${escapeHtml(longDateSafe(start))} or later · ${n} of ${roster.length} players · Report generated ${longDate(todayStr())}</div></div>
+      <h1>Anthropometry round report${ui.age ? ' · ' + AGE_LABEL[ui.age] : ''}</h1>
+      <div class="fr-sub">Assessments dated ${escapeHtml(longDateSafe(start))} or later · ${n} of ${scopedRoster().length} players · Report generated ${longDate(todayStr())}</div></div>
     <div class="fr-kpis">${kpi('Players assessed', n + ' / ' + roster.length, pending.length ? pending.length + ' pending' : 'Everyone is done')}${n ? kpi('Mean sum of 6', st.sum6.mean.toFixed(1) + ' mm', 'range ' + st.sum6.min.toFixed(0) + '–' + st.sum6.max.toFixed(0)) + kpi('Mean fat (Yuhasz)', st.yuhaszPct.mean.toFixed(1) + ' %', 'range ' + st.yuhaszPct.min.toFixed(1) + '–' + st.yuhaszPct.max.toFixed(1)) + kpi('Mean muscle (Lee)', st.musclePct.mean.toFixed(1) + ' %', 'range ' + st.musclePct.min.toFixed(1) + '–' + st.musclePct.max.toFixed(1)) : ''}</div>
     ${n ? `<div class="fr-sec"><h2>Players</h2><div class="fr-target">Latest complete assessment of the round · Δ Σ6 vs the previous assessment, * = substantial change (larger than the usual variation between measurements)</div><table><tr><th>Player</th><th>Age</th><th>Mass (kg)</th><th>Σ6 (mm)</th><th>Fat % (Yuhasz)</th><th>Muscle % (Lee)</th><th>BMI</th><th>Δ Σ6 (mm)</th></tr>${rowsHtml}</table></div>` : '<div class="fr-sec"><h2>No complete assessments in this round yet</h2></div>'}
     <div class="fr-sec"><h2>Summary</h2><div class="fr-target">Neutral, descriptive conclusions</div>${lines.map(t => `<div class="fr-line">${t}</div>`).join('')}</div>
@@ -3104,13 +3122,13 @@ function anPendingHtml() {
   const n = rows.length, td = n <= 24 ? 5.5 : Math.max(2, 5.5 - (n - 24) * 0.15);
   return `<div class="fr fr-an" style="--g:8px;--sp:10px;--spx:16px;--bp:14px;--td:${td.toFixed(1)}px">
     <div class="fr-band"><img src="${LOGO_SRC}" alt="FUTEDU Team"><div class="fr-kicker">FUTEDU Academy · Nutrition Department</div>
-      <h1>Anthropometry: players still to assess</h1>
-      <div class="fr-sub">Round starting ${escapeHtml(longDateSafe(start))} · ${n} of ${roster.length} players · Generated ${longDate(todayStr())}</div></div>
+      <h1>Anthropometry: players still to assess${ui.age ? ' · ' + AGE_LABEL[ui.age] : ''}</h1>
+      <div class="fr-sub">Round starting ${escapeHtml(longDateSafe(start))} · ${n} of ${scopedRoster().length} players · Generated ${longDate(todayStr())}</div></div>
     <div class="fr-sec">${n ? `<table><tr><th>Player</th><th>Last assessment</th><th>Notes</th><th>Done</th></tr>${rows.map(tr).join('')}</table>` : '<h2>Everyone has been assessed in this round.</h2>'}</div>
     <div class="fr-foot"><span>FUTEDU Academy — Anthropometry</span><span>Nutrition Department</span></div></div>`;
 }
 document.getElementById('anRoundReportBtn').addEventListener('click', () => {
-  if (!anRoundData().done.length) { customConfirm('No player has a complete assessment in the current round yet.'); return; }
+  if (!anRoundData().done.length) { customConfirm('No player has a complete assessment in the current round yet' + (ui.age ? ' in this age group' : '') + '.'); return; }
   printHtml(anRoundReportHtml(), 'futedu-anthropometry-round-report');
 });
 document.getElementById('anPendingBtn').addEventListener('click', () => printHtml(anPendingHtml(), 'futedu-anthropometry-pending'));
