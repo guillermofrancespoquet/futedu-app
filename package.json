@@ -1,0 +1,11 @@
+{
+  "name": "futedu-app-tests",
+  "private": true,
+  "description": "Browser tests for the FUTEDU tracker. The app itself has no build step and no dependencies.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}
