@@ -3194,6 +3194,37 @@ function historyTable(id) {
 }
 
 // ---- player profile ----
+// ---- player data shared by Bioimpedance and Anthropometry ----
+// Date of birth, sex and height are one record per player (the anthropometry profile, `anthro_profiles` in the settings table).
+// Both sections read and edit that same record; measurements are never mixed between the two sections.
+function sharedDataHtml(pid) {
+  const pf = anthroProfiles[pid] || {}, age = pf.dob ? anAge(todayStr(), pf.dob) : null;
+  const item = (label, v) => `<div class="kpi" style="padding:12px 14px;"><div class="k-label">${label}</div><div class="k-value" style="font-size:18px;">${v}</div></div>`;
+  const has = pf.dob || pf.sex || pf.height;
+  return `<div class="kpis" style="margin-bottom:8px;">${item('Date of birth', pf.dob ? escapeHtml(longDateSafe(pf.dob)) : '—')}${item('Age', age != null ? age.toFixed(1) : '—')}${item('Sex', pf.sex ? escapeHtml(pf.sex) : '—')}${item('Height', pf.height != null ? pf.height + '<small> cm</small>' : '—')}</div>
+    <div class="save-note">${has ? 'Shared with the Anthropometry section: changing it here changes it there too. Measurements stay separate.' : 'Not entered yet. If this player has an anthropometry profile it will appear here; otherwise add the data by hand with Edit. It is shared with the Anthropometry section.'}</div>`;
+}
+function sharedDataForm(pid) {
+  const p = roster.find(x => x.id === pid), cur = anthroProfiles[pid] || {};
+  const o = anOverlay(`<h3>Player data: ${escapeHtml(p.name)}</h3><div class="save-note" style="margin-bottom:12px;">Shared with the Anthropometry section (same record). Personal data stays in your database only.</div>
+    <div class="imp-grid" style="grid-template-columns:repeat(3,1fr);"><div><label for="sdDob">Date of birth</label><input type="date" id="sdDob" value="${escapeHtml(cur.dob || '')}"></div>
+      <div><label for="sdSex">Sex</label><select id="sdSex"><option value="">—</option>${['Male', 'Female'].map(x => `<option${cur.sex === x ? ' selected' : ''}>${x}</option>`).join('')}</select></div>
+      <div><label for="sdHeight">Height (cm)</label><input type="number" step="any" inputmode="decimal" id="sdHeight" value="${cur.height != null ? cur.height : ''}"></div></div>
+    <div class="imp-foot"><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Save</button></div>`);
+  o.querySelector('.modal-cancel').addEventListener('click', () => o.remove());
+  o.querySelector('.modal-ok').addEventListener('click', async () => {
+    const h = parseFloat(o.querySelector('#sdHeight').value), height = isNaN(h) ? null : h;
+    const dob = o.querySelector('#sdDob').value || '', sex = o.querySelector('#sdSex').value || '';
+    const next = await mutateSetting('anthro_profiles', all => {
+      const prev = all[pid] || {}, merged = { ...prev, dob, sex, height };
+      if (height !== (prev.height != null ? prev.height : null)) merged.fixedDate = todayStr();   // a new height is a new fixed measurement
+      all[pid] = merged;
+    });
+    if (!next) return;
+    anthroProfiles = next; o.remove(); toast('Player data saved'); renderAll();
+    if (ui.view === 'player') renderProfile();
+  });
+}
 function renderProfile() {
   const p = roster.find(x => x.id === ui.playerId);
   const el = document.getElementById('view-player');
@@ -3220,12 +3251,15 @@ function renderProfile() {
       </div>
     </div>
     <div class="kpis">${kpi('Body fat', 'body_fat_percent', '%', c.bodyFat)}${kpi('Fat-free mass', 'fat_free_mass_kg', ' kg', c.ffm)}${kpi('Hydration', 'total_body_water_percent', '%', c.hydration)}${kpi('BMI', 'bmi', '', c.bmi)}</div>
+    <div class="card"><div class="row" style="justify-content:space-between;margin-bottom:8px;"><h2 style="margin:0;">Player data</h2><button class="btn sm" id="pfData">Edit</button></div>
+      ${sharedDataHtml(p.id)}</div>
     <div class="card"><h2>Evolution</h2>${chartsHtml(p.id, 'charts')}</div>
     <div class="card"><h2>All measurements</h2>${historyTable(p.id)}</div>
     <div class="card"><div class="row" style="justify-content:space-between;margin-bottom:6px;"><h2 style="margin:0;">Health notes</h2><button class="btn sm note-add" data-id="${p.id}">Add note</button></div>
       ${notesHtml(p.id) || '<div class="empty">No notes.</div>'}</div>`;
   document.getElementById('backBtn').addEventListener('click', () => navigate('summary'));
   document.getElementById('pfTags').addEventListener('click', () => editTags(p.id));
+  document.getElementById('pfData').addEventListener('click', () => sharedDataForm(p.id));
   document.getElementById('pfRename').addEventListener('click', () => renamePlayer(p.id));
   document.getElementById('pfPrint').addEventListener('click', () => printReport(p.id));
   bindNoteActions(el);
