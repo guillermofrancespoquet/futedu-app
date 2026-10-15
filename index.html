@@ -730,6 +730,7 @@
         <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><input type="search" id="anSearch" placeholder="Search players" aria-label="Search players"></div><select id="anAge" class="age-sel" aria-label="Age group" style="width:auto;"></select><select id="anSort" aria-label="Sort players" style="width:auto;"><option value="name">Sort: Name</option><option value="pending">Sort: Pending first</option><option value="age">Sort: Age (oldest)</option><option value="last">Sort: Last assessment (oldest)</option></select><div class="seg" id="anFilter" role="group" aria-label="Round status"><button data-f="all" class="on">All</button><button data-f="pending">Pending</button><button data-f="done">Done</button></div></div>
         <div class="an-round" id="anRound"></div>
         <div class="card hist-full" id="anTable"></div>
+        <div id="anHistory"></div>
       </section>
       <section id="view-anthrop" class="view hidden"></section>
 
@@ -2550,6 +2551,44 @@ function anRoundStart() {
   return y + (d.getMonth() < 6 ? '-01-01' : '-07-01');   // default: start of the current half-year
 }
 function anDoneThisRound(pid) { const s = anRoundStart(); return anList(pid).some(a => a.date >= s); }
+// Closed rounds are kept by name and start date; each one runs until the next one starts, and who was assessed in it is worked out from the assessment dates
+function anRoundsAll() {
+  const hist = (anthroRound.history || []).slice().sort((a, b) => a.start.localeCompare(b.start));
+  const all = [...hist.map(h => ({ ...h, closed: true })), { name: 'Current round', start: anRoundStart(), closed: false }];
+  return all.map((r, i) => ({ ...r, end: all[i + 1] ? all[i + 1].start : null }));
+}
+function anRoundDone(r, pid) { return anList(pid).some(a => a.date >= r.start && (!r.end || a.date < r.end)); }
+function anStartNewRound() {
+  const old = anRoundStart(), o = anOverlay(`<h3>Start a new round</h3><div class="save-note" style="margin-bottom:12px;">The round that ends now is kept in the history with the name you give it. Everyone shows as pending in the new round until they get a new assessment. No assessment is changed.</div>
+    <div class="imp-grid" style="grid-template-columns:1fr 200px;"><div><label for="nrName">Name of the round that ends</label><input type="text" id="nrName" value="${escapeHtml('Round of ' + longDateSafe(old).replace(/ \d+,/, ''))}"></div>
+      <div><label for="nrStart">New round starts on</label><input type="date" id="nrStart" value="${escapeHtml(todayStr())}"></div></div>
+    <div class="save-note" id="nrNote"></div>
+    <div class="imp-foot"><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Start new round</button></div>`);
+  o.querySelector('.modal-cancel').addEventListener('click', () => o.remove());
+  o.querySelector('.modal-ok').addEventListener('click', async () => {
+    const name = o.querySelector('#nrName').value.trim(), start = o.querySelector('#nrStart').value;
+    if (!name) { o.querySelector('#nrNote').textContent = 'Give the round that ends a name.'; return; }
+    if (!start || start <= old) { o.querySelector('#nrNote').textContent = 'The new round must start after ' + longDateSafe(old) + '.'; return; }
+    const next = await mutateSetting('anthro_round', n => { n.history = [...(n.history || []), { name, start: old }]; n.start = start; });
+    if (!next) return;
+    anthroRound = next; o.remove(); toast('New round started'); renderAnthro(); renderAnthroDash();
+  });
+}
+function anHistoryHtml() {
+  const closed = anRoundsAll().filter(r => r.closed).reverse();
+  if (!closed.length) return '';
+  const scope = scopedRoster();
+  return `<div class="card"><h2>Previous rounds</h2><div class="hist-full"><table><tr><th>Round</th><th>Period</th><th>Assessed</th><th>Not assessed</th></tr>${closed.map(r => {
+    const miss = scope.filter(p => !anRoundDone(r, p.id)), n = scope.length - miss.length;
+    return `<tr><td><strong>${escapeHtml(r.name)}</strong></td><td>${escapeHtml(longDateSafe(r.start))} – ${escapeHtml(longDateSafe(r.end))}</td><td class="num">${n} / ${scope.length}</td><td>${miss.length ? `<details><summary>${miss.length} player${miss.length === 1 ? '' : 's'}</summary><div class="save-note">${miss.map(p => escapeHtml(p.name)).join(', ')}</div></details>` : '<span class="muted">Everyone</span>'}</td></tr>`;
+  }).join('')}</table></div></div>`;
+}
+const shortDateLabel = iso => /^\d{4}-\d{2}-\d{2}$/.test(iso || '') ? MONTHS[+iso.slice(5, 7) - 1].slice(0, 3) + ' ' + iso.slice(2, 4) : (iso || '');
+function anChartsHtml(pid) {
+  const pts = anList(pid).map(a => ({ a, f: anFull(pid, a) })).filter(x => x.f.R);
+  const mk = (title, key, unit) => `<div class="chart-box"><h3>${title}</h3>${lineChart(pts.map(x => ({ label: shortDateLabel(x.a.date), v: x.f.R[key] })), { unit, title })}</div>`;
+  return `<div class="charts">${mk('Sum of 6 skinfolds (mm)', 'sum6', ' mm')}${mk('Fat, Yuhasz (%)', 'yuhaszPct', '%')}${mk('Muscle mass, Lee (kg)', 'muscleKg', ' kg')}</div><div class="save-note" style="margin-top:6px;">Estimates: the trend over several assessments says more than a single value.</div>`;
+}
 function anSetRoundStart(start) { return mutateSetting('anthro_round', next => { next.start = start; }).then(v => { if (v) anthroRound = v; return v; }); }
 // fixed measures of an assessment: its own saved copy, else the player's profile (older records may have them among the raw readings)
 function anFixedFor(pid, a) {
@@ -2662,8 +2701,7 @@ function renderAnthroList() {
   document.getElementById('anRound').innerHTML = `<span><strong>Current round</strong> · assessments dated ${escapeHtml(longDateSafe(start))} or later count${anthroRound.start ? '' : ' (default: start of the half-year)'}</span><span class="an-round-btns"><button class="btn sm" id="anRoundEdit">Change start date</button><button class="btn sm" id="anRoundNew">Start a new round</button></span>`;
   document.getElementById('anRoundEdit').addEventListener('click', anRoundDialog);
   document.getElementById('anRoundNew').addEventListener('click', async () => {
-    if (!await customConfirm('Start a new round today? Everyone will show as pending until they get a new assessment. Existing assessments are kept.')) return;
-    if (await anSetRoundStart(todayStr())) { toast('New round started'); renderAnthro(); renderAnthroDash(); }
+    anStartNewRound();
   });
   const group = anGroupRows();
   const avgOf = k => { const v = group.map(g => g.R[k]); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
@@ -2683,6 +2721,7 @@ function renderAnthroList() {
         ${cell('Age', age != null ? age.toFixed(1) : '—')}${cell('Last', last ? escapeHtml(last.date) : '<span class="muted">none</span>')}
         ${cell('Σ6 mm', f && f.R ? f.R.sum6.toFixed(1) : '—')}${cell('Fat %', f && f.R ? f.R.yuhaszPct.toFixed(1) : '—')}${cell('Muscle %', f && f.R ? f.R.musclePct.toFixed(1) : '—')}${cell('BMI', f && f.R ? f.R.bmi.toFixed(1) : '—')}</tr>`;
     }).join('')}</table>`;
+  document.getElementById('anHistory').innerHTML = anHistoryHtml();
   document.querySelectorAll('#anTable [data-open]').forEach(r => r.addEventListener('click', () => navigate('anthro/' + r.dataset.open)));
   document.querySelectorAll('#anTable [data-new]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); anAssessmentForm(b.dataset.new, null); }));
 }
@@ -2728,6 +2767,7 @@ function renderAnthroPlayer() {
       body += `<div class="card"><h2>Results not available yet</h2><div class="note" style="margin-top:0;">Still missing: ${m.map(escapeHtml).join(', ')}.</div></div>`;
     } else {
       body += `<div class="kpis">${kpi('Sum of 6 skinfolds', 'sum6', pR ? `<div class="k-sub">${anChange('sum6', R, pR).diff > 0 ? '+' : ''}${anChange('sum6', R, pR).diff.toFixed(1)} mm vs previous</div>` : '')}${kpi('Fat (Yuhasz)', 'yuhaszPct', R.slaughterPct != null ? `<div class="k-sub">Slaughter (young people): ${R.slaughterPct.toFixed(1)} %</div>` : '')}${kpi('Muscle (Lee)', 'musclePct', `<div class="k-sub">${R.muscleKg.toFixed(1)} kg</div>`)}${kpi('BMI', 'bmi')}</div>
+        <div class="card"><h2>Evolution</h2>${anChartsHtml(p.id)}</div>
         <div class="card"><h2>Summary</h2><ul class="an-list">${anConclusions(R, pR, rows, p.id, prev ? longDateSafe(prev.a.date) : '').map(t => `<li>${t}</li>`).join('')}</ul></div>
         <div class="card"><h2>Body composition</h2>${tbl(['mass', 'sum6', 'yuhaszPct', 'yuhaszKg', 'slaughterPct', 'adiposePct', 'adiposeKg', 'musclePct', 'muscleKg', 'residualPct', 'bmi'])}<div class="note">${AN_CAVEAT}</div></div>
         <div class="card"><h2>Muscle development</h2>${tbl(['corrArm', 'corrThigh', 'corrCalf', 'areaArm', 'areaThigh', 'areaCalf', 'shareArm', 'shareThigh', 'shareCalf', 'flexDiff'])}</div>
