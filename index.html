@@ -2107,7 +2107,8 @@ function renderCompare() {
 // ---- bioimpedance report parsing (text produced by OCR) ----
 // Understands two Arboleaf layouts: the one-screen summary and the full "Body Composition Analysis" report.
 function parseBioText(raw) {
-  const text = String(raw || '').replace(/[–—−]/g, '-').replace(/\r/g, '');
+  // Arboleaf follows the phone's language: "68,3 kg" and "11,1 %" use a decimal comma
+  const text = String(raw || '').replace(/[–—−]/g, '-').replace(/\r/g, '').replace(/(\d)[ \t]*,[ \t]*(?=\d)/g, '$1.');
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   const out = { format: null, name: null, date: null, height_cm: null, values: {}, calculated: [], notes: [] };
   const numIn = s => { const m = String(s).replace(/(\d)\s+(?=[\d.])/g, '$1').replace(/(\d)\s*\.\s*(\d)/g, '$1.$2').match(/\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : null; };
@@ -2118,8 +2119,11 @@ function parseBioText(raw) {
     if (mon > 12 && day <= 12) { const t = day; day = mon; mon = t; }   // dd/mm/yyyy is the Arboleaf default
     out.date = d[3] + '-' + String(mon).padStart(2, '0') + '-' + String(day).padStart(2, '0');
   }
-  const hm = text.match(/Height:\s*(\d{3})\s*cm/i);
+  const hm = text.match(/Height:\s*(\d{3})\D{0,3}cm/i);
   if (hm) out.height_cm = +hm[1];
+  const am = text.match(/Age:\s*(\d{1,2})\b/i), gm = text.match(/Gender:\s*(Male|Female)/i);
+  if (am) out.age = +am[1];
+  if (gm) out.sex = gm[1][0].toUpperCase() + gm[1].slice(1).toLowerCase();
 
   const full = /Body Composition Analysis|Height:\s*\d{3}\s*cm/i.test(text);
   out.format = full ? 'full' : 'summary';
@@ -2242,7 +2246,7 @@ async function fileToCanvases(file) {
     for (let n = 1; n <= Math.min(pdf.numPages, 10); n++) {
       const page = await pdf.getPage(n);
       const base = page.getViewport({ scale: 1 });
-      const viewport = page.getViewport({ scale: 1900 / base.width });
+      const viewport = page.getViewport({ scale: 2400 / base.width });
       const c = document.createElement('canvas');
       c.width = Math.round(viewport.width); c.height = Math.round(viewport.height);
       await page.render({ canvasContext: c.getContext('2d'), viewport }).promise;
@@ -2274,22 +2278,80 @@ function trimCanvas(c) {
   t.getContext('2d').drawImage(c, x0, y0, t.width, t.height, 0, 0, t.width, t.height);
   return t;
 }
-// Full report only: the body water (litres) sits in a blue table that confuses the main pass, so it is read separately
-async function readWaterLitres(canvas, worker) {
-  const t = trimCanvas(canvas);
-  const sx = Math.round(.105 * t.width), sy = Math.round(.13 * t.height), sw = Math.round(.095 * t.width), sh = Math.round(.14 * t.height);
-  const c = document.createElement('canvas');
-  c.width = sw * 3; c.height = sh * 3;
+// The full "Body Composition Analysis" report is a fixed template, so each value is read from its own small area with a digits-only
+// pass (much more reliable than reading the whole page). Positions are fractions of the report image.
+const FULL_ZONES = {
+  waterL: [0.11, 0.137, 0.20, 0.158], fatMass: [0.11, 0.239, 0.20, 0.266], ffm: [0.385, 0.195, 0.48, 0.22], weight: [0.46, 0.226, 0.54, 0.252],
+  subcut: [0.78, 0.262, 0.86, 0.284], bmr: [0.78, 0.297, 0.86, 0.318], lbm: [0.78, 0.331, 0.86, 0.352], skeletal: [0.78, 0.362, 0.86, 0.384],
+  bmiRow: [0.10, 0.531, 0.56, 0.545], pbfRow: [0.10, 0.563, 0.56, 0.577], viscRow: [0.10, 0.598, 0.56, 0.617],
+};
+const FULL_BALANCE = { upper: [0.74, 0.545, 0.99, 0.572], lower: [0.74, 0.575, 0.99, 0.600], overall: [0.74, 0.605, 0.99, 0.635] };
+function zoneCanvas(t, z, scale, ink) {
+  const sx = Math.round(z[0] * t.width), sy = Math.round(z[1] * t.height), sw = Math.round((z[2] - z[0]) * t.width), sh = Math.round((z[3] - z[1]) * t.height);
+  const pad = ink ? 12 : 0, c = document.createElement('canvas');
+  c.width = Math.round(sw * scale) + pad * 2; c.height = Math.round(sh * scale) + pad * 2;
   const ctx = c.getContext('2d');
-  ctx.drawImage(t, sx, sy, sw, sh, 0, 0, c.width, c.height);
-  const img = ctx.getImageData(0, 0, c.width, c.height), d = img.data;
-  for (let i = 0; i < d.length; i += 4) { const l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; const v = l < 95 ? 0 : 255; d[i] = d[i + 1] = d[i + 2] = v; }
-  ctx.putImageData(img, 0, 0);
-  await worker.setParameters({ tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK, tessedit_char_whitelist: '0123456789. ' });
-  const { data } = await worker.recognize(c);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(t, sx, sy, sw, sh, pad, pad, c.width - pad * 2, c.height - pad * 2);
+  if (ink) {   // keep only dark, non-blue pixels: removes the blue table lines and bars that confuse the reader
+    const img = ctx.getImageData(0, 0, c.width, c.height), d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2], blue = d[i + 2] - d[i] > 40;
+      const v = (!blue && l < 150) ? 0 : 255; d[i] = d[i + 1] = d[i + 2] = v;
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  return c;
+}
+async function ocrNumbers(worker, t, z) {
+  const { data } = await worker.recognize(zoneCanvas(t, z, 2, true));
+  return (data.text.replace(/(\d)\s*,\s*(?=\d)/g, '$1.').match(/\d+(?:\.\d+)?/g) || []).map(Number);
+}
+// which of the three check boxes in a row is ticked: find the first box from its border rows, then count blue pixels inside each box (a tick adds them)
+function readBalanceRow(t, z) {
+  const c = zoneCanvas(t, z, 1, false), W = c.width, d = c.getContext('2d').getImageData(0, 0, W, c.height).data;
+  const blue = (x, y) => { const i = (y * W + x) * 4; return d[i + 2] > 150 && d[i] < 140 && d[i + 2] - d[i] > 60; };
+  const boxes = [[0.045, 0.103], [0.353, 0.410], [0.667, 0.724]].map(([a, b]) => [Math.round(a * W), Math.round(b * W)]);
+  const bw = boxes[0][1] - boxes[0][0], inset = Math.max(2, Math.round(bw * 0.18));
+  const rowCount = y => { let n = 0; for (let x = boxes[0][0] - 3; x <= boxes[0][1] + 3; x++) if (blue(x, y)) n++; return n; };
+  let top = -1, bottom = -1;
+  for (let y = 0; y < c.height; y++) if (rowCount(y) >= bw * 0.7) { if (top < 0) top = y; bottom = y; }
+  if (top < 0 || bottom - top < bw * 0.6) return null;
+  const ink = boxes.map(([x0, x1]) => { let n = 0; for (let y = top + inset; y <= bottom - inset; y++) for (let x = x0 + inset; x <= x1 - inset; x++) if (blue(x, y)) n++; return n; });
+  const sorted = ink.slice().sort((p, q) => q - p);
+  if (sorted[0] < bw * 0.8 || sorted[0] < sorted[1] * 2) return null;
+  return ['balanced', 'slight', 'severe'][ink.indexOf(sorted[0])];
+}
+async function readFullReport(t, worker, parsed) {
+  await worker.setParameters({ tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE, tessedit_char_whitelist: '0123456789,.%kgcal ' });
+  const one = async k => { const n = await ocrNumbers(worker, t, FULL_ZONES[k]); return n.length ? n[n.length - 1] : null; };
+  const [waterL, fatMass, ffm, weight, subcut, bmr, lbm, skeletal, bmiOcr, pbfOcr, visc] = [await one('waterL'), await one('fatMass'), await one('ffm'), await one('weight'),
+    await one('subcut'), await one('bmr'), await one('lbm'), await one('skeletal'), await one('bmiRow'), await one('pbfRow'), await one('viscRow')];
   await worker.setParameters({ tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT, tessedit_char_whitelist: '' });
-  const m = data.text.match(/\d+(?:\.\d+)?/);
-  return m ? parseFloat(m[0]) : null;
+  const v = parsed.values, r1 = x => Math.round(x * 10) / 10, near = (a, b, tol) => a != null && b != null && Math.abs(a - b) <= tol;
+  const ff = ffm != null ? ffm : lbm;
+  if (weight != null) v.weight_kg = weight;
+  if (ff != null) v.fat_free_mass_kg = ff;
+  if (subcut != null) v.subcutaneous_fat_percent = subcut;
+  if (skeletal != null) v.skeletal_muscle_mass_kg = skeletal;
+  if (visc != null && visc >= 1 && visc <= 30 && Number.isInteger(visc)) v.visceral_fat = visc;
+  if (bmr != null) v.bmr = bmr;
+  parsed.calculated = parsed.calculated.filter(k => !['bmi', 'body_fat_percent', 'total_body_water_percent'].includes(k));
+  if (weight != null) {
+    const pbfCalc = fatMass != null ? r1(fatMass / weight * 100) : (ff != null ? r1((weight - ff) / weight * 100) : null);
+    if (near(pbfOcr, pbfCalc, 0.25) || (pbfOcr != null && pbfCalc == null)) v.body_fat_percent = pbfOcr;
+    else if (pbfCalc != null) { v.body_fat_percent = pbfCalc; parsed.calculated.push('body_fat_percent'); }
+    const h = parsed.height_cm ? parsed.height_cm / 100 : null, bmiCalc = h ? r1(weight / (h * h)) : null;
+    if (near(bmiOcr, bmiCalc, 0.5) || (bmiOcr != null && bmiCalc == null)) v.bmi = bmiOcr;
+    else if (bmiCalc != null) { v.bmi = bmiCalc; parsed.calculated.push('bmi'); }
+    if (waterL != null) { v.total_body_water_percent = r1(waterL / weight * 100); parsed.calculated.push('total_body_water_percent'); }
+    if (fatMass != null && ff != null && !near(weight, ff + fatMass, 0.4)) parsed.notes.push('Weight, fat-free mass and fat mass do not add up: check them against the report.');
+    if (lbm != null && ffm != null && !near(lbm, ffm, 0.15)) parsed.notes.push('The two fat-free mass readings differ (' + ffm + ' and ' + lbm + '): check it.');
+  } else parsed.notes.push('Weight could not be read: please fill it in.');
+  const bal = {}; Object.keys(FULL_BALANCE).forEach(k => { bal[k] = readBalanceRow(t, FULL_BALANCE[k]); });
+  if (Object.values(bal).some(Boolean)) parsed.balance = bal;
+  parsed.notes = parsed.notes.filter(n => !/could not be cross-checked/.test(n));
+  return parsed;
 }
 function matchPlayer(name) {
   if (!name) return null;
@@ -2298,7 +2360,13 @@ function matchPlayer(name) {
   const exact = roster.filter(p => slugify(p.name) === slugify(name));
   if (exact.length === 1) return exact[0].id;
   const cand = roster.filter(p => { const t = norm(p.name); return t.length >= 2 && t.every(x => det.includes(x)); });
-  return cand.length === 1 ? cand[0].id : null;
+  if (cand.length === 1) return cand[0].id;
+  if (cand.length > 1) return null;
+  // a small spelling difference (the report says "Mattise", the roster "Matisse") still counts when it clearly points to one player
+  const lev = (a, b) => { const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]); for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; };
+  const scored = roster.map(p => { const t = norm(p.name); return { id: p.id, cost: t.length >= 2 ? t.reduce((n, x) => n + Math.min(...det.map(y => lev(x, y))), 0) : 99 }; }).sort((x, y) => x.cost - y.cost);
+  return scored.length && scored[0].cost <= 2 && (scored.length < 2 || scored[1].cost >= scored[0].cost + 2) ? scored[0].id : null;
 }
 function progressModal(text) {
   const overlay = document.createElement('div');
@@ -2319,16 +2387,20 @@ async function importReports(files) {
       prog.update('Reading ' + f.name + ' (' + (done + 1) + ' of ' + files.length + ')…', 10 + done / files.length * 85);
       try {
         for (const { canvas, label } of await fileToCanvases(f)) {
-          const { data } = await worker.recognize(canvas);
-          const parsed = parseBioText(data.text);
-          if (parsed.format === 'full' && parsed.values.weight_kg != null && parsed.values.total_body_water_percent == null) {
-            try {
-              const litres = await readWaterLitres(canvas, worker);
-              const pct = litres != null ? Math.round(litres / parsed.values.weight_kg * 1000) / 10 : null;
-              if (pct != null && pct >= 40 && pct <= 75) { parsed.values.total_body_water_percent = pct; parsed.calculated.push('total_body_water_percent'); }
-            } catch (e) { console.warn(e); }
+          // the full report has a header strip with the player: read it first, then every value from its own area
+          const t = trimCanvas(canvas), headZone = [0, 0, 1, 0.14];
+          const head = await worker.recognize(zoneCanvas(t, headZone, 1, false));
+          let parsed, text;
+          if (/Body Composition|ID:|Height:\s*\d/i.test(head.data.text)) {
+            parsed = parseBioText(head.data.text);
+            parsed.format = 'full';
+            await readFullReport(t, worker, parsed);
+            text = head.data.text;
+          } else {
+            const { data } = await worker.recognize(canvas);
+            parsed = parseBioText(data.text); text = data.text;
           }
-          records.push({ label, text: data.text, parsed });
+          records.push({ label, text, parsed });
         }
       } catch (e) { records.push({ label: f.name, error: e.message || String(e) }); }
       done++;
@@ -2369,6 +2441,8 @@ function reviewImport(records) {
       Object.keys(bad).forEach(k => msgs.push((IMPORT_FIELDS.find(f => f[0] === k) || [k, k])[1] + ': ' + bad[k] + '.'));
       p.notes.forEach(n => msgs.push(escapeHtml(n)));
       const missing = IMPORT_FIELDS.filter(f => p.values[f[0]] == null).map(f => f[1]);
+      if (p.format === 'summary') msgs.push('Simplified report (under-18 format): Arboleaf does not include visceral fat, skeletal muscle or muscle balance in it.');
+      const who = [p.age != null ? 'age ' + p.age : '', p.sex || '', p.height_cm ? p.height_cm + ' cm' : ''].filter(Boolean).join(' · ');
       return `<div class="imp-card" data-i="${i}">
         <div class="imp-top">
           <label class="save-note"><input type="checkbox" class="imp-inc" checked style="width:auto;height:auto;"> Import</label>
@@ -2377,6 +2451,8 @@ function reviewImport(records) {
           <input type="date" class="imp-date" value="${escapeHtml(p.date || todayStr())}">
         </div>
         <div class="imp-grid">${IMPORT_FIELDS.map(([k, label, step]) => `<div><label>${label}</label><input type="number" step="${step}" data-k="${k}" value="${p.values[k] != null ? p.values[k] : ''}" class="${bad[k] ? 'warn' : ''}"></div>`).join('')}</div>
+        ${p.balance ? `<div class="imp-grid" style="grid-template-columns:repeat(3,1fr);margin-top:8px;">${['upper', 'lower', 'overall'].map(k => `<div><label>Muscle balance, ${k}</label><select class="imp-bal" data-k="${k}"><option value="">—</option>${[['balanced', 'Balanced'], ['slight', 'Slightly uneven'], ['severe', 'Severely uneven']].map(([v, l]) => `<option value="${v}"${p.balance[k] === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>`).join('')}</div>` : ''}
+        ${who ? `<div class="save-note" style="margin-top:6px;">From the report: ${escapeHtml(who)}</div>` : ''}
         ${msgs.length ? `<div class="imp-msg">${msgs.join('<br>')}</div>` : ''}
         ${missing.length && found ? `<div class="save-note" style="margin-top:6px;">Not in this report (left as they are): ${missing.join(', ')}.</div>` : ''}
         <details><summary>Text read from the file</summary><pre>${escapeHtml(r.text || '')}</pre></details>
@@ -2404,6 +2480,7 @@ function reviewImport(records) {
         if (!pid) return;
         const rid = overlay.querySelector('#impRound').value, cur = readingIn(rid, pid), b = (cur && cur.muscle_balance) || {};
         const row = { round_id: rid, player_id: pid, measured_on: c.querySelector('.imp-date').value || todayStr(), balance_upper: b.upper || null, balance_lower: b.lower || null, balance_overall: b.overall || null };
+        c.querySelectorAll('.imp-bal').forEach(sel => { if (sel.value) row['balance_' + sel.dataset.k] = sel.value; });
         c.querySelectorAll('.imp-grid input').forEach(inp => {
           const val = inp.value === '' ? null : parseFloat(inp.value);
           row[inp.dataset.k] = (val == null || isNaN(val)) ? (cur && cur[inp.dataset.k] != null ? cur[inp.dataset.k] : null) : val;
