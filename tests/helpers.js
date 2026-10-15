@@ -27,9 +27,13 @@ async function openApp(page, data = {}, opts = {}) {
   await page.addInitScript(T => {
     window.__T = T;
     const q = t => {
-      const o = { _f: null,
-        then: f => f({ data: (t === 'settings' && o._f) ? T.settings.filter(x => x.key === o._f) : (T[t] || []), error: null }),
-        eq: (c, v) => { o._f = v; return o; }, like: () => o, order: () => o, select: () => o, insert: () => o, update: () => o, delete: () => o, single: () => o,
+      const o = { _eq: {}, _del: false,
+        then: f => {
+          if (o._del) { if (t === 'measurements') T.measurements = T.measurements.filter(m => !Object.entries(o._eq).every(([c, v]) => m[c] === v)); return f({ data: null, error: null }); }
+          return f({ data: (t === 'settings' && o._eq.key) ? T.settings.filter(x => x.key === o._eq.key) : (T[t] || []), error: null });
+        },
+        eq: (c, v) => { o._eq[c] = v; return o; }, like: () => o, order: () => o, select: () => o, insert: () => o, update: () => o, single: () => o,
+        delete: () => { o._del = true; return o; },
         upsert: r => {
           (Array.isArray(r) ? r : [r]).forEach(x => {
             if (t === 'settings') { const i = T.settings.findIndex(y => y.key === x.key); if (i >= 0) T.settings[i] = x; else T.settings.push(x); }
