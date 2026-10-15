@@ -781,12 +781,12 @@
         </div>
 
         <div class="card">
-          <h2>Import measurements <span class="muted">CSV into the current round</span></h2>
+          <h2>Import measurements <span class="muted">CSV, into any round</span></h2>
           <div class="row">
             <input type="file" id="csvFile" accept=".csv,text/csv" style="height:auto;padding:8px;max-width:320px;">
             <button class="btn" id="csvTemplateBtn">Download template</button>
           </div>
-          <div class="note">Columns: <b>player</b> (name), <b>date</b> (YYYY-MM-DD, optional) and any of body_fat_percent, subcutaneous_fat_percent, total_body_water_percent, bmi, fat_free_mass_kg, visceral_fat, skeletal_muscle_mass_kg, weight_kg. Commas or semicolons both work. You will see a preview before anything is saved.</div>
+          <div class="note">Columns: <b>player</b> (name), <b>date</b> (YYYY-MM-DD, optional) and any of body_fat_percent, subcutaneous_fat_percent, total_body_water_percent, bmi, fat_free_mass_kg, visceral_fat, skeletal_muscle_mass_kg, weight_kg and balance_upper / balance_lower / balance_overall (balanced, slight, severe). Commas or semicolons both work. You choose the round and whether to only fill empty values before anything is saved.</div>
         </div>
 
         <div class="card">
@@ -1087,6 +1087,26 @@ document.getElementById('saveThresholdsBtn').addEventListener('click', async () 
   renderAll();
 });
 
+// Imports can fill an earlier round (for example a month whose report was only partly entered): choose where the values go
+function roundOptionsHtml(selected) {
+  return rounds.slice().reverse().map(r => `<option value="${r.id}"${r.id === selected ? ' selected' : ''}>${escapeHtml(roundLabel(r))}${currentRound && r.id === currentRound.id ? ' (current)' : ''}</option>`).join('');
+}
+function readingIn(roundId, pid) { return (measurements[roundId] && measurements[roundId][pid]) || null; }
+function importTargetModal(summary) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `<div class="modal-box"><p>${escapeHtml(summary)}</p>
+      <div class="imp-grid" style="grid-template-columns:1fr;margin:10px 0;"><div><label for="itRound">Save into round</label><select id="itRound">${roundOptionsHtml(currentRound && currentRound.id)}</select></div></div>
+      <label class="an-check"><input type="checkbox" id="itFill" checked> Only fill empty values (keep what is already saved)</label>
+      <div class="modal-actions"><button class="modal-cancel">Cancel</button><button class="modal-ok">Import</button></div></div>`;
+    document.body.appendChild(overlay);
+    const cleanup = r => { overlay.remove(); resolve(r); };
+    overlay.querySelector('.modal-cancel').addEventListener('click', () => cleanup(null));
+    overlay.querySelector('.modal-ok').addEventListener('click', () => cleanup({ roundId: overlay.querySelector('#itRound').value, fillOnly: overlay.querySelector('#itFill').checked }));
+    overlay.addEventListener('click', e => { if (e.target === overlay) cleanup(null); });
+  });
+}
 function customConfirm(message) {
   return new Promise(resolve => {
     const overlay = document.createElement('div');
@@ -1946,6 +1966,9 @@ const CSV_ALIASES = {
   visceral_fat: ['visceralfat', 'visceral'],
   skeletal_muscle_mass_kg: ['skeletalmusclemasskg', 'skeletalmusclemass', 'skeletalmuscle', 'smm', 'musculoesqueletico'],
   weight_kg: ['weightkg', 'weight', 'peso'],
+  balance_upper: ['balanceupper', 'musclebalanceupper'],
+  balance_lower: ['balancelower', 'musclebalancelower'],
+  balance_overall: ['balanceoverall', 'musclebalanceoverall'],
 };
 function csvToRows(text) {
   const { rows, delim } = parseCSV(text);
@@ -1963,7 +1986,7 @@ function csvToRows(text) {
     if (!p) { if (nm) unmatched.push(nm); return; }
     const o = { player_id: p.id, name: p.name, measured_on: (cols.date != null && /^\d{4}-\d{2}-\d{2}$/.test((r[cols.date] || '').trim())) ? r[cols.date].trim() : todayStr() };
     let any = false;
-    Object.keys(CSV_ALIASES).forEach(k => { if (k !== 'player' && k !== 'date' && k in cols) { o[k] = num(r[cols[k]]); if (o[k] != null) any = true; } });
+    Object.keys(CSV_ALIASES).forEach(k => { if (k !== 'player' && k !== 'date' && k in cols) { o[k] = k.startsWith('balance_') ? ((r[cols[k]] || '').trim().toLowerCase() || null) : num(r[cols[k]]); if (o[k] != null) any = true; } });
     if (any) matched.push(o); else unmatched.push(nm + ' (no values)');
   });
   return { matched, unmatched };
@@ -1975,22 +1998,28 @@ document.getElementById('csvFile').addEventListener('change', async e => {
   e.target.value = '';
   if (res.error) { await customConfirm(res.error); return; }
   if (!res.matched.length) { await customConfirm('No rows could be matched to players.' + (res.unmatched.length ? ' Not matched: ' + res.unmatched.join(', ') : '')); return; }
-  const overwrite = res.matched.filter(m => readingFor(m.player_id)).length;
-  const msg = res.matched.length + ' player(s) will be saved into the current round' + (overwrite ? ' (' + overwrite + ' will overwrite existing values)' : '') + '.'
-    + (res.unmatched.length ? ' Not matched and skipped: ' + res.unmatched.join(', ') + '.' : '');
-  if (!await customConfirm(msg)) return;
+  const msg = res.matched.length + ' player(s) found in the file.' + (res.unmatched.length ? ' Not matched and skipped: ' + res.unmatched.join(', ') + '.' : '');
+  const target = await importTargetModal(msg);
+  if (!target) return;
   const rows = res.matched.map(m => {
     const { name, ...rest } = m;
-    const cur = readingFor(m.player_id), b = (cur && cur.muscle_balance) || {};
-    // blank cells in the CSV keep the value already stored
-    Object.keys(rest).forEach(k => { if (rest[k] == null && cur && cur[k] != null) rest[k] = cur[k]; });
-    return { round_id: currentRound.id, ...rest, balance_upper: b.upper || null, balance_lower: b.lower || null, balance_overall: b.overall || null };
+    const cur = readingIn(target.roundId, m.player_id), b = (cur && cur.muscle_balance) || {};
+    const out = { round_id: target.roundId, ...rest };
+    // blank cells keep the stored value; with "only fill empty values" the stored value also wins over the file
+    Object.keys(CSV_ALIASES).forEach(k => {
+      if (k === 'player' || k === 'date') return;
+      const stored = k.startsWith('balance_') ? (b[k.slice(8)] || null) : (cur ? cur[k] : null);
+      if (out[k] == null || (target.fillOnly && stored != null)) out[k] = stored != null ? stored : (out[k] != null ? out[k] : null);
+    });
+    if (target.fillOnly && cur && cur.date) out.measured_on = cur.date;
+    return out;
   });
   const { error } = await sb.from('measurements').upsert(rows, { onConflict: 'round_id,player_id' });
   if (error) { showError(error); return; }
-  rows.forEach(r => { (measurements[currentRound.id] = measurements[currentRound.id] || {})[r.player_id] = rowToReading(r); });
+  rows.forEach(r => { (measurements[r.round_id] = measurements[r.round_id] || {})[r.player_id] = rowToReading(r); });
   renderAll();
-  toast('Imported ' + rows.length + ' measurement' + (rows.length === 1 ? '' : 's'));
+  const rd = rounds.find(x => x.id === target.roundId);
+  toast('Imported ' + rows.length + ' measurement' + (rows.length === 1 ? '' : 's') + ' into ' + (rd ? roundLabel(rd) : 'the round'));
 });
 document.getElementById('csvTemplateBtn').addEventListener('click', () => {
   const head = ['player', 'date', ...Object.keys(CSV_ALIASES).filter(k => k !== 'player' && k !== 'date')];
@@ -2297,9 +2326,10 @@ async function importReports(files) {
   if (!rows.length) { await customConfirm('Nothing to save.'); return; }
   const { error } = await sb.from('measurements').upsert(rows, { onConflict: 'round_id,player_id' });
   if (error) { showError(error); return; }
-  rows.forEach(r => { (measurements[currentRound.id] = measurements[currentRound.id] || {})[r.player_id] = rowToReading(r); });
+  rows.forEach(r => { (measurements[r.round_id] = measurements[r.round_id] || {})[r.player_id] = rowToReading(r); });
   renderAll();
-  toast('Saved ' + rows.length + ' measurement' + (rows.length === 1 ? '' : 's') + ' into the current round');
+  const rd = rounds.find(x => x.id === rows[0].round_id);
+  toast('Saved ' + rows.length + ' measurement' + (rows.length === 1 ? '' : 's') + ' into ' + (rd && currentRound && rd.id !== currentRound.id ? roundLabel(rd) : 'the current round'));
 }
 const IMPORT_FIELDS = [
   ['weight_kg', 'Weight (kg)', '0.01'], ['body_fat_percent', 'Body fat %', '0.1'], ['subcutaneous_fat_percent', 'Subcutaneous %', '0.1'],
@@ -2335,7 +2365,8 @@ function reviewImport(records) {
       </div>`;
     }).join('');
     overlay.innerHTML = `<div class="modal-box imp-box"><h3>Review imported reports</h3>
-      <div class="save-note">Check every value against the report. Saved into the current round; empty fields keep the value already stored.</div>
+      <div class="save-note">Check every value against the report. Empty fields keep the value already stored.</div>
+      <div class="imp-grid" style="grid-template-columns:240px 1fr;margin:10px 0;"><div><label for="impRound">Save into round</label><select id="impRound">${roundOptionsHtml(currentRound && currentRound.id)}</select></div></div>
       ${cards}
       <div class="imp-foot"><span class="save-note" id="impCount"></span><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Save</button></div></div>`;
     document.body.appendChild(overlay);
@@ -2353,8 +2384,8 @@ function reviewImport(records) {
         if (!c.querySelector('.imp-inc').checked) return;
         const pid = c.querySelector('.imp-player').value;
         if (!pid) return;
-        const cur = readingFor(pid), b = (cur && cur.muscle_balance) || {};
-        const row = { round_id: currentRound.id, player_id: pid, measured_on: c.querySelector('.imp-date').value || todayStr(), balance_upper: b.upper || null, balance_lower: b.lower || null, balance_overall: b.overall || null };
+        const rid = overlay.querySelector('#impRound').value, cur = readingIn(rid, pid), b = (cur && cur.muscle_balance) || {};
+        const row = { round_id: rid, player_id: pid, measured_on: c.querySelector('.imp-date').value || todayStr(), balance_upper: b.upper || null, balance_lower: b.lower || null, balance_overall: b.overall || null };
         c.querySelectorAll('.imp-grid input').forEach(inp => {
           const val = inp.value === '' ? null : parseFloat(inp.value);
           row[inp.dataset.k] = (val == null || isNaN(val)) ? (cur && cur[inp.dataset.k] != null ? cur[inp.dataset.k] : null) : val;
