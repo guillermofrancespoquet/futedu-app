@@ -70,3 +70,13 @@ test('full backup counts everything saved', async ({ page }) => {
   const data = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
   expect(data.meta.counts).toMatchObject({ players: 4, measurements: 2, anthropometry_assessments: 1, anthropometry_profiles: 1 });
 });
+
+test('a measurement can be deleted from the player page', async ({ page }) => {
+  await openApp(page, twoRounds());
+  await go(page, `player/${alex}`);
+  await page.click('[data-del-reading="rS"]');
+  await page.click('.modal-ok');
+  await expect.poll(() => rows(page, 'rS')).toEqual([]);
+  expect(await rows(page, 'r1')).toEqual([[carla, 9.9, 3, 70]]);   // other players and rounds are untouched
+  await expect(page.locator('#view-player')).toContainText('No measurements yet');
+});

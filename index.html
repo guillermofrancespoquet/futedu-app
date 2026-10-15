@@ -1091,15 +1091,21 @@ document.getElementById('saveThresholdsBtn').addEventListener('click', async () 
 
 // Imports can fill an earlier round (for example a month whose report was only partly entered): choose where the values go
 function roundOptionsHtml(selected) {
-  return rounds.slice().reverse().map(r => `<option value="${r.id}"${r.id === selected ? ' selected' : ''}>${escapeHtml(roundLabel(r))}${currentRound && r.id === currentRound.id ? ' (current)' : ''}</option>`).join('');
+  return rounds.slice().reverse().map(r => `<option value="${r.id}"${r.id === selected ? ' selected' : ''}>${escapeHtml(roundLabel(r))}${currentRound && r.id === currentRound.id && roundLabel(r) !== 'Current' ? ' (current)' : ''}</option>`).join('');
+}
+// the round a report belongs to: the earliest closed round that was still open on that date, otherwise the current one
+function roundForDate(date) {
+  const closed = rounds.filter(r => r.closed && r.closed_on).sort((a, b) => a.closed_on.localeCompare(b.closed_on));
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date || '')) { const hit = closed.find(r => date <= r.closed_on); if (hit) return hit.id; }
+  return currentRound ? currentRound.id : (rounds.length ? rounds[rounds.length - 1].id : null);
 }
 function readingIn(roundId, pid) { return (measurements[roundId] && measurements[roundId][pid]) || null; }
-function importTargetModal(summary) {
+function importTargetModal(summary, defaultRound) {
   return new Promise(resolve => {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `<div class="modal-box"><p>${escapeHtml(summary)}</p>
-      <div class="imp-grid" style="grid-template-columns:1fr;margin:10px 0;"><div><label for="itRound">Save into round</label><select id="itRound">${roundOptionsHtml(currentRound && currentRound.id)}</select></div></div>
+      <div class="imp-grid" style="grid-template-columns:1fr;margin:10px 0;"><div><label for="itRound">Save into round</label><select id="itRound">${roundOptionsHtml(defaultRound || (currentRound && currentRound.id))}</select></div></div>
       <label class="an-check"><input type="checkbox" id="itFill" checked> Only fill empty values (keep what is already saved)</label>
       <div class="modal-actions"><button class="modal-cancel">Cancel</button><button class="modal-ok">Import</button></div></div>`;
     document.body.appendChild(overlay);
@@ -2017,7 +2023,8 @@ document.getElementById('csvFile').addEventListener('change', async e => {
   if (res.error) { await customConfirm(res.error); return; }
   if (!res.matched.length) { await customConfirm('No rows could be matched to players.' + (res.unmatched.length ? ' Not matched: ' + res.unmatched.join(', ') : '')); return; }
   const msg = res.matched.length + ' player(s) found in the file.' + (res.unmatched.length ? ' Not matched and skipped: ' + res.unmatched.join(', ') + '.' : '');
-  const target = await importTargetModal(msg);
+  const votes = {}; res.matched.forEach(m => { const id = roundForDate(m.measured_on); votes[id] = (votes[id] || 0) + 1; });
+  const target = await importTargetModal(msg + ' The round below was chosen from the dates in the file.', Object.keys(votes).sort((a, b) => votes[b] - votes[a])[0]);
   if (!target) return;
   const rows = res.matched.map(m => {
     const { name, ...rest } = m;
@@ -2411,15 +2418,20 @@ async function importReports(files) {
     return;
   }
   prog.close();
-  const rows = await reviewImport(records);
-  if (!rows) return;
+  const result = await reviewImport(records);
+  if (!result) return;
+  const rows = result.rows;
   if (!rows.length) { await customConfirm('Nothing to save.'); return; }
   const { error } = await sb.from('measurements').upsert(rows, { onConflict: 'round_id,player_id' });
   if (error) { showError(error); return; }
   rows.forEach(r => { (measurements[r.round_id] = measurements[r.round_id] || {})[r.player_id] = rowToReading(r); });
+  if (Object.keys(result.profiles).length) {
+    const np = await mutateSetting('anthro_profiles', all => { Object.entries(result.profiles).forEach(([pid, add]) => { all[pid] = { ...(all[pid] || {}), ...add }; }); });
+    if (np) anthroProfiles = np;
+  }
   renderAll();
-  const rd = rounds.find(x => x.id === rows[0].round_id);
-  toast('Saved ' + rows.length + ' measurement' + (rows.length === 1 ? '' : 's') + ' into ' + (rd && currentRound && rd.id !== currentRound.id ? roundLabel(rd) : 'the current round'));
+  const names = [...new Set(rows.map(r => { const rd = rounds.find(x => x.id === r.round_id); return rd ? roundLabel(rd) : ''; }))].filter(Boolean);
+  toast('Saved ' + rows.length + ' measurement' + (rows.length === 1 ? '' : 's') + ' into ' + (names.length ? names.join(', ') : 'the round') + (Object.keys(result.profiles).length ? ' and updated the player data' : ''));
 }
 const IMPORT_FIELDS = [
   ['weight_kg', 'Weight (kg)', '0.01'], ['body_fat_percent', 'Body fat %', '0.1'], ['subcutaneous_fat_percent', 'Subcutaneous %', '0.1'],
@@ -2449,10 +2461,12 @@ function reviewImport(records) {
           <span class="fname">${escapeHtml(r.label)}</span>
           <select class="imp-player"><option value="">— choose player —</option>${roster.map(x => `<option value="${x.id}"${x.id === pid ? ' selected' : ''}>${escapeHtml(x.name)}</option>`).join('')}</select>
           <input type="date" class="imp-date" value="${escapeHtml(p.date || todayStr())}">
+          <select class="imp-round" aria-label="Round" title="Round it is saved into (chosen from the report date)">${roundOptionsHtml(roundForDate(p.date))}</select>
         </div>
         <div class="imp-grid">${IMPORT_FIELDS.map(([k, label, step]) => `<div><label>${label}</label><input type="number" step="${step}" data-k="${k}" value="${p.values[k] != null ? p.values[k] : ''}" class="${bad[k] ? 'warn' : ''}"></div>`).join('')}</div>
         ${p.balance ? `<div class="imp-grid" style="grid-template-columns:repeat(3,1fr);margin-top:8px;">${['upper', 'lower', 'overall'].map(k => `<div><label>Muscle balance, ${k}</label><select class="imp-bal" data-k="${k}"><option value="">—</option>${[['balanced', 'Balanced'], ['slight', 'Slightly uneven'], ['severe', 'Severely uneven']].map(([v, l]) => `<option value="${v}"${p.balance[k] === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>`).join('')}</div>` : ''}
         ${who ? `<div class="save-note" style="margin-top:6px;">From the report: ${escapeHtml(who)}</div>` : ''}
+        ${p.height_cm || p.sex ? (() => { const pf = (pid && anthroProfiles[pid]) || {}, differs = p.height_cm && pf.height != null && pf.height !== p.height_cm; return `<label class="an-check"><input type="checkbox" class="imp-prof"${differs ? '' : ' checked'}> Also save ${[p.height_cm ? 'height ' + p.height_cm + ' cm' : '', p.sex && !pf.sex ? 'sex ' + p.sex : ''].filter(Boolean).join(' and ') || 'height'} in the player's data (shared with Anthropometry)${differs ? ' <span class="muted">(replaces ' + pf.height + ' cm)</span>' : ''}</label>`; })() : ''}
         ${msgs.length ? `<div class="imp-msg">${msgs.join('<br>')}</div>` : ''}
         ${missing.length && found ? `<div class="save-note" style="margin-top:6px;">Not in this report (left as they are): ${missing.join(', ')}.</div>` : ''}
         <details><summary>Text read from the file</summary><pre>${escapeHtml(r.text || '')}</pre></details>
@@ -2460,7 +2474,7 @@ function reviewImport(records) {
     }).join('');
     overlay.innerHTML = `<div class="modal-box imp-box"><h3>Review imported reports</h3>
       <div class="save-note">Check every value against the report. Empty fields keep the value already stored.</div>
-      <div class="imp-grid" style="grid-template-columns:240px 1fr;margin:10px 0;"><div><label for="impRound">Save into round</label><select id="impRound">${roundOptionsHtml(currentRound && currentRound.id)}</select></div></div>
+      <div class="save-note">Each report goes into the round that matches its date: change the round on a report if needed.</div>
       ${cards}
       <div class="imp-foot"><span class="save-note" id="impCount"></span><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Save</button></div></div>`;
     document.body.appendChild(overlay);
@@ -2469,25 +2483,38 @@ function reviewImport(records) {
       overlay.querySelector('#impCount').textContent = n + ' report(s) ready to save';
       overlay.querySelectorAll('.imp-card[data-i]').forEach(c => c.classList.toggle('skip', !c.querySelector('.imp-inc').checked));
     };
-    overlay.addEventListener('change', update); update();
+    overlay.addEventListener('change', e => {
+      const card = e.target.closest && e.target.closest('.imp-card[data-i]');
+      if (card && e.target.classList.contains('imp-round')) e.target.dataset.touched = '1';
+      if (card && e.target.classList.contains('imp-date')) { const sel = card.querySelector('.imp-round'); if (!sel.dataset.touched) sel.value = roundForDate(e.target.value); }
+      update();
+    });
+    update();
     const done = v => { overlay.remove(); resolve(v); };
     overlay.querySelector('.modal-cancel').addEventListener('click', () => done(null));
     overlay.querySelector('.modal-ok').addEventListener('click', () => {
-      const byPlayer = {};
+      const byPlayer = {}, profiles = {};
       overlay.querySelectorAll('.imp-card[data-i]').forEach(c => {
         if (!c.querySelector('.imp-inc').checked) return;
         const pid = c.querySelector('.imp-player').value;
         if (!pid) return;
-        const rid = overlay.querySelector('#impRound').value, cur = readingIn(rid, pid), b = (cur && cur.muscle_balance) || {};
+        const rid = c.querySelector('.imp-round').value, cur = readingIn(rid, pid), b = (cur && cur.muscle_balance) || {};
         const row = { round_id: rid, player_id: pid, measured_on: c.querySelector('.imp-date').value || todayStr(), balance_upper: b.upper || null, balance_lower: b.lower || null, balance_overall: b.overall || null };
         c.querySelectorAll('.imp-bal').forEach(sel => { if (sel.value) row['balance_' + sel.dataset.k] = sel.value; });
         c.querySelectorAll('.imp-grid input').forEach(inp => {
           const val = inp.value === '' ? null : parseFloat(inp.value);
           row[inp.dataset.k] = (val == null || isNaN(val)) ? (cur && cur[inp.dataset.k] != null ? cur[inp.dataset.k] : null) : val;
         });
-        byPlayer[pid] = row;   // if two files are for the same player, the last one wins
+        byPlayer[rid + '|' + pid] = row;   // if two files are for the same player and round, the last one wins
+        const rec = records[+c.dataset.i], pbox = c.querySelector('.imp-prof');
+        if (pbox && pbox.checked && rec && rec.parsed) {
+          const pf = anthroProfiles[pid] || {}, add = {};
+          if (rec.parsed.height_cm) { add.height = rec.parsed.height_cm; add.fixedDate = row.measured_on; }
+          if (rec.parsed.sex && !pf.sex) add.sex = rec.parsed.sex;
+          if (Object.keys(add).length) profiles[pid] = add;
+        }
       });
-      done(Object.values(byPlayer));
+      done({ rows: Object.values(byPlayer), profiles });
     });
   });
 }
@@ -3255,7 +3282,7 @@ function seriesFor(id) {
   return rounds
     .map(rd => ({ round: rd, r: measurements[rd.id] && measurements[rd.id][id] }))
     .filter(x => x.r)
-    .map(x => ({ label: x.round.closed ? x.round.label : (x.round.label && x.round.label !== 'In progress' ? x.round.label : 'Current'), date: x.r.date || x.round.closed_on || '', r: x.r }));
+    .map(x => ({ roundId: x.round.id, label: x.round.closed ? x.round.label : (x.round.label && x.round.label !== 'In progress' ? x.round.label : 'Current'), date: x.r.date || x.round.closed_on || '', r: x.r }));
 }
 function niceStep(raw) {
   const mag = Math.pow(10, Math.floor(Math.log10(raw)));
@@ -3321,11 +3348,24 @@ function chartsHtml(id, cls) {
     ${mk('Hydration (%)', 'total_body_water_percent', '%', { target: thresholds.hydMin, legend: 'minimum ' + thresholds.hydMin + '%' })}
   </div>`;
 }
-function historyTable(id) {
+function historyTable(id, deletable) {
   const ser = seriesFor(id).slice().reverse();
   if (!ser.length) return '<div class="empty">No measurements yet.</div>';
-  return `<div class="hist-full"><table><tr><th>Round</th><th>Date</th><th>Body fat</th><th>Subcut.</th><th>Hydration</th><th>BMI</th><th>FFM</th><th>Visc.</th><th>Skel. muscle</th><th>Weight</th></tr>
-    ${ser.map(x => `<tr><td>${escapeHtml(x.label)}</td><td>${escapeHtml(x.date || '—')}</td><td>${fmtN(x.r.body_fat_percent, '%')}</td><td>${fmtN(x.r.subcutaneous_fat_percent, '%')}</td><td>${fmtN(x.r.total_body_water_percent, '%')}</td><td>${fmtN(x.r.bmi)}</td><td>${fmtN(x.r.fat_free_mass_kg, ' kg')}</td><td>${fmtN(x.r.visceral_fat)}</td><td>${fmtN(x.r.skeletal_muscle_mass_kg, ' kg')}</td><td>${fmtN(x.r.weight_kg, ' kg')}</td></tr>`).join('')}</table></div>`;
+  return `<div class="hist-full"><table><tr><th>Round</th><th>Date</th><th>Body fat</th><th>Subcut.</th><th>Hydration</th><th>BMI</th><th>FFM</th><th>Visc.</th><th>Skel. muscle</th><th>Weight</th>${deletable ? '<th></th>' : ''}</tr>
+    ${ser.map(x => `<tr><td>${escapeHtml(x.label)}</td><td>${escapeHtml(x.date || '—')}</td><td>${fmtN(x.r.body_fat_percent, '%')}</td><td>${fmtN(x.r.subcutaneous_fat_percent, '%')}</td><td>${fmtN(x.r.total_body_water_percent, '%')}</td><td>${fmtN(x.r.bmi)}</td><td>${fmtN(x.r.fat_free_mass_kg, ' kg')}</td><td>${fmtN(x.r.visceral_fat)}</td><td>${fmtN(x.r.skeletal_muscle_mass_kg, ' kg')}</td><td>${fmtN(x.r.weight_kg, ' kg')}</td>${deletable ? `<td><button class="btn sm danger" data-del-reading="${x.roundId}">Delete</button></td>` : ''}</tr>`).join('')}</table></div>`;
+}
+
+// Delete one bioimpedance measurement (one player in one round) from the player's page
+async function deleteReading(pid, roundId) {
+  const p = roster.find(x => x.id === pid), rd = rounds.find(x => x.id === roundId);
+  if (!p || !rd) return;
+  if (!await customConfirm('Delete the ' + roundLabel(rd) + ' measurement of ' + p.name + '? This cannot be undone.')) return;
+  const { error } = await sb.from('measurements').delete().eq('round_id', roundId).eq('player_id', pid);
+  if (error) { showError(error); return; }
+  if (measurements[roundId]) delete measurements[roundId][pid];
+  renderAll();
+  if (ui.view === 'player') renderProfile();
+  toast('Measurement deleted');
 }
 
 // ---- player profile ----
@@ -3389,7 +3429,7 @@ function renderProfile() {
     <div class="card"><div class="row" style="justify-content:space-between;margin-bottom:8px;"><h2 style="margin:0;">Player data</h2><button class="btn sm" id="pfData">Edit</button></div>
       ${sharedDataHtml(p.id)}</div>
     <div class="card"><h2>Evolution</h2>${chartsHtml(p.id, 'charts')}</div>
-    <div class="card"><h2>All measurements</h2>${historyTable(p.id)}</div>
+    <div class="card"><h2>All measurements</h2>${historyTable(p.id, true)}</div>
     <div class="card"><div class="row" style="justify-content:space-between;margin-bottom:6px;"><h2 style="margin:0;">Health notes</h2><button class="btn sm note-add" data-id="${p.id}">Add note</button></div>
       ${notesHtml(p.id) || '<div class="empty">No notes.</div>'}</div>`;
   document.getElementById('backBtn').addEventListener('click', () => navigate('summary'));
@@ -3397,6 +3437,7 @@ function renderProfile() {
   document.getElementById('pfData').addEventListener('click', () => sharedDataForm(p.id));
   document.getElementById('pfRename').addEventListener('click', () => renamePlayer(p.id));
   document.getElementById('pfPrint').addEventListener('click', () => printReport(p.id));
+  el.querySelectorAll('[data-del-reading]').forEach(b => b.addEventListener('click', () => deleteReading(p.id, b.dataset.delReading)));
   bindNoteActions(el);
 }
 

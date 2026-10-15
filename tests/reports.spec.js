@@ -49,3 +49,23 @@ test('muscle-balance check boxes: the ticked one is found', async ({ page }) => 
   expect(await read(2)).toBe('severe');
   expect(await read(-1)).toBeNull();
 });
+
+test('imported reports go into the round that matches their date, and can save height and sex to the player data', async ({ page }) => {
+  await openApp(page, { rounds: [{ id: 'rS', label: 'September 2026', closed: true, closed_on: '2026-09-30', created_at: '1' }, { id: 'r1', label: 'In progress', closed: false, created_at: '2' }] });
+  const result = await page.evaluate(async () => {
+    const rec = (name, date) => ({ label: name + '.png', text: '', parsed: { format: 'full', name, date, height_cm: 180, sex: 'Male', age: 19, values: { weight_kg: 70, body_fat_percent: 12 }, calculated: [], notes: [] } });
+    const pr = reviewImport([rec('Alex Testa', '2026-09-02'), rec('Ben Prueba', '2026-10-10')]);
+    await new Promise(r => setTimeout(r, 100));
+    const picked = [...document.querySelectorAll('.imp-round')].map(s => s.value);
+    document.querySelector('.imp-card[data-i="1"] .imp-date').value = '2026-09-05';
+    document.querySelector('.imp-card[data-i="1"] .imp-date').dispatchEvent(new Event('change', { bubbles: true }));
+    const afterDateChange = document.querySelector('.imp-card[data-i="1"] .imp-round').value;
+    document.querySelector('.modal-ok').click();
+    const out = await pr;
+    return { picked, afterDateChange, rows: out.rows.map(r => [r.player_id, r.round_id]), profiles: out.profiles };
+  });
+  expect(result.picked).toEqual(['rS', 'r1']);           // September report -> September round, October report -> current round
+  expect(result.afterDateChange).toBe('rS');              // changing the date re-picks the round
+  expect(result.rows).toEqual([['alex-testa', 'rS'], ['ben-prueba', 'rS']]);
+  expect(result.profiles['alex-testa']).toMatchObject({ height: 180, sex: 'Male', fixedDate: '2026-09-02' });
+});
