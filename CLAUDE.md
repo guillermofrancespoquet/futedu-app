@@ -18,7 +18,7 @@ Bioimpedance tracker for the **FUTEDU Academy** (youth football academy). Single
 - Brand: black/dark grey, orange `#ff5405`, white; light grey background; rounded iOS-like cards, buttons as rounded squares; font stack: system / Helvetica Neue. All UI text in **English**.
 - Colors come from the CSS variables in `:root` (light) and the dark overrides; never hard-code colors in CSS or generated HTML, so both themes and the always-light print report keep working. Check new UI in both themes.
 - Keep it a single dependency-free file where possible; external libraries are loaded from a CDN only when needed (Supabase client, Tesseract.js, PDF.js, SheetJS), always with an **exact version** (never `@2`/`@5`); when updating one, test login, OCR import and Excel import.
-- Test changes with a mocked Supabase client in a headless browser before opening a PR (there is no real backend in the sandbox).
+- Test changes with a mocked Supabase client in a headless browser before opening a PR (there is no real backend in the sandbox). The suite lives in `tests/` (Playwright, `npm ci && npx playwright install chromium && npm test`; locally `CHROMIUM_PATH=/path/to/chromium npm test`) and runs on every PR through `.github/workflows/test.yml`. Add a test for each new feature; tests use made-up players only, never real names or data. `package.json` / `node_modules` are only for the tests: the app itself stays dependency-free.
 
 ## Planned work (short term)
 - **Anthropometry module, target: December 2026.** The owner's Excel and calculator HTML have been reviewed (they are not in the repo). Scope and decisions are defined below; implementation starts in December:

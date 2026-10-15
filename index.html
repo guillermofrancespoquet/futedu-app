@@ -2869,7 +2869,7 @@ function anAssessmentForm(pid, a, opts) {
     const list = firsts(), i = list.indexOf(e.target.closest('.an-field').querySelector('input[data-i="0"]'));
     if (i >= 0 && i < list.length - 1) { list[i + 1].focus(); list[i + 1].select(); } else o.querySelector('.modal-ok').focus();
   });
-  setTimeout(() => { const f = firsts().find(x => x.value === '') || firsts()[0]; if (f && !a) f.focus(); }, 50);
+  { const f = firsts().find(x => x.value === '') || firsts()[0]; if (f && !a) f.focus(); else if (document.activeElement) document.activeElement.blur(); }   // focus right away, so Enter never re-triggers the button behind the form
   o.querySelector('.modal-cancel').addEventListener('click', () => o.remove());
   o.querySelectorAll('.modal-ok').forEach(btn => btn.addEventListener('click', async () => {
     const goNext = btn.dataset.next === '1';

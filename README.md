@@ -34,3 +34,6 @@ Publish this folder from a **separate public repository that contains only these
 
 ## Notes on data storage
 No database updates are ever needed after setup: dated health notes, player tags and check-ins are stored in the existing `settings` table (keys `player_notes`, `player_tags` and `checkins`). The first time the app loads, it carries over each player's old single health note automatically. Both are included in the JSON export.
+
+## Tests
+`npm ci`, `npx playwright install chromium`, then `npm test`. The tests open `index.html` from disk with a mocked Supabase client and made-up players (no network, no real data) and cover the anthropometry rounds, assessment form, reports (one A4 page), imports into a previous round, shared player data, age filters, backup and the mobile layout. They run automatically on every pull request.
