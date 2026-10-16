@@ -108,3 +108,16 @@ test('latest line says when the current round has no measurement yet, and flags 
   await go(page, `player/${ben}`);
   await expect(page.locator('#view-player .sub')).toContainText('check round');
 });
+
+test('rounds are shown oldest to newest with the open round last, whatever order they come from the database in', async ({ page }) => {
+  const d = twoRounds();
+  d.rounds = [{ id: 'r1', label: 'In progress', closed: false, created_at: '2026-08-01T00:00:00Z' }, { id: 'rS', label: 'September 2026', closed: true, closed_on: '2026-09-30', created_at: '2026-09-01T00:00:00Z' }];   // the open round was created first
+  d.measurements = [reading('rS', alex), reading('r1', alex, { measured_on: '2026-10-12', body_fat_percent: 14 })];
+  await openApp(page, d);
+  await go(page, `player/${alex}`);
+  expect(await page.evaluate(id => seriesFor(id).map(x => x.label), alex)).toEqual(['September 2026', 'Current']);
+  await expect(page.locator('#view-player .sub')).toContainText('Latest: Current');
+  await expect(page.locator('#view-player .kpi').first()).toContainText('vs September 2026');   // compared with the previous round, not the other way round
+  const first = await page.locator('#view-player table tr').nth(1).textContent();
+  expect(first).toContain('Current');                                                              // history table: newest first
+});

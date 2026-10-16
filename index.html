@@ -871,6 +871,16 @@ function todayStr() { return new Date().toISOString().slice(0, 10); }
 function readingFor(id) {
   return (currentRound && measurements[currentRound.id] && measurements[currentRound.id][id]) || null;
 }
+// Rounds always run oldest to newest: closed rounds by the day they were closed (then by their first reading, then creation), the open round last.
+// The order they come from the database in is not reliable (a round created earlier can be the one still open), and every chart, history and "vs previous" comparison depends on it.
+function sortRounds() {
+  const firstDate = r => { const m = measurements[r.id]; return m ? Object.values(m).map(x => x.date).filter(Boolean).sort()[0] || '' : ''; };
+  rounds.sort((a, b) => {
+    if (a.closed !== b.closed) return a.closed ? -1 : 1;
+    if (a.closed) return (a.closed_on || '').localeCompare(b.closed_on || '') || firstDate(a).localeCompare(firstDate(b)) || String(a.created_at || '').localeCompare(String(b.created_at || ''));
+    return String(a.created_at || '').localeCompare(String(b.created_at || ''));
+  });
+}
 function closedRounds() { return rounds.filter(r => r.closed); }
 // Most recent closed-round reading for a player
 function previousFor(id) {
@@ -1061,6 +1071,7 @@ async function loadAllInner() {
   const th = setting('thresholds');
   thresholds = th ? { ...DEFAULT_THRESHOLDS, ...th } : { ...DEFAULT_THRESHOLDS };
 
+  sortRounds();
   currentRound = rounds.filter(r => !r.closed).pop() || null;
   if (!currentRound) {
     const { data, error } = await sb.from('rounds').insert({ label: 'In progress' }).select().single();
@@ -1368,7 +1379,7 @@ document.querySelectorAll('.js-archive').forEach(btn => btn.addEventListener('cl
   closedRound.label = label.trim(); closedRound.closed = true; closedRound.closed_on = today;
   const { data, error: e2 } = await sb.from('rounds').insert({ label: 'In progress' }).select().single();
   if (e2) { showError(e2); return; }
-  currentRound = data; rounds.push(data);
+  currentRound = data; rounds.push(data); sortRounds();
   await persistCheckins(c => { Object.keys(c).forEach(k => delete c[k]); });
   renderAll();
   if (await customConfirm('Round archived. Create its report now?')) roundReportFlow(closedRound.id);
