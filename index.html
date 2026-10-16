@@ -285,7 +285,9 @@
     #printArea .p-charts h3 { font-size:11px; margin-bottom:4px; }
     #printArea .ch-legend { font-size:9px; color:#6a6a6e; }
     #printArea .p-note { border-left:3px solid #3a8fd1; padding:4px 10px; margin-bottom:6px; background:#f3f8fc; }
-    #printArea .fr { --g:8px; --sp:10px; --spx:16px; --td:4.5px; --bp:16px; display:flex; flex-direction:column; min-height:266mm; }
+    #printArea .fr { --g:8px; --sp:10px; --spx:16px; --td:4.5px; --bp:16px; display:flex; flex-direction:column; min-height:266mm; min-height:min(100vh, 266mm); }
+    #printArea tr, #printArea .fr-pill, #printArea .fr-kpi, #printArea .fr-note, #printArea .fr-line, #printArea .chart-box { break-inside:avoid; page-break-inside:avoid; }
+    #printArea .fr-disc, #printArea .fr-foot { break-before:avoid; break-inside:avoid; }
     #printArea .fr-band { background:linear-gradient(140deg,#4a4a4a 0%,#303030 100%); border-radius:20px; padding:var(--bp) 26px; margin-bottom:var(--g); position:relative; color:#fff; }
     #printArea .fr-band .fr-kicker { font-size:9.5px; letter-spacing:3px; text-transform:uppercase; color:#ff5405; font-weight:700; margin-bottom:6px; }
     #printArea .fr-band h1 { font-size:20px; color:#fff; margin:0 0 6px; max-width:78%; }
@@ -402,6 +404,8 @@
   .an-check input { width:auto; height:auto; }
   .an-round { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-2); margin:-4px 0 12px; }
   .an-round-btns { display:flex; gap:8px; }
+  .row-actions { white-space:nowrap; text-align:right; }
+  .row-actions .btn + .btn { margin-left:6px; }
   .an-status { display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
   .an-table td, .an-table th { white-space:nowrap; }
   .an-table .an-c-name { white-space:normal; }
@@ -558,6 +562,17 @@
     .dash-grid, .settings-grid, .manual-grid { grid-template-columns:1fr; }
     .kpi .k-value { font-size:24px; }
     .trend-row { grid-template-columns:90px 1fr 46px; }
+  }
+  /* spacing and harmony across phone, tablet and desktop */
+  @media (max-width: 1300px) { #view-summary .toolbar .search { flex-basis:100%; } }
+  @media (max-width: 520px) {
+    #dashGrid { grid-template-columns:1fr 1fr; gap:8px; }
+    .player-actions { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; }
+    .player-actions .btn-sm { width:100%; padding:0 4px; }
+    .player-actions .btn-sm.remove { grid-column:1 / -1; }
+    .toolbar select { flex:1 1 calc(50% - 6px); min-width:0; width:100%; }
+    .toolbar .seg { width:100%; }
+    .toolbar .seg button { flex:1; padding:0 8px; }
   }
   /* phones: 16 px fields so the browser never zooms in on focus */
   @media (max-width: 860px) { input, select, textarea, .quick input, .an-field input, .search input, .modal-overlay input, .modal-overlay select, .imp-box input, .imp-box select { font-size:16px; } }
@@ -3352,9 +3367,51 @@ function historyTable(id, deletable) {
   const ser = seriesFor(id).slice().reverse();
   if (!ser.length) return '<div class="empty">No measurements yet.</div>';
   return `<div class="hist-full"><table><tr><th>Round</th><th>Date</th><th>Body fat</th><th>Subcut.</th><th>Hydration</th><th>BMI</th><th>FFM</th><th>Visc.</th><th>Skel. muscle</th><th>Weight</th>${deletable ? '<th></th>' : ''}</tr>
-    ${ser.map(x => `<tr><td>${escapeHtml(x.label)}</td><td>${escapeHtml(x.date || '—')}</td><td>${fmtN(x.r.body_fat_percent, '%')}</td><td>${fmtN(x.r.subcutaneous_fat_percent, '%')}</td><td>${fmtN(x.r.total_body_water_percent, '%')}</td><td>${fmtN(x.r.bmi)}</td><td>${fmtN(x.r.fat_free_mass_kg, ' kg')}</td><td>${fmtN(x.r.visceral_fat)}</td><td>${fmtN(x.r.skeletal_muscle_mass_kg, ' kg')}</td><td>${fmtN(x.r.weight_kg, ' kg')}</td>${deletable ? `<td><button class="btn sm danger" data-del-reading="${x.roundId}">Delete</button></td>` : ''}</tr>`).join('')}</table></div>`;
+    ${ser.map(x => `<tr><td>${escapeHtml(x.label)}</td><td>${escapeHtml(x.date || '—')}${readingRoundIssue(x.roundId, x.date) ? ' <span class="tag-chip" title="' + escapeHtml(readingRoundIssue(x.roundId, x.date)) + '">check round</span>' : ''}</td><td>${fmtN(x.r.body_fat_percent, '%')}</td><td>${fmtN(x.r.subcutaneous_fat_percent, '%')}</td><td>${fmtN(x.r.total_body_water_percent, '%')}</td><td>${fmtN(x.r.bmi)}</td><td>${fmtN(x.r.fat_free_mass_kg, ' kg')}</td><td>${fmtN(x.r.visceral_fat)}</td><td>${fmtN(x.r.skeletal_muscle_mass_kg, ' kg')}</td><td>${fmtN(x.r.weight_kg, ' kg')}</td>${deletable ? `<td class="row-actions"><button class="btn sm" data-edit-reading="${x.roundId}">Edit</button><button class="btn sm danger" data-del-reading="${x.roundId}">Delete</button></td>` : ''}</tr>`).join('')}</table></div>`;
 }
 
+// a measurement whose date does not fit the round it is filed in (for example a September report saved in the current round)
+function readingRoundIssue(roundId, date) {
+  const rd = rounds.find(r => r.id === roundId);
+  if (!rd || !/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return '';
+  if (rd.closed && rd.closed_on && date > rd.closed_on) return 'Dated after this round was closed (' + rd.closed_on + '): it may belong to a later round. Use Edit to move it.';
+  if (!rd.closed && rd.created_at && date < String(rd.created_at).slice(0, 10)) return 'Dated before this round started (' + String(rd.created_at).slice(0, 10) + '): it may belong to an earlier round. Use Edit to move it.';
+  return '';
+}
+// Edit one measurement of a player: values, date, balance and the round it is filed in
+function editReading(pid, roundId) {
+  const p = roster.find(x => x.id === pid), cur = readingIn(roundId, pid);
+  if (!p || !cur) return;
+  const bal = cur.muscle_balance || {};
+  const o = anOverlay(`<h3>Edit measurement: ${escapeHtml(p.name)}</h3>
+    <div class="imp-grid" style="grid-template-columns:repeat(2,1fr);margin-top:10px;"><div><label for="erRound">Round</label><select id="erRound">${roundOptionsHtml(roundId)}</select></div>
+      <div><label for="erDate">Date</label><input type="date" id="erDate" value="${escapeHtml(cur.date || '')}"></div></div>
+    <div class="imp-grid" style="margin-top:10px;">${IMPORT_FIELDS.map(([k, label, step]) => `<div><label>${label}</label><input type="number" step="${step}" inputmode="decimal" data-k="${k}" value="${cur[k] != null ? cur[k] : ''}"></div>`).join('')}</div>
+    <div class="imp-grid" style="grid-template-columns:repeat(3,1fr);margin-top:10px;">${['upper', 'lower', 'overall'].map(k => `<div><label>Muscle balance, ${k}</label><select data-bal="${k}"><option value="">—</option>${[['balanced', 'Balanced'], ['slight', 'Slightly uneven'], ['severe', 'Severely uneven']].map(([v, l]) => `<option value="${v}"${bal[k] === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>`).join('')}</div>
+    <div class="save-note" id="erNote" style="margin-top:8px;">Changing the round moves the measurement there.</div>
+    <div class="imp-foot"><button class="btn modal-cancel">Cancel</button><button class="btn primary modal-ok">Save</button></div>`);
+  o.querySelector('.modal-cancel').addEventListener('click', () => o.remove());
+  o.querySelector('.modal-ok').addEventListener('click', async () => {
+    const newRound = o.querySelector('#erRound').value;
+    if (newRound !== roundId && readingIn(newRound, pid)) {
+      const nr = rounds.find(r => r.id === newRound);
+      if (!await customConfirm(roundLabel(nr) + ' already has a measurement for ' + p.name + '. Replace it with this one?')) return;
+    }
+    const row = { round_id: newRound, player_id: pid, measured_on: o.querySelector('#erDate').value || todayStr() };
+    o.querySelectorAll('.imp-grid input[data-k]').forEach(i => { const v = parseFloat(i.value); row[i.dataset.k] = isNaN(v) ? null : v; });
+    ['upper', 'lower', 'overall'].forEach(k => { row['balance_' + k] = o.querySelector('[data-bal="' + k + '"]').value || null; });
+    const up = await sb.from('measurements').upsert(row, { onConflict: 'round_id,player_id' });
+    if (up.error) { showError(up.error); return; }
+    if (newRound !== roundId) {
+      const del = await sb.from('measurements').delete().eq('round_id', roundId).eq('player_id', pid);
+      if (del.error) { showError(del.error); return; }
+      if (measurements[roundId]) delete measurements[roundId][pid];
+    }
+    (measurements[newRound] = measurements[newRound] || {})[pid] = rowToReading(row);
+    o.remove(); toast(newRound !== roundId ? 'Measurement moved and saved' : 'Measurement saved');
+    renderAll(); if (ui.view === 'player') renderProfile();
+  });
+}
 // Delete one bioimpedance measurement (one player in one round) from the player's page
 async function deleteReading(pid, roundId) {
   const p = roster.find(x => x.id === pid), rd = rounds.find(x => x.id === roundId);
@@ -3417,7 +3474,7 @@ function renderProfile() {
     <button class="btn sm back" id="backBtn">← Bioimpedance</button>
     <div class="page-head">
       <div class="name-row"><span class="avatar lg" aria-hidden="true">${escapeHtml(initials(p.name))}</span><div><h1>${escapeHtml(p.name)}</h1>
-        <div class="sub">${last ? 'Latest: ' + escapeHtml(last.label) + (last.date ? ' · ' + escapeHtml(last.date) : '') : 'No measurements yet'}</div>
+        <div class="sub">${last ? 'Latest: ' + escapeHtml(last.label) + (last.date ? ' · ' + escapeHtml(last.date) : '') : 'No measurements yet'}${currentRound && (!last || last.roundId !== currentRound.id) ? ` <span class="tag-chip">not measured in ${escapeHtml(roundLabel(currentRound))} yet</span>` : ''}${last && readingRoundIssue(last.roundId, last.date) ? ' <span class="tag-chip" title="' + escapeHtml(readingRoundIssue(last.roundId, last.date)) + '">check round</span>' : ''}</div>
         ${p.tags.length ? `<div class="tags-line" style="margin-top:8px;">${p.tags.map(t => `<span class="tag-chip">${escapeHtml(t)}</span>`).join('')}</div>` : ''}</div></div>
       <div class="actions">
         <button class="btn" id="pfTags">Tags</button>
@@ -3437,6 +3494,7 @@ function renderProfile() {
   document.getElementById('pfData').addEventListener('click', () => sharedDataForm(p.id));
   document.getElementById('pfRename').addEventListener('click', () => renamePlayer(p.id));
   document.getElementById('pfPrint').addEventListener('click', () => printReport(p.id));
+  el.querySelectorAll('[data-edit-reading]').forEach(b => b.addEventListener('click', () => editReading(p.id, b.dataset.editReading)));
   el.querySelectorAll('[data-del-reading]').forEach(b => b.addEventListener('click', () => deleteReading(p.id, b.dataset.delReading)));
   bindNoteActions(el);
 }
@@ -3555,21 +3613,44 @@ document.querySelectorAll('.js-round-report').forEach(b => b.addEventListener('c
 
 // ---- printable report (browser print dialog -> Save as PDF) ----
 // Spacing for the player report: the more rounds in the history table, the tighter it gets, so it stays on one A4 page.
-const P_ROOMY = { g: 12, sp: 12, spx: 18, td: 5.5, bp: 20 }, P_TIGHT = { g: 6, sp: 8, spx: 14, td: 3.5, bp: 12 };
+const P_ROOMY = { g: 12, sp: 12, spx: 18, td: 5.5, bp: 20 }, P_TIGHT = { g: 6, sp: 8, spx: 14, td: 3.5, bp: 12 }, P_ULTRA = { g: 4, sp: 6, spx: 12, td: 2.2, bp: 9 };
 const P_LOAD_ROOMY = 12, P_LOAD_TIGHT = 18.5;   // measured: roomy fits up to load ~13.5, tight up to ~20. load = latest-measurement rows + history rows + notes (3 for the card + 1.5 each)
 function playerSpacing(load) {
   const f = Math.min(1, Math.max(0, (load - P_LOAD_ROOMY) / (P_LOAD_TIGHT - P_LOAD_ROOMY)));
   const mix = k => Math.round((P_ROOMY[k] + (P_TIGHT[k] - P_ROOMY[k]) * f) * 10) / 10;
   return { g: mix('g'), sp: mix('sp'), spx: mix('spx'), td: mix('td'), bp: mix('bp') };
 }
+// A report must never run onto a second page: before printing, the page is laid out off-screen with the print rules at A4 width,
+// measured, and tightened step by step until it fits with some room to spare (printers and phones add margins of their own).
+const FIT_MM = 252;
+function measureReportMm(html) {
+  let st = document.getElementById('fitStyle');
+  if (!st) {
+    st = document.createElement('style'); st.id = 'fitStyle';
+    let css = '#fitBox { position:absolute; left:-10000px; top:0; width:182mm; visibility:hidden; display:block; color:#1c1c1e; font-size:12px; } ';
+    [...document.styleSheets].forEach(sh => { try { [...sh.cssRules].forEach(r => { if (r.type === CSSRule.MEDIA_RULE && /print/.test(r.conditionText || r.media.mediaText)) [...r.cssRules].forEach(x => { if (x.selectorText && x.selectorText.includes('#printArea') && !/^#printArea$/.test(x.selectorText.trim())) css += x.cssText.replace(/#printArea/g, '#fitBox') + ' '; }); }); } catch (e) { /* cross-origin sheets */ } });
+    st.textContent = css; document.head.appendChild(st);
+  }
+  const box = document.createElement('div'); box.id = 'fitBox'; box.innerHTML = html; document.body.appendChild(box);
+  const fr = box.querySelector('.fr'); fr.style.minHeight = '0';
+  const mm = fr.getBoundingClientRect().height * 25.4 / 96;
+  box.remove();
+  return mm;
+}
+function fitPlayerReport(id, withNotes) {
+  const steps = [[undefined, undefined], [P_TIGHT, undefined], [P_ULTRA, undefined], [P_ULTRA, { hist: 5 }], [P_ULTRA, { hist: 3 }]];
+  let html;
+  for (const [sp, lim] of steps) { html = playerReportHtml(id, withNotes, sp, lim); if (measureReportMm(html) <= FIT_MM) break; }
+  return html;
+}
 async function printReport(id) {
   const p = roster.find(x => x.id === id);
   const ser = seriesFor(id);
   if (!ser.length) { await customConfirm('This player has no measurements yet.'); return; }
   const withNotes = hasNotes(id) ? await customConfirm('Include the health notes in the report? They are sensitive: leave them out if the report is going to anyone other than the family or the staff who need them.') : false;
-  printHtml(playerReportHtml(id, withNotes), 'futedu-' + slugify(p.name) + '-report');
+  printHtml(fitPlayerReport(id, withNotes), 'futedu-' + slugify(p.name) + '-report');
 }
-function playerReportHtml(id, withNotes, spOverride) {
+function playerReportHtml(id, withNotes, spOverride, lim) {
   const p = roster.find(x => x.id === id);
   const ser = seriesFor(id);
   const last = ser[ser.length - 1], prev = ser[ser.length - 2], r = last.r, c = classify(r) || {}, t = thresholds;
@@ -3583,7 +3664,7 @@ function playerReportHtml(id, withNotes, spOverride) {
     return `<div class="fr-kpi"><b>${v != null ? v : '—'}${v != null ? `<i style="font-style:normal;font-size:11px;color:#8a8a90;font-weight:600;">${unit}</i>` : ''}</b><span>${label}</span>${d}</div>`;
   };
   const notes = withNotes ? notesFor(id) : [];
-  const histAll = ser.slice().reverse(), hist = histAll.slice(0, notes.length ? 6 : 8);
+  const histAll = ser.slice().reverse(), hist = histAll.slice(0, (lim && lim.hist) || (notes.length ? 6 : 8));
   const rowCount = ['weight_kg', 'body_fat_percent', 'subcutaneous_fat_percent', 'total_body_water_percent', 'bmi', 'fat_free_mass_kg', 'visceral_fat', 'skeletal_muscle_mass_kg'].filter(k => r[k] != null).length;
   const sp = spOverride || playerSpacing(rowCount + hist.length + (notes.length ? 3 + notes.length * 1.5 : 0));
   return `<div class="fr" style="--g:${sp.g}px;--sp:${sp.sp}px;--spx:${sp.spx}px;--td:${sp.td}px;--bp:${sp.bp}px">
