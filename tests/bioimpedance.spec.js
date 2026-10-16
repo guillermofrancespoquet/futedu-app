@@ -121,3 +121,18 @@ test('rounds are shown oldest to newest with the open round last, whatever order
   const first = await page.locator('#view-player table tr').nth(1).textContent();
   expect(first).toContain('Current');                                                              // history table: newest first
 });
+
+test('clicking a player name (card, avatar or quick entry) opens the player page', async ({ page }) => {
+  await openApp(page, twoRounds());
+  await go(page, 'summary');
+  await expect(page.locator('#playerList button', { hasText: /^Profile$/ })).toHaveCount(0);
+  await page.locator('#playerList .name-link', { hasText: 'Alex Testa' }).click();
+  await expect(page.locator('#view-player')).toBeVisible();
+  await go(page, 'summary');
+  await page.locator('#playerList .avatar.profile').first().click();
+  await expect(page.locator('#view-player')).toBeVisible();
+  await go(page, 'summary');
+  await page.click('#modeSeg button[data-mode="table"]');
+  await page.locator('#quickEntry .name-link', { hasText: 'Ben Prueba' }).click();
+  await expect(page.locator('#view-player')).toBeVisible();
+});
