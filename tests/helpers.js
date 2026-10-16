@@ -37,6 +37,7 @@ async function openApp(page, data = {}, opts = {}) {
         upsert: r => {
           (Array.isArray(r) ? r : [r]).forEach(x => {
             if (t === 'settings') { const i = T.settings.findIndex(y => y.key === x.key); if (i >= 0) T.settings[i] = x; else T.settings.push(x); }
+            else if (t === 'players' || t === 'rounds') { const i = T[t].findIndex(y => y.id === x.id); if (i >= 0) T[t][i] = { ...T[t][i], ...x }; else T[t].push(x); }
             else if (t === 'measurements') { const i = T.measurements.findIndex(y => y.round_id === x.round_id && y.player_id === x.player_id); if (i >= 0) T.measurements[i] = { ...T.measurements[i], ...x }; else T.measurements.push(x); }
           });
           return o;
