@@ -190,6 +190,10 @@
   .check-circle.on svg { opacity:1; }
   .player-name { font-weight:700; font-size:15px; flex:1; min-width:120px; letter-spacing:-0.2px; }
   .player.checked-in .player-name { color:var(--ink-3); }
+  .name-link { font:inherit; font-weight:700; letter-spacing:inherit; background:none; border:none; padding:0; color:inherit; cursor:pointer; text-align:left; }
+  .name-link:hover, .avatar.profile:hover { color:var(--orange); }
+  .avatar.profile { cursor:pointer; }
+  .name-link:focus-visible { outline:2px solid var(--orange); outline-offset:2px; border-radius:4px; }
   .status-pill { font-size:11px; padding:3px 10px; border-radius:8px; font-weight:700; }
   .status-done { background:var(--good-bg); color:var(--good); }
   .status-none { background:var(--fill); color:var(--ink-3); }
@@ -1869,12 +1873,11 @@ function renderPlayerCard(p) {
         <div class="check-circle ${p.checkedIn ? 'on' : ''}" data-checkin="${p.id}">
           <svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5l5 5L20 6" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <span class="avatar" aria-hidden="true">${escapeHtml(initials(p.name))}</span>
-        <span class="player-name">${escapeHtml(p.name)}${p.tags.length ? ` <span class="tags-line" style="display:inline-flex;margin-left:6px;">${p.tags.map(t => `<span class="tag-chip">${escapeHtml(t)}</span>`).join('')}</span>` : ''}</span>
+        <span class="avatar profile" data-id="${p.id}" aria-hidden="true">${escapeHtml(initials(p.name))}</span>
+        <span class="player-name"><button class="name-link profile" data-id="${p.id}" title="Open ${escapeHtml(p.name)}'s page">${escapeHtml(p.name)}</button>${p.tags.length ? ` <span class="tags-line" style="display:inline-flex;margin-left:6px;">${p.tags.map(t => `<span class="tag-chip">${escapeHtml(t)}</span>`).join('')}</span>` : ''}</span>
         <span class="status-pill ${r ? 'status-done' : 'status-none'}">${r ? 'Data in' : 'No data'}</span>
       </div>
       <div class="player-actions">
-        <button class="btn-sm profile" data-id="${p.id}">Profile</button>
         <button class="btn-sm manual-toggle" data-id="${p.id}">Edit values</button>
         ${historyFor(p.id).length ? `<button class="btn-sm hist hist-toggle" data-id="${p.id}">History (${historyFor(p.id).length})</button>` : ''}
         <button class="btn-sm note-add" data-id="${p.id}">Add note</button>
@@ -2011,7 +2014,7 @@ function renderQuickEntry(visible) {
   box.innerHTML = `<div class="q-bar"><label class="save-note">Measurement date</label><input type="date" id="qDate" value="${prevDate || todayStr()}">
       <button class="btn primary" id="qSave">Save changes</button><span class="save-note" id="qNote">Type values for as many players as you like, then save once (players that already have a reading keep their date). Enter moves down a row.</span></div>
     <table><tr><th>Player</th>${QFIELDS.map(f => `<th>${f[1]}</th>`).join('')}</tr>
-    ${visible.map(p => { const r = readingFor(p.id) || {}; return `<tr><td class="q-name">${escapeHtml(p.name)}</td>${QFIELDS.map(([k, , step]) => `<td><input type="number" step="${step}" data-q="${k}" data-pid="${p.id}" value="${r[k] != null ? r[k] : ''}"></td>`).join('')}</tr>`; }).join('')}</table>`;
+    ${visible.map(p => { const r = readingFor(p.id) || {}; return `<tr><td class="q-name"><button class="name-link profile" data-id="${p.id}">${escapeHtml(p.name)}</button></td>${QFIELDS.map(([k, , step]) => `<td><input type="number" step="${step}" data-q="${k}" data-pid="${p.id}" value="${r[k] != null ? r[k] : ''}"></td>`).join('')}</tr>`; }).join('')}</table>`;
   box.querySelectorAll('input[data-q]').forEach(inp => inp.addEventListener('keydown', e => {
     if (e.key !== 'Enter') return;
     e.preventDefault();
@@ -2019,6 +2022,7 @@ function renderQuickEntry(visible) {
     const nxt = same[same.indexOf(inp) + 1];
     if (nxt) { nxt.focus(); nxt.select(); }
   }));
+  box.querySelectorAll('.profile').forEach(b => b.addEventListener('click', () => navigate('player/' + b.dataset.id)));
   document.getElementById('qSave').addEventListener('click', saveQuickEntry);
 }
 async function saveQuickEntry() {
