@@ -80,3 +80,31 @@ test('a measurement can be deleted from the player page', async ({ page }) => {
   expect(await rows(page, 'r1')).toEqual([[carla, 9.9, 3, 70]]);   // other players and rounds are untouched
   await expect(page.locator('#view-player')).toContainText('No measurements yet');
 });
+
+test('a measurement can be edited and moved to another round from the player page', async ({ page }) => {
+  await openApp(page, twoRounds());
+  await go(page, `player/${alex}`);
+  await page.click('[data-edit-reading="rS"]');
+  await page.fill('[data-k="visceral_fat"]', '8');
+  await page.fill('[data-k="skeletal_muscle_mass_kg"]', '48.1');
+  await page.click('.modal-ok');
+  await expect.poll(() => rows(page, 'rS')).toEqual([[alex, 13, 8, 86]]);
+  // move it to the current round
+  await page.click('[data-edit-reading="rS"]');
+  await page.selectOption('#erRound', 'r1');
+  await page.click('.modal-ok');
+  await expect.poll(() => rows(page, 'rS')).toEqual([]);
+  expect((await rows(page, 'r1')).map(r => r[0]).sort()).toEqual([alex, carla].sort());
+});
+
+test('latest line says when the current round has no measurement yet, and flags a reading filed in the wrong round', async ({ page }) => {
+  const d = twoRounds();
+  d.rounds[1].created_at = '2026-10-01T00:00:00Z';
+  d.rounds[0].created_at = '2026-09-01T00:00:00Z';
+  d.measurements.push({ round_id: 'r1', player_id: ben, measured_on: '2026-09-03', body_fat_percent: 12 });   // a September report saved in the October round
+  await openApp(page, d);
+  await go(page, `player/${alex}`);
+  await expect(page.locator('#view-player .sub')).toContainText('not measured in');
+  await go(page, `player/${ben}`);
+  await expect(page.locator('#view-player .sub')).toContainText('check round');
+});

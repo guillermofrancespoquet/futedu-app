@@ -69,3 +69,18 @@ test('imported reports go into the round that matches their date, and can save h
   expect(result.rows).toEqual([['alex-testa', 'rS'], ['ben-prueba', 'rS']]);
   expect(result.profiles['alex-testa']).toMatchObject({ height: 180, sex: 'Male', fixedDate: '2026-09-02' });
 });
+
+test('the player report stays on one A4 page even when the printer takes extra margin, with the footer at the bottom', async ({ page }) => {
+  const id = 'alex-testa';
+  const rounds = Array.from({ length: 8 }, (_, i) => ({ id: 'r' + i, label: i === 7 ? 'In progress' : 'Month ' + (i + 1), closed: i < 7, closed_on: '2026-0' + (i + 1) + '-28', created_at: '2026-0' + (i + 1) + '-01T00:00:00Z' }));
+  const measurements = rounds.map((r, i) => ({ round_id: r.id, player_id: id, measured_on: '2026-0' + (i + 1) + '-05', body_fat_percent: 11 + i * 0.3, subcutaneous_fat_percent: 9, total_body_water_percent: 63, bmi: 22.5, fat_free_mass_kg: 60 + i, visceral_fat: 6, skeletal_muscle_mass_kg: 39, weight_kg: 68 + i }));
+  const note = (n, t) => ({ id: 'n' + n, note: t, noted_on: '2026-09-1' + n });
+  await openApp(page, { rounds, measurements, settings: { player_notes: { [id]: [note(1, 'Minor knee complaint, physio check done. Continue with the reduced load until the next review and keep an eye on hydration during long sessions.'), note(2, 'Allergic to tree nuts: confirmed by the family.'), note(3, 'Sleeps little before away games; talk to the family about the evening routine.')] } } });
+  await page.setViewportSize({ width: 688, height: 1000 });   // A4 content width, so the fitting measures what the printer will lay out
+  const html = await page.evaluate(i => fitPlayerReport(i, true), id);
+  await page.evaluate(h => { document.getElementById('printArea').innerHTML = h; }, html);
+  await page.addStyleTag({ content: '@media print { @page { size:A4; margin:20mm 14mm; } }' });   // a printer or phone that adds more margin than the 14 mm we ask for
+  await page.emulateMedia({ media: 'print' });
+  const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
+  expect((pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length).toBe(1);
+});
