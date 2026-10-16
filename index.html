@@ -814,6 +814,10 @@
             <button class="btn" id="exportAnCsvBtn">Anthropometry CSV</button>
             <button class="btn js-reset-checkins">Reset check-ins</button>
           </div>
+          <div class="row" style="margin-top:10px;">
+            <label class="btn" for="restoreFile" style="cursor:pointer;">Restore from a JSON backup…</label>
+            <input type="file" id="restoreFile" accept=".json,application/json" class="hidden">
+          </div>
           <div class="note" id="backupNote"></div>
           <div class="note">The JSON backup has everything (players, bioimpedance, anthropometry, notes, tags, thresholds). Exports download to this device and contain player data: store them somewhere private and never put them in a repository. Check-ins are shared across devices.</div>
         </div>
@@ -1416,6 +1420,64 @@ document.getElementById('exportHistoryBtn').addEventListener('click', async () =
   download('futedu-backup-' + todayStr() + '.json', JSON.stringify({ meta: { app: 'futedu-tracker', exported_on: todayStr(), counts }, ...all }, null, 2), 'application/json');
   markBackup();
   toast(`Backup saved: ${counts.players} players, ${counts.measurements} bioimpedance readings, ${counts.anthropometry_assessments} anthropometry assessments`);
+});
+// Restore from a JSON backup made by "Back up everything". It never deletes anything: it adds what is missing
+// (default) or also overwrites records with the same id / round+player / settings key.
+function backupProblem(b) {
+  if (!b || typeof b !== 'object' || !b.meta || b.meta.app !== 'futedu-tracker') return 'This does not look like a FUTEDU backup file.';
+  if (!['players', 'rounds', 'measurements', 'settings'].every(k => Array.isArray(b[k]))) return 'The backup is incomplete (players, rounds, measurements or settings are missing).';
+  return null;
+}
+function restoreModal(summary) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `<div class="modal-box"><p>${escapeHtml(summary)}</p>
+      <label class="an-check"><input type="checkbox" id="rsFill" checked> Only add what is missing (keep what is saved now)</label>
+      <div class="save-note">Nothing is ever deleted. Untick it to also overwrite records that exist in both.</div>
+      <div class="modal-actions"><button class="modal-cancel">Cancel</button><button class="modal-ok">Restore</button></div></div>`;
+    document.body.appendChild(overlay);
+    const cleanup = r => { overlay.remove(); resolve(r); };
+    overlay.querySelector('.modal-cancel').addEventListener('click', () => cleanup(null));
+    overlay.querySelector('.modal-ok').addEventListener('click', () => cleanup({ fillOnly: overlay.querySelector('#rsFill').checked }));
+    overlay.addEventListener('click', e => { if (e.target === overlay) cleanup(null); });
+  });
+}
+document.getElementById('restoreFile').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  let b;
+  try { b = JSON.parse(await f.text()); } catch (err) { toast('That file is not valid JSON.', 'error'); return; }
+  const bad = backupProblem(b);
+  if (bad) { toast(bad, 'error'); return; }
+  const cur = await fetchEverything();
+  if (!cur) return;
+  const c = backupCounts(b);
+  const choice = await restoreModal(`Backup from ${b.meta.exported_on || 'an unknown date'}: ${c.players} players, ${c.rounds} rounds, ${c.measurements} bioimpedance readings, ${c.anthropometry_assessments} anthropometry assessments. Restore it into the current data?`);
+  if (!choice) return;
+  const fill = choice.fillOnly;
+  const have = (list, key) => new Set(list.map(key));
+  const pick = (rows, haveSet, key) => fill ? rows.filter(r => !haveSet.has(key(r))) : rows;
+  const players = pick(b.players, have(cur.players, x => x.id), x => x.id);
+  const rounds = pick(b.rounds, have(cur.rounds, x => x.id), x => x.id);
+  const mkey = m => m.round_id + '|' + m.player_id;
+  const meas = pick(b.measurements, have(cur.measurements, mkey), mkey);
+  const settings = b.settings.map(r => {
+    const now = cur.settings.find(x => x.key === r.key);
+    if (!now) return r;
+    if (!fill) return r;
+    const a = r.value, z = now.value;
+    return (a && z && typeof a === 'object' && typeof z === 'object' && !Array.isArray(a) && !Array.isArray(z)) ? { key: r.key, value: { ...a, ...z } } : null;   // current values win
+  }).filter(Boolean);
+  const steps = [['players', players, 'id'], ['rounds', rounds, 'id'], ['measurements', meas, 'round_id,player_id'], ['settings', settings, 'key']];
+  for (const [table, rows, conflict] of steps) {
+    if (!rows.length) continue;
+    const { error } = await sb.from(table).upsert(rows, { onConflict: conflict });
+    if (error) { showError(error); return; }
+  }
+  await loadAll();
+  toast(`Restored: ${players.length} players, ${rounds.length} rounds, ${meas.length} readings, ${settings.length} settings`);
 });
 document.getElementById('exportAnCsvBtn').addEventListener('click', async () => {
   const all = await fetchEverything();
@@ -3214,7 +3276,7 @@ function anSpacing(histRows) {
   const mix = k => Math.round((roomy[k] + (tight[k] - roomy[k]) * f) * 10) / 10;
   return { g: mix('g'), sp: mix('sp'), spx: mix('spx'), td: mix('td'), bp: mix('bp') };
 }
-function anthroReportHtml(pid, aid) {
+function anthroReportHtml(pid, aid, spOverride, histMax) {
   const p = roster.find(x => x.id === pid), list = anList(pid), idx = list.findIndex(x => x.id === aid);
   const cur = anFull(pid, list[idx]), R = cur.R, prof = anthroProfiles[pid];
   let prev = null; for (let i = idx - 1; i >= 0 && !prev; i--) { const f = anFull(pid, list[i]); if (f.R) prev = f; }
@@ -3223,10 +3285,10 @@ function anthroReportHtml(pid, aid) {
   const chg = k => { const c = anChange(k, R, pR); if (!c) return '<span style="color:#8a8a90;">—</span>'; const sgn = (c.diff > 0 ? '+' : c.diff < 0 ? '−' : '±') + Math.abs(c.diff).toFixed(AN_VARS[k].dec) + AN_VARS[k].unit; return c.beyond ? `<strong>${sgn}</strong> <i style="color:#b84300;font-style:normal;">*</i>` : `${sgn}`; };
   const trow = k => R[k] == null ? '' : `<tr><td>${AN_VARS[k].label}</td><td class="num">${anFmt(k, R[k])}</td><td>${chg(k)}</td><td>${grey(anGroupHtml(anGroupStat(rows, k, pid), k, R, true))}</td></tr>`;
   const table = keys => `<table><tr><th>Variable</th><th>Value</th><th>Change</th><th>Group mean</th></tr>${keys.map(trow).join('')}</table>`;
-  const hist = list.map(x => ({ x, f: anFull(pid, x) })).filter(h => h.f.R).slice(-4).reverse();
+  const hist = list.map(x => ({ x, f: anFull(pid, x) })).filter(h => h.f.R).slice(-(histMax || 4)).reverse();
   const concl = anConclusions(R, pR, rows, pid, prev ? longDateSafe(prev.a.date) : '');
   const comp = ['mass', 'sum6', 'yuhaszPct', 'slaughterPct', 'adiposePct', 'musclePct', 'residualPct', 'bmi'], musc = ['areaArm', 'areaThigh', 'areaCalf', 'shareThigh', 'flexDiff', 'cormic', 'relSpan', 'fatDist'];
-  const sp = anSpacing(hist.length > 1 ? hist.length : 0);
+  const sp = spOverride || anSpacing(hist.length > 1 ? hist.length : 0);
   const kpi = (label, val, sub) => `<div class="fr-kpi"><b>${val}</b><span>${label}</span><small>${sub || '&nbsp;'}</small></div>`;
   return `<div class="fr fr-an" style="--g:${sp.g}px;--sp:${sp.sp}px;--spx:${sp.spx}px;--td:${sp.td}px;--bp:${sp.bp}px">
     <div class="fr-band"><img src="${LOGO_SRC}" alt="FUTEDU Team"><div class="fr-kicker">FUTEDU Academy · Nutrition Department</div>
@@ -3240,9 +3302,16 @@ function anthroReportHtml(pid, aid) {
     <div class="fr-disc">${AN_CAVEAT} Confidential: contains health data of a minor; share it only with the player's family or the staff who need it. Not a medical diagnosis.</div>
     <div class="fr-foot"><span>FUTEDU Academy — Anthropometry report</span><span>Nutrition Department</span></div></div>`;
 }
+// same idea as fitPlayerReport: tighten the spacing, then show fewer past assessments, until it fits one A4 page
+function fitAnthroReport(pid, aid) {
+  const steps = [[undefined, undefined], [P_TIGHT, undefined], [P_ULTRA, undefined], [P_ULTRA, 3], [P_ULTRA, 2]];
+  let html;
+  for (const [sp, max] of steps) { html = anthroReportHtml(pid, aid, sp, max); if (measureReportMm(html) <= FIT_MM) break; }
+  return html;
+}
 function anPrint(pid, aid) {
   const p = roster.find(x => x.id === pid);
-  printHtml(anthroReportHtml(pid, aid), 'futedu-' + slugify(p.name) + '-anthropometry');
+  printHtml(fitAnthroReport(pid, aid), 'futedu-' + slugify(p.name) + '-anthropometry');
 }
 
 // ---- anthropometry: round report (whole academy, current round) and pending list ----

@@ -121,3 +121,36 @@ test('rounds are shown oldest to newest with the open round last, whatever order
   const first = await page.locator('#view-player table tr').nth(1).textContent();
   expect(first).toContain('Current');                                                              // history table: newest first
 });
+
+test('restore from a JSON backup adds what is missing and never deletes or overwrites by default', async ({ page }) => {
+  await openApp(page, { ...twoRounds(), settings: { player_notes: { [alex]: [{ id: 'n1', text: 'kept' }] } } });
+  await go(page, 'settings');
+  const backup = {
+    meta: { app: 'futedu-tracker', exported_on: '2026-10-01', counts: {} },
+    players: [{ id: 'old-kid', name: 'Eli Antiguo', active: true }],
+    rounds: [{ id: 'rS', label: 'September 2026', closed: true, closed_on: '2026-09-30', created_at: '1' }],
+    measurements: [reading('rS', alex, { weight_kg: 99 }), reading('rS', ben)],
+    settings: [{ key: 'player_notes', value: { [ben]: [{ id: 'n2', text: 'restored' }] } }, { key: 'anthro_profiles', value: { [ben]: { dob: '2008-01-01' } } }],
+  };
+  const file = csvFile(JSON.stringify(backup)).replace(/\.csv$/, '.json');
+  require('fs').writeFileSync(file, JSON.stringify(backup));
+  await page.setInputFiles('#restoreFile', file);
+  await expect(page.locator('.modal-box p')).toContainText('Backup from 2026-10-01');
+  await page.click('.modal-ok');
+  await expect.poll(() => page.evaluate(() => window.__T.players.some(p => p.name === 'Eli Antiguo'))).toBe(true);
+  expect(await rows(page, 'rS')).toEqual([[alex, 13, null, 86], [ben, 13, null, 86]]);   // alex untouched (86, not 99), ben added
+  const notes = await stored(page, 'player_notes');
+  expect(Object.keys(notes).sort()).toEqual([alex, ben].sort());
+  expect(notes[alex][0].text).toBe('kept');
+  expect((await stored(page, 'anthro_profiles'))[ben].dob).toBe('2008-01-01');
+});
+
+test('restore refuses a file that is not a FUTEDU backup', async ({ page }) => {
+  await openApp(page, twoRounds());
+  await go(page, 'settings');
+  const f = csvFile('{"hello":1}').replace(/\.csv$/, '.json');
+  require('fs').writeFileSync(f, '{"hello":1}');
+  await page.setInputFiles('#restoreFile', f);
+  await expect(page.locator('.modal-box')).toHaveCount(0);
+  await expect(page.locator('#toast, .toast').first()).toContainText('FUTEDU backup');
+});
