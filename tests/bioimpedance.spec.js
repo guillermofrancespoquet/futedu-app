@@ -169,3 +169,21 @@ test('clicking a player name (card, avatar or quick entry) opens the player page
   await page.locator('#quickEntry .name-link', { hasText: 'Ben Prueba' }).click();
   await expect(page.locator('#view-player')).toBeVisible();
 });
+
+test('rounds can be renamed in Settings (closed and current)', async ({ page }) => {
+  await openApp(page, twoRounds());
+  await go(page, 'settings');
+  await page.locator('[data-round-rename="rS"]').click();
+  await page.fill('.modal-box input', 'Baseline September');
+  await page.click('.modal-ok');
+  await expect(page.locator('#roundList')).toContainText('Baseline September');
+  expect(await page.evaluate(() => window.__T.rounds.find(r => r.id === 'rS').label)).toBe('Baseline September');
+  await page.locator('[data-round-rename="r1"]').click();
+  await page.fill('.modal-box input', 'October 2026');
+  await page.click('.modal-ok');
+  await expect(page.locator('#roundList')).toContainText('October 2026');
+  await page.locator('[data-round-rename="rS"]').click();   // a closed round cannot end up without a name
+  await page.fill('.modal-box input', '  ');
+  await page.click('.modal-ok');
+  expect(await page.evaluate(() => window.__T.rounds.find(r => r.id === 'rS').label)).toBe('Baseline September');
+});

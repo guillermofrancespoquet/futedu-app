@@ -1834,16 +1834,32 @@ function renderSummary() {
   list.querySelectorAll('.remove').forEach(btn => btn.addEventListener('click', () => removePlayer(btn.dataset.id)));
 }
 
+async function renameRound(id) {
+  const r = rounds.find(x => x.id === id);
+  if (!r) return;
+  const input = await customPrompt(r.closed ? 'New name for this round:' : 'Name for the current round (leave empty to show "Current"):', r.label === 'In progress' ? '' : r.label);
+  if (input == null) return;
+  const name = input.trim();
+  if (r.closed && !name) { toast('A closed round needs a name.', 'error'); return; }
+  const label = name || 'In progress';
+  if (label === r.label) return;
+  const { error } = await sb.from('rounds').update({ label }).eq('id', id);
+  if (error) { showError(error); return; }
+  r.label = label;
+  renderAll();
+  toast('Round renamed');
+}
 function renderSettings() {
   const rows = rounds.slice().reverse().map(r => {
     const n = Object.keys(measurements[r.id] || {}).length;
-    return `<div class="round-row"><strong>${escapeHtml(r.label)}</strong>${r.closed ? '' : '<span class="tag">Current</span>'}
-      <span class="r-meta">${n} players${r.closed_on ? ' · closed ' + escapeHtml(r.closed_on) : ''}</span>${n ? `<button class="btn sm" data-round-report="${r.id}">Report</button>` : ''}</div>`;
+    return `<div class="round-row"><strong>${escapeHtml(roundLabel(r))}</strong>${r.closed ? '' : '<span class="tag">Current</span>'}
+      <span class="r-meta">${n} players${r.closed_on ? ' · closed ' + escapeHtml(r.closed_on) : ''}</span><button class="btn sm" data-round-rename="${r.id}">Rename</button>${n ? `<button class="btn sm" data-round-report="${r.id}">Report</button>` : ''}</div>`;
   });
   const lbk = lastBackup();
   document.getElementById('backupNote').textContent = lbk ? 'Last export from this device: ' + lbk + ' (' + daysSince(lbk) + ' days ago).' : 'No export made from this device yet.';
   const rl = document.getElementById('roundList');
   rl.innerHTML = rows.join('') || '<div class="empty">No rounds yet.</div>';
+  rl.querySelectorAll('[data-round-rename]').forEach(b => b.addEventListener('click', () => renameRound(b.dataset.roundRename)));
   rl.querySelectorAll('[data-round-report]').forEach(b => b.addEventListener('click', () => roundReportFlow(b.dataset.roundReport)));
 }
 
@@ -2774,9 +2790,9 @@ function anHistoryHtml() {
   const closed = anRoundsAll().filter(r => r.closed).reverse();
   if (!closed.length) return '';
   const scope = scopedRoster();
-  return `<div class="card"><h2>Previous rounds</h2><div class="hist-full"><table><tr><th>Round</th><th>Period</th><th>Assessed</th><th>Not assessed</th></tr>${closed.map(r => {
+  return `<div class="card"><h2>Previous rounds</h2><div class="hist-full"><table><tr><th>Round</th><th>Period</th><th>Assessed</th><th>Not assessed</th><th></th></tr>${closed.map(r => {
     const miss = scope.filter(p => !anRoundDone(r, p.id)), n = scope.length - miss.length;
-    return `<tr><td><strong>${escapeHtml(r.name)}</strong></td><td>${escapeHtml(longDateSafe(r.start))} – ${escapeHtml(longDateSafe(r.end))}</td><td class="num">${n} / ${scope.length}</td><td>${miss.length ? `<details><summary>${miss.length} player${miss.length === 1 ? '' : 's'}</summary><div class="save-note">${miss.map(p => escapeHtml(p.name)).join(', ')}</div></details>` : '<span class="muted">Everyone</span>'}</td></tr>`;
+    return `<tr><td><strong>${escapeHtml(r.name)}</strong></td><td>${escapeHtml(longDateSafe(r.start))} – ${escapeHtml(longDateSafe(r.end))}</td><td class="num">${n} / ${scope.length}</td><td>${miss.length ? `<details><summary>${miss.length} player${miss.length === 1 ? '' : 's'}</summary><div class="save-note">${miss.map(p => escapeHtml(p.name)).join(', ')}</div></details>` : '<span class="muted">Everyone</span>'}</td><td><button class="btn sm" data-an-round-rename="${escapeHtml(r.start)}">Rename</button></td></tr>`;
   }).join('')}</table></div></div>`;
 }
 const shortDateLabel = iso => /^\d{4}-\d{2}-\d{2}$/.test(iso || '') ? MONTHS[+iso.slice(5, 7) - 1].slice(0, 3) + ' ' + iso.slice(2, 4) : (iso || '');
@@ -2918,6 +2934,15 @@ function renderAnthroList() {
         ${cell('Σ6 mm', f && f.R ? f.R.sum6.toFixed(1) : '—')}${cell('Fat %', f && f.R ? f.R.yuhaszPct.toFixed(1) : '—')}${cell('Muscle %', f && f.R ? f.R.musclePct.toFixed(1) : '—')}${cell('BMI', f && f.R ? f.R.bmi.toFixed(1) : '—')}</tr>`;
     }).join('')}</table>`;
   document.getElementById('anHistory').innerHTML = anHistoryHtml();
+  document.querySelectorAll('[data-an-round-rename]').forEach(b => b.addEventListener('click', async () => {
+    const start = b.dataset.anRoundRename, h = (anthroRound.history || []).find(x => x.start === start);
+    const input = h ? await customPrompt('New name for this round:', h.name) : null;
+    if (input == null) return;
+    const name = input.trim();
+    if (!name) { toast('A round needs a name.', 'error'); return; }
+    const next = await mutateSetting('anthro_round', v => { const e = (v.history || []).find(x => x.start === start); if (e) e.name = name; });
+    if (next) { anthroRound = next; renderAnthro(); toast('Round renamed'); }
+  }));
   document.querySelectorAll('#anTable [data-open]').forEach(r => r.addEventListener('click', () => navigate('anthro/' + r.dataset.open)));
   document.querySelectorAll('#anTable [data-new]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); anAssessmentForm(b.dataset.new, null); }));
 }

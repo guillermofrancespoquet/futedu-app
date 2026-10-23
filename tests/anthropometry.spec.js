@@ -87,3 +87,15 @@ test('the anthropometry player report fits one A4 page even with extra printer m
   const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
   expect((pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length).toBe(1);
 });
+
+test('a previous anthropometry round can be renamed', async ({ page }) => {
+  const d = base();
+  d.settings.anthro_round = { start: '2026-09-01', history: [{ name: 'Round of March', start: '2026-03-01' }] };
+  await openApp(page, d);
+  await go(page, 'anthro');
+  await page.locator('[data-an-round-rename="2026-03-01"]').click();
+  await page.fill('.modal-box input', 'Spring 2026');
+  await page.click('.modal-ok');
+  await expect(page.locator('#anHistory')).toContainText('Spring 2026');
+  expect((await stored(page, 'anthro_round')).history[0].name).toBe('Spring 2026');
+});

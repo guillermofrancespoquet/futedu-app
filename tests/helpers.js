@@ -30,9 +30,10 @@ async function openApp(page, data = {}, opts = {}) {
       const o = { _eq: {}, _del: false,
         then: f => {
           if (o._del) { if (t === 'measurements') T.measurements = T.measurements.filter(m => !Object.entries(o._eq).every(([c, v]) => m[c] === v)); return f({ data: null, error: null }); }
+          if (o._patch && t === 'rounds') { T.rounds.filter(x => Object.entries(o._eq).every(([c, v]) => x[c] === v)).forEach(x => Object.assign(x, o._patch)); return f({ data: null, error: null }); }
           return f({ data: (t === 'settings' && o._eq.key) ? T.settings.filter(x => x.key === o._eq.key) : (T[t] || []), error: null });
         },
-        eq: (c, v) => { o._eq[c] = v; return o; }, like: () => o, order: () => o, select: () => o, insert: () => o, update: () => o, single: () => o,
+        eq: (c, v) => { o._eq[c] = v; return o; }, like: () => o, order: () => o, select: () => o, insert: () => o, update: p => { o._patch = p; return o; }, single: () => o,
         delete: () => { o._del = true; return o; },
         upsert: r => {
           (Array.isArray(r) ? r : [r]).forEach(x => {
