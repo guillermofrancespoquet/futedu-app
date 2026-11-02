@@ -57,3 +57,21 @@ test('Settings is ordered in labelled sections', async ({ page }) => {
   await go(page, 'settings');
   expect(await page.locator('#view-settings .section-label').allTextContents()).toEqual(['Targets', 'Rounds', 'Import', 'Backup and restore', 'This device']);
 });
+
+test('sidebar: collapses to icons and remembers it, and finds a player by name', async ({ page }) => {
+  await openApp(page, data());
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(page.locator('#app')).not.toHaveClass(/collapsed/);
+  await page.click('#collapseBtn');
+  await expect(page.locator('#app')).toHaveClass(/collapsed/);
+  expect(await page.evaluate(() => localStorage.getItem('futedu_sidebar_collapsed'))).toBe('1');
+  await page.hover('.nav-item[data-view="anthro"]');
+  await expect(page.locator('.nav-tip')).toHaveText('Anthropometry');
+  await page.click('#collapseBtn');
+  await expect(page.locator('#app')).not.toHaveClass(/collapsed/);
+  await page.fill('#sideSearch', 'ben');
+  await expect(page.locator('#sideResults button')).toHaveText(['Ben Prueba']);
+  await page.press('#sideSearch', 'Enter');
+  await expect(page.locator('#view-player')).toBeVisible();
+  await expect(page.locator('#sideSearch')).toHaveValue('');
+});
