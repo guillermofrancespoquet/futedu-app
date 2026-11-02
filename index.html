@@ -342,11 +342,12 @@
     #printArea .fr-land .fr-disc { margin-top:auto; }
     #printArea .fr-land .fr-sec h2 { font-size:14px; }
     #printArea .fr-land .fr-sec td { font-size:12px; }
-    #printArea .fr-land .fr-sec.fr-pills td { padding-top:calc(var(--td) + 2px); padding-bottom:calc(var(--td) + 2px); }   /* more air between the status pills */
+    #printArea .fr-land .fr-sec.fr-pills td { padding-top:calc(var(--td) + 4.5px); padding-bottom:calc(var(--td) + 4.5px); }   /* more air between the status pills */
     #printArea .fr-land .fr-sec th { font-size:9px; }
     #printArea .fr-land.fr-an .fr-sec td { font-size:11px; }
     #printArea .fr-land .fr-line { font-size:11px; line-height:1.5; }
     #printArea .fr-land .fr-note { font-size:11px; }
+    #printArea .fr-land .p-charts svg { height:var(--ch, 39mm); }   /* shorter charts leave room for the spaced pills and the full history */
     #printArea .fr-land .fr-disc { font-size:9.5px; }
     #printArea svg { width:100%; height:auto; }
     #printArea * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -3768,7 +3769,8 @@ function measureReportMm(html, widthMm) {
   return mm;
 }
 function fitPlayerReport(id, withNotes) {
-  const steps = [[P_ROOMY, undefined], [undefined, undefined], [P_TIGHT, undefined], [P_ULTRA, undefined], [P_ULTRA, { hist: 5 }], [P_ULTRA, { hist: 3 }]];
+  // the Latest measurement table (spaced pills) is the tallest block, so shrink spacing and charts first and cut the history only as a last resort
+  const steps = [[P_ROOMY, undefined], [undefined, undefined], [P_TIGHT, { ch: 36 }], [P_ULTRA, { ch: 34 }], [P_ULTRA, { ch: 30 }], [P_ULTRA, { ch: 28, hist: 5 }], [P_ULTRA, { ch: 26, hist: 3 }]];
   let html;
   for (const [sp, lim] of steps) { html = playerReportHtml(id, withNotes, sp, lim); if (measureReportMm(html, LAND_W_MM) <= FIT_LAND_MM) break; }
   return html;
@@ -3797,7 +3799,7 @@ function playerReportHtml(id, withNotes, spOverride, lim) {
   const histAll = ser.slice().reverse(), hist = histAll.slice(0, (lim && lim.hist) || (notes.length ? 6 : 8));
   const rowCount = ['weight_kg', 'body_fat_percent', 'subcutaneous_fat_percent', 'total_body_water_percent', 'bmi', 'fat_free_mass_kg', 'visceral_fat', 'skeletal_muscle_mass_kg'].filter(k => r[k] != null).length;
   const sp = spOverride || playerSpacing(rowCount + hist.length + (notes.length ? 3 + notes.length * 1.5 : 0));
-  return `<div class="fr fr-land" style="--g:${sp.g}px;--sp:${sp.sp}px;--spx:${sp.spx}px;--td:${sp.td}px;--bp:${sp.bp}px">
+  return `<div class="fr fr-land" style="--g:${sp.g}px;--sp:${sp.sp}px;--spx:${sp.spx}px;--td:${sp.td}px;--bp:${sp.bp}px;--ch:${(lim && lim.ch) || 39}mm">
     <div class="fr-title"><h1>${escapeHtml(p.name)}</h1>
       <div class="fr-sub">Bioimpedance report · ${escapeHtml(last.label)}${last.date ? ' · measured ' + escapeHtml(longDateSafe(last.date)) : ''}${p.tags.length ? ' · ' + p.tags.map(escapeHtml).join(', ') : ''} · Report generated ${longDate(todayStr())}</div></div>
     <div class="fr-kpis">${kpi('Weight', 'weight_kg', ' kg')}${kpi('Body fat', 'body_fat_percent', '%')}${kpi('Fat-free mass', 'fat_free_mass_kg', ' kg')}${kpi('Hydration', 'total_body_water_percent', '%')}</div>
