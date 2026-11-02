@@ -36,7 +36,7 @@
     --on-accent:#fff; --overlay:rgba(0,0,0,.4); --shadow-s:0 1px 2px rgba(0,0,0,.03); --shadow-l:0 20px 50px rgba(0,0,0,.3);
     --logo-bg:#fff; color-scheme:light;
     --r-card:16px; --r-btn:10px; --r-in:10px;
-    --sidebar:248px;
+    --sidebar:272px;
   }
   :root[data-theme="dark"] {
     --orange:#ff5405; --orange-d:#ff6f2c; --orange-soft:rgba(255,84,5,.16);
@@ -91,28 +91,73 @@
 
   /* ---------- shell ---------- */
   .shell { display:flex; min-height:100vh; }
+  /* sidebar: a floating rounded panel (collapsible to icons), search, grouped menu, theme switch and account row */
   .sidebar {
-    position:fixed; inset:0 auto 0 0; width:var(--sidebar); background:var(--card); border-right:1px solid var(--line);
-    display:flex; flex-direction:column; padding:22px 14px 16px; z-index:50; transition:transform .2s;
+    position:fixed; inset:12px auto 12px 12px; width:calc(var(--sidebar) - 24px); background:var(--card); border:1px solid var(--line); border-radius:24px;
+    box-shadow:0 10px 34px rgba(0,0,0,.07); display:flex; flex-direction:column; padding:20px 12px 14px; z-index:50; transition:transform .2s, width .2s;
   }
-  .brand { padding:0 6px 20px; border-bottom:1px solid var(--line); margin-bottom:14px; text-align:center; display:flex; flex-direction:column; align-items:center; }
-  .brand img { display:block; width:150px; height:auto; box-sizing:border-box; }
+  .brand { position:relative; padding:0 6px 16px; margin-bottom:12px; text-align:center; display:flex; flex-direction:column; align-items:center; }
+  .brand img.logo-img { display:block; box-sizing:border-box; }
+  .brand .brand-mark { display:none; width:44px; height:44px; border-radius:12px; }
   .brand .brand-sub { margin-top:12px; font-size:10px; letter-spacing:2.2px; padding-left:2.2px; text-align:center; text-transform:uppercase; color:var(--ink-3); font-weight:600; }
-  .nav { display:flex; flex-direction:column; gap:4px; }
+  .collapse-btn { position:absolute; right:-25px; top:18px; width:26px; height:26px; padding:0; border-radius:50%; border:3px solid var(--bg); background:var(--orange); color:var(--on-accent); display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.18); box-sizing:content-box; }
+  .collapse-btn svg { width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; transition:transform .2s; }
+  .side-search { position:relative; margin:0 2px 6px; }
+  .side-search svg { position:absolute; left:12px; top:11px; width:17px; height:17px; stroke:var(--ink-3); fill:none; stroke-width:2; stroke-linecap:round; pointer-events:none; }
+  .side-search input { height:40px; border-radius:12px; padding-left:38px; background:var(--fill); border-color:transparent; font-size:13.5px; }
+  .side-search input:focus { background:var(--card); }
+  .side-search input::-webkit-search-cancel-button { -webkit-appearance:none; appearance:none; }
+  .side-search .search-icon-btn { display:none; }
+  .side-results { position:absolute; left:0; right:0; top:46px; background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow-l); padding:6px; z-index:60; display:flex; flex-direction:column; gap:2px; }
+  .side-results button { border:none; background:transparent; text-align:left; font:inherit; font-size:13.5px; font-weight:600; color:var(--ink); padding:9px 10px; border-radius:9px; cursor:pointer; }
+  .side-results button:hover, .side-results button.first { background:var(--fill); }
+  .side-results .none { font-size:12.5px; color:var(--ink-3); padding:9px 10px; }
+  .nav { display:flex; flex-direction:column; gap:3px; overflow-y:auto; overflow-x:hidden; margin:0 -4px; padding:0 4px; scrollbar-width:thin; }
   .nav-item {
-    display:flex; align-items:center; gap:11px; height:40px; padding:0 12px; border:none; border-radius:10px;
+    position:relative; display:flex; align-items:center; gap:12px; min-height:42px; padding:0 12px; border:none; border-radius:12px;
     background:transparent; color:var(--ink-2); font-size:14px; font-weight:600; cursor:pointer; text-align:left;
   }
   .nav-item svg { width:19px; height:19px; flex-shrink:0; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
-  .nav-item:hover { background:var(--fill); }
+  .nav-label { font-size:11px; font-weight:600; letter-spacing:.4px; color:var(--ink-3); padding:16px 12px 5px; }
+  .nav-label:first-child { padding-top:6px; }
+  .nav-item:hover { background:var(--fill); color:var(--ink); }
   .nav-item.active { background:var(--orange-soft); color:var(--orange); }
-  .nav-item .badge { margin-left:auto; font-size:11px; font-weight:700; background:var(--fill-d); color:var(--ink-2); border-radius:8px; padding:1px 8px; }
+  .nav-item.active::before { content:''; position:absolute; left:-4px; top:9px; bottom:9px; width:4px; border-radius:0 4px 4px 0; background:var(--orange); }
+  .nav-item .badge { margin-left:auto; font-size:11px; font-weight:700; background:var(--fill-d); color:var(--ink-2); border-radius:999px; padding:1px 8px; min-width:22px; text-align:center; }
   .nav-item.active .badge { background:var(--orange); color:var(--on-accent); }
-  .sidebar-foot { margin-top:auto; padding:14px 6px 0; border-top:1px solid var(--line); }
-  .sidebar-foot .who { font-size:11.5px; color:var(--ink-3); margin-bottom:10px; word-break:break-all; }
+  .sidebar-foot { margin-top:auto; padding:12px 2px 0; border-top:1px solid var(--line); }
   .sidebar-foot .btn { width:100%; }
+  .sidebar-foot .theme-seg { border-radius:14px; padding:4px; }
+  .sidebar-foot .theme-seg button { height:34px; border-radius:11px; gap:6px; font-size:12.5px; }
+  .user-row { display:flex; align-items:center; gap:10px; padding:2px 2px 0; }
+  .user-row .who { flex:1; min-width:0; font-size:12px; color:var(--ink-2); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .icon-btn { width:34px; height:34px; padding:0; border:none; border-radius:10px; background:transparent; color:var(--ink-3); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .icon-btn:hover { background:var(--fill); color:var(--ink); }
+  .icon-btn svg { width:19px; height:19px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+  .nav-tip { position:fixed; z-index:300; background:var(--ink); color:var(--card); font-size:12.5px; font-weight:600; padding:6px 11px; border-radius:9px; pointer-events:none; box-shadow:0 4px 14px rgba(0,0,0,.25); white-space:nowrap; }
+  @media (min-width: 861px) {
+    .shell.collapsed { --sidebar:96px; }
+    .shell.collapsed .sidebar { padding-left:10px; padding-right:10px; }
+    .shell.collapsed .brand img.logo-img, .shell.collapsed .brand .brand-sub, .shell.collapsed .nav-item .nav-text, .shell.collapsed .nav-item .badge-full, .shell.collapsed .side-search input, .shell.collapsed .theme-seg .t-label, .shell.collapsed .user-row .who { display:none; }
+    .shell.collapsed .brand .brand-mark { display:block; }
+    .shell.collapsed .brand { padding-bottom:12px; }
+    .shell.collapsed .collapse-btn svg { transform:rotate(180deg); }
+    .shell.collapsed .side-search svg { display:none; }
+    .shell.collapsed .side-search .search-icon-btn { display:flex; width:100%; height:40px; border-radius:12px; background:var(--fill); }
+    .shell.collapsed .side-search .search-icon-btn svg { display:block; position:static; width:19px; height:19px; stroke:var(--ink-2); }
+    .shell.collapsed .nav-item { justify-content:center; padding:0; }
+    .shell.collapsed .nav-item .badge { position:absolute; top:3px; right:4px; margin:0; padding:0 5px; min-width:0; font-size:10px; line-height:16px; }
+    .shell.collapsed .nav-label { font-size:0; padding:8px 0 2px; border-top:1px solid var(--line); margin:8px 6px 0; }
+    .shell.collapsed .nav-label:first-child { border-top:none; margin-top:0; }
+    .shell.collapsed .theme-seg { flex-direction:column; flex-shrink:0; gap:2px; }
+    .shell.collapsed .theme-seg button { flex:none; width:100%; height:32px; }
+    .shell.collapsed .user-row { flex-direction:column; gap:6px; }
+    .shell.collapsed .install-label { display:none; }
+  }
+  @media (max-width: 860px) { .side-search input { font-size:16px; } }
+  @media (max-width: 860px) { .collapse-btn { display:none; } .brand .brand-mark { display:none !important; } }
 
-  .main { margin-left:var(--sidebar); flex:1; min-width:0; padding:28px 32px 60px; }
+  .main { margin-left:var(--sidebar); transition:margin-left .2s; flex:1; min-width:0; padding:28px 32px 60px; }
   .content { max-width:1080px; margin:0 auto; }
   .topbar { display:none; }
   .scrim { display:none; }
@@ -120,7 +165,18 @@
   .page-head { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
   .page-head h1 { font-size:26px; font-weight:700; letter-spacing:-0.5px; }
   .page-head .sub { font-size:13px; color:var(--ink-3); margin-top:3px; }
-  .page-head .actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .page-head .actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .more { position:relative; }
+  .more-btn svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; margin-left:6px; vertical-align:-2px; }
+  .more-menu { display:none; position:absolute; right:0; top:calc(100% + 6px); min-width:210px; background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow-l); padding:6px; z-index:40; flex-direction:column; gap:2px; }
+  .more.open .more-menu { display:flex; }
+  .more-menu .btn { justify-content:flex-start; text-align:left; width:100%; height:38px; background:transparent; border:none; box-shadow:none; }
+  .more-menu .btn:hover { background:var(--fill); }
+  .section-label { font-size:11px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:var(--ink-3); margin:26px 2px 10px; }
+  .section-label:first-of-type { margin-top:4px; }
+  .pl-table td { vertical-align:middle; }
+  .pl-table .pl-actions { white-space:nowrap; text-align:right; }
+  .pl-table .pl-actions .btn-sm { margin-left:4px; }
 
   .card { background:var(--card); border:1px solid var(--line); border-radius:var(--r-card); padding:20px 22px; margin-bottom:16px; box-shadow:var(--shadow-s); }
   .card h2 { font-size:15px; font-weight:700; letter-spacing:-0.2px; margin-bottom:14px; }
@@ -376,7 +432,7 @@
   .import-list { font-size:12.5px; color:var(--ink-2); margin:8px 0; max-height:140px; overflow:auto; line-height:1.6; }
 
   .logo-img { border-radius:14px; background:var(--logo-bg); }
-  .brand img.logo-img { padding:8px 10px; width:164px; margin:0 auto; }
+  .brand img.logo-img { padding:8px 10px; width:150px; margin:0 auto; }
   .topbar img.logo-img { padding:3px 6px; height:34px; }
   .modal-overlay.imp-overlay { align-items:flex-start; overflow-y:auto; }
   .modal-box.imp-box { max-width:880px; max-height:none; margin:20px auto; }
@@ -575,7 +631,7 @@
     .grid-2 { grid-template-columns:1fr; }
   }
   @media (max-width: 860px) {
-    .sidebar { transform:translateX(-100%); box-shadow:none; }
+    .sidebar { transform:translateX(-110%); box-shadow:none; width:260px; }
     .sidebar.open { transform:none; box-shadow:0 0 40px rgba(0,0,0,.25); }
     .scrim.open { display:block; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:40; }
     .main { margin-left:0; padding:0 16px 48px; }
@@ -629,44 +685,53 @@
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <img class="logo-img" alt="FUTEDU Team">
-      <div class="brand-sub">Bioimpedance</div>
+      <img class="brand-mark" src="icons/icon-96.png" alt="FUTEDU">
+      <div class="brand-sub">Nutrition</div>
+      <button class="collapse-btn" id="collapseBtn" aria-label="Collapse the menu" title="Collapse the menu"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    </div>
+    <div class="side-search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+      <input type="search" id="sideSearch" placeholder="Find a player…" aria-label="Find a player" autocomplete="off">
+      <button class="icon-btn search-icon-btn" id="sideSearchBtn" aria-label="Find a player" title="Find a player"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></button>
+      <div class="side-results hidden" id="sideResults"></div>
     </div>
     <nav class="nav">
-      <button class="nav-item" data-view="dashboard">
-        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="9" rx="2"/><rect x="13.5" y="3" width="7.5" height="5.5" rx="2"/><rect x="13.5" y="11.5" width="7.5" height="9.5" rx="2"/><rect x="3" y="15.5" width="7.5" height="5.5" rx="2"/></svg>
-        Dashboard
+      <div class="nav-label">Overview</div>
+      <button class="nav-item" data-tip="Dashboard" data-view="dashboard">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="9" rx="2"/><rect x="13.5" y="3" width="7.5" height="5.5" rx="2"/><rect x="13.5" y="11.5" width="7.5" height="9.5" rx="2"/><rect x="3" y="15.5" width="7.5" height="5.5" rx="2"/></svg><span class="nav-text">Dashboard</span>
       </button>
-      <button class="nav-item" data-view="summary">
-        <svg viewBox="0 0 24 24"><path d="M3 12h4l2.5-7 5 14 2.5-7H21"/></svg>
-        Bioimpedance
+      <div class="nav-label">Measurements</div>
+      <button class="nav-item" data-tip="Bioimpedance" data-view="summary">
+        <svg viewBox="0 0 24 24"><path d="M3 12h4l2.5-7 5 14 2.5-7H21"/></svg><span class="nav-text">Bioimpedance</span>
         <span class="badge" id="navPending"></span>
       </button>
-      <button class="nav-item" data-view="compare">
-        <svg viewBox="0 0 24 24"><line x1="6" y1="20" x2="6" y2="11"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/></svg>
-        Compare
+      <button class="nav-item" data-tip="Anthropometry" data-view="anthro">
+        <svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="1.5"/><path d="M7 8v3M11 8v4M15 8v3M19 8v4"/></svg><span class="nav-text">Anthropometry</span>
       </button>
-      <button class="nav-item" data-view="anthro">
-        <svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="1.5"/><path d="M7 8v3M11 8v4M15 8v3M19 8v4"/></svg>
-        Anthropometry
+      <button class="nav-item" data-tip="Compare" data-view="compare">
+        <svg viewBox="0 0 24 24"><line x1="6" y1="20" x2="6" y2="11"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/></svg><span class="nav-text">Compare</span>
       </button>
-      <button class="nav-item" data-view="recipes">
-        <svg viewBox="0 0 24 24"><path d="M5 11h14a0 0 0 0 1 0 0 7 7 0 0 1-7 7 7 7 0 0 1-7-7z"/><path d="M8.5 11V8.6a3.5 3.5 0 0 1 7 0V11"/><path d="M12 18v2.5M8.5 20.5h7"/></svg>
-        Recipes
+      <div class="nav-label">Library</div>
+      <button class="nav-item" data-tip="Recipes" data-view="recipes">
+        <svg viewBox="0 0 24 24"><path d="M5 11h14a0 0 0 0 1 0 0 7 7 0 0 1-7 7 7 7 0 0 1-7-7z"/><path d="M8.5 11V8.6a3.5 3.5 0 0 1 7 0V11"/><path d="M12 18v2.5M8.5 20.5h7"/></svg><span class="nav-text">Recipes</span>
       </button>
-      <button class="nav-item" data-view="settings">
-        <svg viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="9" cy="7" r="2.4" style="fill:var(--card)"/><circle cx="15" cy="17" r="2.4" style="fill:var(--card)"/></svg>
-        Settings
+      <div class="nav-label">Admin</div>
+      <button class="nav-item" data-tip="Players" data-view="players">
+        <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M2.8 19.5a6.2 6.2 0 0 1 12.4 0"/><path d="M16 5a3.2 3.2 0 0 1 0 6.2M17.2 14.2a6 6 0 0 1 4 5.3"/></svg><span class="nav-text">Players</span>
+      </button>
+      <button class="nav-item" data-tip="Settings" data-view="settings">
+        <svg viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="9" cy="7" r="2.4" style="fill:var(--card)"/><circle cx="15" cy="17" r="2.4" style="fill:var(--card)"/></svg><span class="nav-text">Settings</span>
       </button>
     </nav>
     <div class="sidebar-foot">
       <button class="btn sm hidden" id="installBtn" style="width:100%;margin-bottom:10px;">Install app</button>
       <div class="seg theme-seg" id="themeSeg" role="group" aria-label="Theme">
-        <button data-theme-set="light" title="Light" aria-label="Light"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg></button>
-        <button data-theme-set="auto" title="Match system" aria-label="Match system"><svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12.5" rx="2.2"/><path d="M8.5 20.5h7M12 17v3.5"/></svg></button>
-        <button data-theme-set="dark" title="Dark" aria-label="Dark"><svg viewBox="0 0 24 24"><path d="M20.5 14.2A8.6 8.6 0 0 1 9.8 3.5a8.6 8.6 0 1 0 10.7 10.7z"/></svg></button>
+        <button data-theme-set="light" title="Light" aria-label="Light"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg><span class="t-label">Light</span></button>
+        <button data-theme-set="auto" title="Match system" aria-label="Match system"><svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12.5" rx="2.2"/><path d="M8.5 20.5h7M12 17v3.5"/></svg><span class="t-label">Auto</span></button>
+        <button data-theme-set="dark" title="Dark" aria-label="Dark"><svg viewBox="0 0 24 24"><path d="M20.5 14.2A8.6 8.6 0 0 1 9.8 3.5a8.6 8.6 0 1 0 10.7 10.7z"/></svg><span class="t-label">Dark</span></button>
       </div>
-      <div class="who" id="whoAmI"></div>
-      <button class="btn" id="logoutBtn">Sign out</button>
+      <div class="user-row"><span class="avatar" id="whoAvatar" aria-hidden="true">?</span><div class="who" id="whoAmI"></div>
+        <button class="icon-btn" id="logoutBtn" aria-label="Sign out" title="Sign out"><svg viewBox="0 0 24 24"><path d="M9 4.5H6.5A2.5 2.5 0 0 0 4 7v10a2.5 2.5 0 0 0 2.5 2.5H9"/><path d="M15 8l4 4-4 4M19 12H9.5"/></svg></button></div>
     </div>
   </aside>
 
@@ -708,8 +773,8 @@
           <div class="actions">
             <div class="seg" id="modeSeg"><button data-mode="cards" class="on">Cards</button><button data-mode="table">Quick entry</button></div>
             <button class="btn js-round-report">Round report</button>
-            <button class="btn js-reset-checkins">Reset check-ins</button>
-            <button class="btn js-archive">Archive round</button>
+            <div class="more"><button class="btn more-btn" aria-haspopup="true" aria-expanded="false">More<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+              <div class="more-menu" role="menu"><button class="btn js-reset-checkins" role="menuitem">Reset check-ins</button><button class="btn js-archive" role="menuitem">Archive round</button></div></div>
           </div>
         </div>
         <div class="dropzone" id="dropzone">
@@ -738,10 +803,6 @@
           </select>
         </div>
         <div class="card">
-          <div class="add-row">
-            <input type="text" id="newPlayerName" placeholder="Add player name…">
-            <button class="btn primary" id="addPlayerBtn">Add</button>
-          </div>
           <div class="save-note" id="checkinCount"></div>
           <div id="playerList"></div>
           <div id="quickEntry" class="quick hidden"></div>
@@ -760,13 +821,28 @@
         <div class="card cmp" id="cmpTable"></div>
       </section>
 
+      <!-- PLAYERS -->
+      <section id="view-players" class="view hidden">
+        <div class="page-head"><div><h1>Players</h1><div class="sub" id="plSub"></div></div></div>
+        <div class="card">
+          <div class="add-row">
+            <input type="text" id="newPlayerName" placeholder="Add player name…" aria-label="New player name">
+            <button class="btn primary" id="addPlayerBtn">Add</button>
+          </div>
+          <div class="save-note" style="margin-top:8px;">Date of birth, sex and height are shared by Bioimpedance and Anthropometry. Removing a player keeps their past measurements.</div>
+        </div>
+        <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><input type="search" id="plSearch" placeholder="Search players" aria-label="Search players"></div>
+          <select id="plAge" class="age-sel" aria-label="Age group"></select><select id="plTag" aria-label="Group" class="hidden"></select></div>
+        <div class="card hist-full" id="plTable"></div>
+      </section>
+
       <!-- PLAYER PROFILE -->
       <section id="view-player" class="view hidden"></section>
 
       <!-- ANTHROPOMETRY -->
       <section id="view-anthro" class="view hidden">
         <div class="page-head"><div><h1>Anthropometry</h1><div class="sub">Skinfolds, girths and basic measures: body composition, muscle development and proportions.</div></div>
-          <div class="actions"><button class="btn" id="anRoundReportBtn">Round report</button><button class="btn" id="anPendingBtn">Pending list</button><button class="btn" id="anImportBtn">Import past assessments</button></div></div>
+          <div class="actions"><button class="btn" id="anRoundReportBtn">Round report</button><div class="more"><button class="btn more-btn" aria-haspopup="true" aria-expanded="false">More<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button><div class="more-menu" role="menu"><button class="btn" id="anPendingBtn" role="menuitem">Pending list</button><button class="btn" id="anImportBtn" role="menuitem">Import past assessments</button></div></div></div></div>
         <input type="file" id="anFile" accept=".xlsx,.xlsm,.xls,application/vnd.ms-excel.sheet.macroEnabled.12,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple class="hidden">
         <div class="kpis" id="anKpis"></div>
         <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><input type="search" id="anSearch" placeholder="Search players" aria-label="Search players"></div><select id="anAge" class="age-sel" aria-label="Age group" style="width:auto;"></select><select id="anSort" aria-label="Sort players" style="width:auto;"><option value="name">Sort: Name</option><option value="pending">Sort: Pending first</option><option value="age">Sort: Age (oldest)</option><option value="last">Sort: Last assessment (oldest)</option></select><div class="seg" id="anFilter" role="group" aria-label="Round status"><button data-f="all" class="on">All</button><button data-f="pending">Pending</button><button data-f="done">Done</button></div></div>
@@ -785,14 +861,9 @@
 
       <!-- SETTINGS -->
       <section id="view-settings" class="view hidden">
-        <div class="page-head"><div><h1>Settings</h1><div class="sub">Thresholds, rounds and data.</div></div></div>
+        <div class="page-head"><div><h1>Settings</h1><div class="sub">Targets, rounds, imports and backup.</div></div></div>
 
-        <div class="card install-card">
-          <h2>Install the app</h2>
-          <div class="row"><span class="save-note" id="installStatus"></span><button class="btn primary hidden" id="installBtn2">Install FUTEDU</button></div>
-          <div class="note" id="installHelp"></div>
-        </div>
-
+        <h3 class="section-label">Targets</h3>
         <div class="card">
           <h2>Classification thresholds</h2>
           <div class="settings-grid">
@@ -810,20 +881,19 @@
           </div>
           <div class="note">BMI is a rough proxy and doesn't account well for muscle mass in growing athletes. Fat-free mass varies by height/age, so its threshold is optional.</div>
         </div>
-
+        <h3 class="section-label">Rounds</h3>
         <div class="card">
           <h2>Rounds</h2>
           <div id="roundList"></div>
           <div class="row" style="margin-top:14px;"><button class="btn js-round-report">Create round report</button><button class="btn js-archive">Archive current round</button></div>
           <div class="note">Archiving closes the current round under the name you choose, clears check-ins and opens a new round with everyone pending. Previous values stay visible on each player's History.</div>
         </div>
-
+        <h3 class="section-label">Import</h3>
         <div class="card">
           <h2>Import from photo or PDF <span class="muted">Arboleaf reports</span></h2>
           <div class="row"><button class="btn primary js-import-report">Choose images or PDFs</button></div>
           <div class="note">Reads JPG, PNG, WebP and PDF reports on this device (nothing is uploaded; only the reader code and its language file are downloaded the first time). You review and correct every value before anything is saved.</div>
         </div>
-
         <div class="card">
           <h2>Import measurements <span class="muted">CSV, into any round</span></h2>
           <div class="row">
@@ -832,7 +902,7 @@
           </div>
           <div class="note">Columns: <b>player</b> (name), <b>date</b> (YYYY-MM-DD, optional) and any of body_fat_percent, subcutaneous_fat_percent, total_body_water_percent, bmi, fat_free_mass_kg, visceral_fat, skeletal_muscle_mass_kg, weight_kg and balance_upper / balance_lower / balance_overall (balanced, slight, severe). Commas or semicolons both work. You choose the round and whether to only fill empty values before anything is saved.</div>
         </div>
-
+        <h3 class="section-label">Backup and restore</h3>
         <div class="card">
           <h2>Data</h2>
           <div class="row">
@@ -847,6 +917,12 @@
           </div>
           <div class="note" id="backupNote"></div>
           <div class="note">The JSON backup has everything (players, bioimpedance, anthropometry, notes, tags, thresholds). Exports download to this device and contain player data: store them somewhere private and never put them in a repository. Check-ins are shared across devices.</div>
+        </div>
+        <h3 class="section-label">This device</h3>
+        <div class="card install-card">
+          <h2>Install the app</h2>
+          <div class="row"><span class="save-note" id="installStatus"></span><button class="btn primary hidden" id="installBtn2">Install FUTEDU</button></div>
+          <div class="note" id="installHelp"></div>
         </div>
       </section>
 
@@ -1030,7 +1106,9 @@ function showApp() {
   document.getElementById('loginCard').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   sb.auth.getSession().then(({ data }) => {
-    document.getElementById('whoAmI').textContent = (data.session && data.session.user && data.session.user.email) || '';
+    const email = (data.session && data.session.user && data.session.user.email) || '';
+    document.getElementById('whoAmI').textContent = email;
+    document.getElementById('whoAvatar').textContent = (email[0] || '?').toUpperCase();
   });
   navigate(decodeURIComponent(location.hash.replace('#', '')) || ui.view, true);
   hideSplash();
@@ -1221,7 +1299,7 @@ async function addPlayer() {
   while (taken.has(id)) { id = base + '-' + (++suffix); }
   const { error } = await sb.from('players').insert({ id, name });
   if (error) { showError(error); return; }
-  roster.push({ id, name, checkedIn: false });
+  roster.push({ id, name, checkedIn: false, tags: [] });
   input.value = '';
   sortRosterAlpha();
   renderAll();
@@ -1249,6 +1327,83 @@ async function renamePlayer(id) {
   sortRosterAlpha();
   renderAll();
 }
+
+// ---- Players page: the one place to add, rename, tag and remove players, and to see their shared data (date of birth, sex, height)
+function renderPlayers() {
+  const el = document.getElementById('plTable');
+  if (!el) return;
+  const tags = allTags(), tagSel = document.getElementById('plTag');
+  const curTag = tagSel.value;
+  tagSel.innerHTML = '<option value="">All groups</option>' + tags.map(t => `<option value="${escapeHtml(t)}"${t === curTag ? ' selected' : ''}>${escapeHtml(t)}</option>`).join('');
+  tagSel.classList.toggle('hidden', !tags.length);
+  const q = document.getElementById('plSearch').value.trim().toLowerCase(), tag = tags.includes(curTag) ? curTag : '';
+  const list = scopedRoster().filter(p => (!q || p.name.toLowerCase().includes(q)) && (!tag || p.tags.includes(tag)));
+  document.getElementById('plSub').textContent = roster.length + ' player' + (roster.length === 1 ? '' : 's') + (list.length !== roster.length ? ' · showing ' + list.length : '');
+  if (!list.length) { el.innerHTML = '<div class="empty">' + (roster.length ? 'No players match.' : 'No players yet. Add the first one above.') + '</div>'; return; }
+  el.innerHTML = `<table class="pl-table"><tr><th>Player</th><th>Age</th><th>Date of birth</th><th>Sex</th><th>Height</th><th>Groups</th><th></th></tr>${list.map(p => {
+    const pf = anthroProfiles[p.id] || {}, age = pf.dob ? anAge(todayStr(), pf.dob) : null;
+    return `<tr><td><button class="name-link profile" data-id="${p.id}" title="Open ${escapeHtml(p.name)}'s page">${escapeHtml(p.name)}</button></td>
+      <td>${age != null ? age.toFixed(1) : '—'}</td><td>${pf.dob ? escapeHtml(longDateSafe(pf.dob)) : '—'}</td><td>${pf.sex ? escapeHtml(pf.sex) : '—'}</td><td>${pf.height != null ? escapeHtml(String(pf.height)) + ' cm' : '—'}</td>
+      <td>${p.tags.length ? p.tags.map(t => `<span class="tag-chip">${escapeHtml(t)}</span>`).join(' ') : '<span class="muted">—</span>'}</td>
+      <td class="pl-actions"><button class="btn-sm" data-pl="data" data-id="${p.id}">Player data</button><button class="btn-sm" data-pl="tags" data-id="${p.id}">Groups</button><button class="btn-sm" data-pl="rename" data-id="${p.id}">Rename</button><button class="btn-sm remove" data-pl="remove" data-id="${p.id}">Remove</button></td></tr>`;
+  }).join('')}</table>`;
+  el.querySelectorAll('.profile').forEach(b => b.addEventListener('click', () => navigate('player/' + b.dataset.id)));
+  el.querySelectorAll('[data-pl]').forEach(b => b.addEventListener('click', () => ({ data: sharedDataForm, tags: editTags, rename: renamePlayer, remove: removePlayer })[b.dataset.pl](b.dataset.id)));
+}
+document.getElementById('plSearch').addEventListener('input', () => renderPlayers());
+document.getElementById('plTag').addEventListener('change', () => renderPlayers());
+
+// ---- sidebar: collapse to icons (remembered on this device), tooltips for the icons, quick player search
+(function () {
+  const shell = document.getElementById('app'), btn = document.getElementById('collapseBtn');
+  const KEY = 'futedu_sidebar_collapsed';
+  const set = on => { shell.classList.toggle('collapsed', on); btn.setAttribute('aria-label', on ? 'Expand the menu' : 'Collapse the menu'); btn.title = on ? 'Expand the menu' : 'Collapse the menu'; try { localStorage.setItem(KEY, on ? '1' : '0'); } catch (e) { /* ignore */ } };
+  try { if (localStorage.getItem(KEY) === '1') set(true); } catch (e) { /* ignore */ }
+  btn.addEventListener('click', () => set(!shell.classList.contains('collapsed')));
+  let tip = null;
+  const hide = () => { if (tip) { tip.remove(); tip = null; } };
+  document.querySelectorAll('.nav-item, #sideSearchBtn, #logoutBtn').forEach(el => {
+    const show = () => {
+      if (!shell.classList.contains('collapsed') && el.id !== 'logoutBtn') return;
+      hide();
+      const r = el.getBoundingClientRect();
+      tip = document.createElement('div'); tip.className = 'nav-tip'; tip.textContent = el.dataset.tip || el.getAttribute('aria-label') || el.title;
+      document.body.appendChild(tip);
+      const left = el.id === 'logoutBtn' && !shell.classList.contains('collapsed') ? r.left : r.right + 10;
+      tip.style.left = left + 'px'; tip.style.top = (r.top + r.height / 2 - tip.offsetHeight / 2 - (left === r.left ? r.height : 0)) + 'px';
+    };
+    el.addEventListener('mouseenter', show); el.addEventListener('focus', show); el.addEventListener('mouseleave', hide); el.addEventListener('blur', hide); el.addEventListener('click', hide);
+  });
+  // quick find: type a name, Enter or click opens that player's page
+  const input = document.getElementById('sideSearch'), box = document.getElementById('sideResults');
+  const close = () => { box.classList.add('hidden'); box.innerHTML = ''; };
+  const open = id => { close(); input.value = ''; navigate('player/' + id); };
+  const render = () => {
+    const q = input.value.trim().toLowerCase();
+    if (!q) { close(); return; }
+    const hits = roster.filter(p => p.name.toLowerCase().includes(q)).slice(0, 6);
+    box.innerHTML = hits.length ? hits.map((p, i) => `<button data-id="${p.id}" class="${i === 0 ? 'first' : ''}">${escapeHtml(p.name)}</button>`).join('') : '<div class="none">No player found</div>';
+    box.classList.remove('hidden');
+    box.querySelectorAll('button').forEach(b => b.addEventListener('click', () => open(b.dataset.id)));
+  };
+  input.addEventListener('input', render);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { input.value = ''; close(); }
+    if (e.key === 'Enter') { const f = box.querySelector('button'); if (f) open(f.dataset.id); }
+  });
+  document.addEventListener('click', e => { if (!e.target.closest('.side-search')) close(); });
+  document.getElementById('sideSearchBtn').addEventListener('click', () => { set(false); setTimeout(() => input.focus(), 220); });
+})();
+
+// "More" menus in the page headers: secondary actions out of the way
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.more-btn');
+  document.querySelectorAll('.more.open').forEach(m => { if (!btn || m !== btn.closest('.more')) { m.classList.remove('open'); m.querySelector('.more-btn').setAttribute('aria-expanded', 'false'); } });
+  if (btn) { const m = btn.closest('.more'); m.classList.toggle('open'); btn.setAttribute('aria-expanded', m.classList.contains('open') ? 'true' : 'false'); }
+  else if (!e.target.closest('.more-menu')) return;
+  else document.querySelectorAll('.more.open').forEach(m => { m.classList.remove('open'); m.querySelector('.more-btn').setAttribute('aria-expanded', 'false'); });
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.more.open').forEach(m => m.classList.remove('open')); });
 
 async function toggleCheckin(id) {
   const player = roster.find(p => p.id === id);
@@ -1338,7 +1493,7 @@ async function renderRecipes() {
 }
 document.getElementById('rcSearch').addEventListener('input', renderRecipes);
 
-const VIEWS = ['dashboard', 'summary', 'compare', 'anthro', 'anthrop', 'recipes', 'player', 'settings'];
+const VIEWS = ['dashboard', 'summary', 'compare', 'anthro', 'anthrop', 'recipes', 'players', 'player', 'settings'];
 function navigate(route, silent) {
   let [view, param] = String(route || '').split('/');
   if (view === 'anthro' && param) view = 'anthrop';
@@ -1355,6 +1510,7 @@ function navigate(route, silent) {
   if (view === 'compare') renderCompare();
   if (view === 'anthro') renderAnthroList();
   if (view === 'recipes') renderRecipes();
+  if (view === 'players') renderPlayers();
   if (view === 'anthrop') renderAnthroPlayer();
   closeMenu();
   window.scrollTo(0, 0);
@@ -1772,9 +1928,9 @@ function scopedRoster() { return roster.filter(p => !ui.age || ageGroupOf(p.id) 
 function renderAgeSelects() {
   const n = g => roster.filter(p => ageGroupOf(p.id) === g).length;
   const opts = [['', 'All ages'], ['U18', 'U18 (under 18) · ' + n('U18')], ['U23', 'U23 (18 to 22) · ' + n('U23')], ...(n('older') ? [['older', '23 and over · ' + n('older')]] : []), ['nodob', 'No date of birth · ' + n('nodob')]];
-  ['ageSel', 'anAge'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = opts.map(([v, l]) => `<option value="${v}"${v === ui.age ? ' selected' : ''}>${l}</option>`).join(''); });
+  ['ageSel', 'anAge', 'plAge'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = opts.map(([v, l]) => `<option value="${v}"${v === ui.age ? ' selected' : ''}>${l}</option>`).join(''); });
 }
-document.addEventListener('change', e => { if (e.target.classList && e.target.classList.contains('age-sel')) { ui.age = e.target.value; renderAgeSelects(); renderSummary(); renderAnthroList(); } });
+document.addEventListener('change', e => { if (e.target.classList && e.target.classList.contains('age-sel')) { ui.age = e.target.value; renderAgeSelects(); renderSummary(); renderAnthroList(); if (ui.view === 'players') renderPlayers(); } });
 function matchesFilter(p) {
   const r = readingFor(p.id);
   if (ui.filter === 'pending' && r) return false;
@@ -1895,6 +2051,7 @@ function renderAll() {
   renderSummary();
   renderSettings();
   if (ui.view === 'compare') renderCompare();
+  if (ui.view === 'players') renderPlayers();
   if (ui.view === 'anthro' || ui.view === 'anthrop') renderAnthro();
   if (ui.view === 'player') {
     if (roster.some(p => p.id === ui.playerId)) renderProfile(); else navigate('summary');
@@ -1921,8 +2078,6 @@ function renderPlayerCard(p) {
         ${historyFor(p.id).length ? `<button class="btn-sm hist hist-toggle" data-id="${p.id}">History (${historyFor(p.id).length})</button>` : ''}
         <button class="btn-sm note-add" data-id="${p.id}">Add note</button>
         <button class="btn-sm tags-edit" data-id="${p.id}">Tags</button>
-        <button class="btn-sm rename" data-id="${p.id}">Rename</button>
-        <button class="btn-sm remove" data-id="${p.id}">Remove</button>
       </div>
       <div class="metrics">
         ${chipHtml('Body fat', r && r.body_fat_percent, '%', c.bodyFat)}
