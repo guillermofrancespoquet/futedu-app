@@ -4,7 +4,7 @@ const { PLAYER_IDS: [alex], assessment, profile, openApp, go } = require('./help
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
 const data = () => ({ settings: { anthro_profiles: { [alex]: profile('2008-01-01') }, anthro_assessments: { [alex]: [assessment('2026-09-10')] }, anthro_round: { start: '2026-09-01' } } });
-const VIEWS = ['dashboard', 'summary', 'compare', 'anthro', `anthro/${alex}`, 'recipes', 'settings', `player/${alex}`];
+const VIEWS = ['dashboard', 'summary', 'compare', 'anthro', `anthro/${alex}`, 'recipes', 'players', 'settings', `player/${alex}`];
 
 test('no horizontal overflow in any view', async ({ page }) => {
   await openApp(page, data());
