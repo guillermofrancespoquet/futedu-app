@@ -98,3 +98,26 @@ test('player reports have no branded header band or footer and ask for landscape
   await page.evaluate(() => { printHtml('<div>x</div>', 'b'); });
   expect(await page.evaluate(() => [...document.head.querySelectorAll('style')].some(s => s.textContent.includes('A4 landscape')))).toBe(false);
 });
+
+test('a player report can be saved as a PNG image (bioimpedance and anthropometry)', async ({ page }) => {
+  const id = 'alex-testa';
+  await openApp(page, { measurements: [{ round_id: 'r1', player_id: id, measured_on: '2026-10-05', body_fat_percent: 13, weight_kg: 70, fat_free_mass_kg: 60, total_body_water_percent: 62 }],
+    settings: { anthro_profiles: { [id]: { dob: '2010-01-01', sex: 'Male', ethnicity: 'Caucasian', height: 175, sitting: 90, span: 178 } },
+      anthro_assessments: { [id]: [{ id: 'a1', date: '2026-10-05', fixed: { height: 175, sitting: 90, span: 178 }, raw: { mass: [70], sf_triceps: [8], sf_subscapular: [8], sf_supraspinal: [8], sf_abdominal: [8], sf_thigh: [8], sf_calf: [6], gr_armRelaxed: [28], gr_armFlexed: [30], gr_thigh: [52], gr_calf: [36] } }] } } });
+  const png = async click => {
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click(click)]);
+    const file = await dl.path();
+    const buf = require('fs').readFileSync(file);
+    expect(buf.subarray(1, 4).toString()).toBe('PNG');
+    return { name: dl.suggestedFilename(), w: buf.readUInt32BE(16), h: buf.readUInt32BE(20), size: buf.length };
+  };
+  await page.evaluate(i => navigate('player/' + i), id);
+  const bio = await png('#pfImage');
+  expect(bio.name).toBe('futedu-alex-testa-bioimpedance.png');
+  expect(bio.w).toBeGreaterThan(2500);       // 3x scale of a ~1100 px wide page: sharp enough for slides
+  expect(bio.w / bio.h).toBeGreaterThan(1.3);   // landscape
+  await page.evaluate(i => navigate('anthrop/' + i), id);
+  const an = await png('#anImage');
+  expect(an.name).toBe('futedu-alex-testa-anthropometry.png');
+  expect(an.w / an.h).toBeGreaterThan(1.3);
+});
