@@ -331,6 +331,22 @@
     #printArea .fr-line { font-size:10px; line-height:1.45; margin-bottom:4px; padding-left:10px; border-left:3px solid #ff5405; }
     #printArea .fr-an .fr-sec td.num { white-space:nowrap; }
     #printArea .fr-foot { display:flex; justify-content:space-between; margin-top:auto; padding-top:var(--g); font-size:8.5px; letter-spacing:1px; text-transform:uppercase; color:#9a9aa0; }
+    #printArea .fr-land { min-height:190mm; min-height:min(100vh, 190mm); }
+    #printArea .fr-title { border-left:5px solid #ff5405; padding:1px 0 1px 12px; margin-bottom:var(--g); display:flex; align-items:baseline; flex-wrap:wrap; column-gap:14px; row-gap:2px; }
+    #printArea .fr-title h1 { font-size:21px; margin:0; color:#1c1c1e; }
+    #printArea .fr-title .fr-sub { font-size:10.5px; color:#6a6a6e; line-height:1.5; }
+    #printArea .fr-grid { display:grid; gap:var(--g); margin-bottom:var(--g); align-items:start; }
+    #printArea .fr-grid .fr-sec, #printArea .fr-land .fr-sec { margin-bottom:0; }
+    #printArea .fr-land > .fr-sec { margin-bottom:var(--g); }
+    #printArea .fr-land .fr-kpi b { font-size:20px; margin-bottom:4px; }
+    #printArea .fr-land .fr-disc { margin-top:auto; }
+    #printArea .fr-land .fr-sec h2 { font-size:14px; }
+    #printArea .fr-land .fr-sec td { font-size:12px; }
+    #printArea .fr-land .fr-sec th { font-size:9px; }
+    #printArea .fr-land.fr-an .fr-sec td { font-size:11px; }
+    #printArea .fr-land .fr-line { font-size:11px; line-height:1.5; }
+    #printArea .fr-land .fr-note { font-size:11px; }
+    #printArea .fr-land .fr-disc { font-size:9.5px; }
     #printArea svg { width:100%; height:auto; }
     #printArea * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   }
@@ -3319,28 +3335,28 @@ function anthroReportHtml(pid, aid, spOverride, histMax) {
   const comp = ['mass', 'sum6', 'yuhaszPct', 'slaughterPct', 'adiposePct', 'musclePct', 'residualPct', 'bmi'], musc = ['areaArm', 'areaThigh', 'areaCalf', 'shareThigh', 'flexDiff', 'cormic', 'relSpan', 'fatDist'];
   const sp = spOverride || anSpacing(hist.length > 1 ? hist.length : 0);
   const kpi = (label, val, sub) => `<div class="fr-kpi"><b>${val}</b><span>${label}</span><small>${sub || '&nbsp;'}</small></div>`;
-  return `<div class="fr fr-an" style="--g:${sp.g}px;--sp:${sp.sp}px;--spx:${sp.spx}px;--td:${sp.td}px;--bp:${sp.bp}px">
-    <div class="fr-band"><img src="${LOGO_SRC}" alt="FUTEDU Team"><div class="fr-kicker">FUTEDU Academy · Nutrition Department</div>
-      <h1>${escapeHtml(p.name)}</h1>
+  return `<div class="fr fr-an fr-land" style="--g:${sp.g}px;--sp:${sp.sp}px;--spx:${sp.spx}px;--td:${sp.td}px;--bp:${sp.bp}px">
+    <div class="fr-title"><h1>${escapeHtml(p.name)}</h1>
       <div class="fr-sub">Anthropometry assessment · ${escapeHtml(longDateSafe(cur.a.date))} · age ${cur.age.toFixed(1)} · ${escapeHtml(prof.sex)} · Report generated ${longDate(todayStr())}</div></div>
     <div class="fr-kpis">${kpi('Sum of 6 skinfolds', R.sum6.toFixed(1) + ' mm', pR ? signed(R.sum6 - pR.sum6, ' mm') + ' vs previous' : '')}${kpi('Fat (Yuhasz)', R.yuhaszPct.toFixed(1) + ' %', R.slaughterPct != null ? 'Slaughter ' + R.slaughterPct.toFixed(1) + ' %' : '')}${kpi('Muscle (Lee)', R.musclePct.toFixed(1) + ' %', R.muscleKg.toFixed(1) + ' kg')}${kpi('BMI', R.bmi.toFixed(1), 'Body mass ' + R.mass.toFixed(1) + ' kg')}</div>
-    <div class="fr-sec"><h2>Summary</h2><div class="fr-target">Neutral, descriptive conclusions from the measurements</div>${concl.map(t => `<div class="fr-line">${t}</div>`).join('')}</div>
-    <div class="fr-cols"><div class="fr-sec"><h2>Body composition</h2><div class="fr-target">Estimates: the trend matters more than one value</div>${table(comp)}</div>
+    <div class="fr-grid" style="grid-template-columns:1fr 1fr"><div class="fr-sec"><h2>Body composition</h2><div class="fr-target">Estimates: the trend matters more than one value</div>${table(comp)}</div>
       <div class="fr-sec"><h2>Muscle and proportions</h2><div class="fr-target">* substantial change (larger than the usual variation between measurements)</div>${table(musc)}</div></div>
+    <div class="fr-grid" style="grid-template-columns:${hist.length > 1 ? '6fr 5fr' : '1fr'}">
+    <div class="fr-sec"><h2>Summary</h2><div class="fr-target">Neutral, descriptive conclusions from the measurements</div>${concl.map(t => `<div class="fr-line">${t}</div>`).join('')}</div>
     ${hist.length > 1 ? `<div class="fr-sec"><h2>Evolution</h2><div class="fr-target">Latest ${hist.length} assessments</div><table><tr><th>Date</th><th>Body mass</th><th>Σ6 (mm)</th><th>Fat % (Yuhasz)</th><th>Muscle (kg)</th></tr>${hist.map(({ x, f }) => `<tr><td>${escapeHtml(longDateSafe(x.date))}</td><td>${f.v.mass} kg</td><td>${f.R.sum6.toFixed(1)}</td><td>${f.R.yuhaszPct.toFixed(1)}</td><td>${f.R.muscleKg.toFixed(1)}</td></tr>`).join('')}</table></div>` : ''}
-    <div class="fr-disc">${AN_CAVEAT} Confidential: contains health data of a minor; share it only with the player's family or the staff who need it. Not a medical diagnosis.</div>
-    <div class="fr-foot"><span>FUTEDU Academy — Anthropometry report</span><span>Nutrition Department</span></div></div>`;
+    </div>
+    <div class="fr-disc">${AN_CAVEAT} Confidential: contains health data of a minor; share it only with the player's family or the staff who need it. Not a medical diagnosis.</div></div>`;
 }
 // same idea as fitPlayerReport: tighten the spacing, then show fewer past assessments, until it fits one A4 page
 function fitAnthroReport(pid, aid) {
-  const steps = [[undefined, undefined], [P_TIGHT, undefined], [P_ULTRA, undefined], [P_ULTRA, 3], [P_ULTRA, 2]];
+  const steps = [[P_ROOMY, undefined], [undefined, undefined], [P_TIGHT, undefined], [P_ULTRA, undefined], [P_ULTRA, 3], [P_ULTRA, 2]];
   let html;
-  for (const [sp, max] of steps) { html = anthroReportHtml(pid, aid, sp, max); if (measureReportMm(html) <= FIT_MM) break; }
+  for (const [sp, max] of steps) { html = anthroReportHtml(pid, aid, sp, max); if (measureReportMm(html, LAND_W_MM) <= FIT_LAND_MM) break; }
   return html;
 }
 function anPrint(pid, aid) {
   const p = roster.find(x => x.id === pid);
-  printHtml(fitAnthroReport(pid, aid), 'futedu-' + slugify(p.name) + '-anthropometry');
+  printHtml(fitAnthroReport(pid, aid), 'futedu-' + slugify(p.name) + '-anthropometry', true);
 }
 
 // ---- anthropometry: round report (whole academy, current round) and pending list ----
@@ -3682,11 +3698,15 @@ function flaggedReportHtml(roundId, o) {
   </div>`;
 }
 function readingIn(roundId, pid) { return (measurements[roundId] && measurements[roundId][pid]) || null; }
-function printHtml(html, fileTitle) {
+// landscape: the player reports are A4 landscape; everything else stays portrait (the page rule is added only for this print)
+const LAND_PAGE_CSS = '@media print { @page { size:A4 landscape; margin:10mm; } }';
+function printHtml(html, fileTitle, landscape) {
   document.getElementById('printArea').innerHTML = html;
   const old = document.title;
   if (fileTitle) document.title = fileTitle;
-  const restore = () => { document.title = old; window.removeEventListener('afterprint', restore); };
+  let pageStyle = null;
+  if (landscape) { pageStyle = document.createElement('style'); pageStyle.textContent = LAND_PAGE_CSS; document.head.appendChild(pageStyle); }
+  const restore = () => { document.title = old; if (pageStyle) pageStyle.remove(); window.removeEventListener('afterprint', restore); };
   window.addEventListener('afterprint', restore);
   setTimeout(() => window.print(), 80);
 }
@@ -3731,8 +3751,8 @@ function playerSpacing(load) {
 }
 // A report must never run onto a second page: before printing, the page is laid out off-screen with the print rules at A4 width,
 // measured, and tightened step by step until it fits with some room to spare (printers and phones add margins of their own).
-const FIT_MM = 252;
-function measureReportMm(html) {
+const FIT_MM = 252, FIT_LAND_MM = 176, LAND_W_MM = 277;   // portrait: 182 mm wide; landscape: 277 mm wide, 190 mm of height minus some room to spare
+function measureReportMm(html, widthMm) {
   let st = document.getElementById('fitStyle');
   if (!st) {
     st = document.createElement('style'); st.id = 'fitStyle';
@@ -3740,16 +3760,16 @@ function measureReportMm(html) {
     [...document.styleSheets].forEach(sh => { try { [...sh.cssRules].forEach(r => { if (r.type === CSSRule.MEDIA_RULE && /print/.test(r.conditionText || r.media.mediaText)) [...r.cssRules].forEach(x => { if (x.selectorText && x.selectorText.includes('#printArea') && !/^#printArea$/.test(x.selectorText.trim())) css += x.cssText.replace(/#printArea/g, '#fitBox') + ' '; }); }); } catch (e) { /* cross-origin sheets */ } });
     st.textContent = css; document.head.appendChild(st);
   }
-  const box = document.createElement('div'); box.id = 'fitBox'; box.innerHTML = html; document.body.appendChild(box);
+  const box = document.createElement('div'); box.id = 'fitBox'; if (widthMm) box.style.width = widthMm + 'mm'; box.innerHTML = html; document.body.appendChild(box);
   const fr = box.querySelector('.fr'); fr.style.minHeight = '0';
   const mm = fr.getBoundingClientRect().height * 25.4 / 96;
   box.remove();
   return mm;
 }
 function fitPlayerReport(id, withNotes) {
-  const steps = [[undefined, undefined], [P_TIGHT, undefined], [P_ULTRA, undefined], [P_ULTRA, { hist: 5 }], [P_ULTRA, { hist: 3 }]];
+  const steps = [[P_ROOMY, undefined], [undefined, undefined], [P_TIGHT, undefined], [P_ULTRA, undefined], [P_ULTRA, { hist: 5 }], [P_ULTRA, { hist: 3 }]];
   let html;
-  for (const [sp, lim] of steps) { html = playerReportHtml(id, withNotes, sp, lim); if (measureReportMm(html) <= FIT_MM) break; }
+  for (const [sp, lim] of steps) { html = playerReportHtml(id, withNotes, sp, lim); if (measureReportMm(html, LAND_W_MM) <= FIT_LAND_MM) break; }
   return html;
 }
 async function printReport(id) {
@@ -3757,7 +3777,7 @@ async function printReport(id) {
   const ser = seriesFor(id);
   if (!ser.length) { await customConfirm('This player has no measurements yet.'); return; }
   const withNotes = hasNotes(id) ? await customConfirm('Include the health notes in the report? They are sensitive: leave them out if the report is going to anyone other than the family or the staff who need them.') : false;
-  printHtml(fitPlayerReport(id, withNotes), 'futedu-' + slugify(p.name) + '-report');
+  printHtml(fitPlayerReport(id, withNotes), 'futedu-' + slugify(p.name) + '-report', true);
 }
 function playerReportHtml(id, withNotes, spOverride, lim) {
   const p = roster.find(x => x.id === id);
@@ -3776,12 +3796,11 @@ function playerReportHtml(id, withNotes, spOverride, lim) {
   const histAll = ser.slice().reverse(), hist = histAll.slice(0, (lim && lim.hist) || (notes.length ? 6 : 8));
   const rowCount = ['weight_kg', 'body_fat_percent', 'subcutaneous_fat_percent', 'total_body_water_percent', 'bmi', 'fat_free_mass_kg', 'visceral_fat', 'skeletal_muscle_mass_kg'].filter(k => r[k] != null).length;
   const sp = spOverride || playerSpacing(rowCount + hist.length + (notes.length ? 3 + notes.length * 1.5 : 0));
-  return `<div class="fr" style="--g:${sp.g}px;--sp:${sp.sp}px;--spx:${sp.spx}px;--td:${sp.td}px;--bp:${sp.bp}px">
-    <div class="fr-band"><img src="${LOGO_SRC}" alt="FUTEDU Team">
-      <div class="fr-kicker">FUTEDU Academy · Nutrition Department</div>
-      <h1>${escapeHtml(p.name)}</h1>
+  return `<div class="fr fr-land" style="--g:${sp.g}px;--sp:${sp.sp}px;--spx:${sp.spx}px;--td:${sp.td}px;--bp:${sp.bp}px">
+    <div class="fr-title"><h1>${escapeHtml(p.name)}</h1>
       <div class="fr-sub">Bioimpedance report · ${escapeHtml(last.label)}${last.date ? ' · measured ' + escapeHtml(longDateSafe(last.date)) : ''}${p.tags.length ? ' · ' + p.tags.map(escapeHtml).join(', ') : ''} · Report generated ${longDate(todayStr())}</div></div>
     <div class="fr-kpis">${kpi('Weight', 'weight_kg', ' kg')}${kpi('Body fat', 'body_fat_percent', '%')}${kpi('Fat-free mass', 'fat_free_mass_kg', ' kg')}${kpi('Hydration', 'total_body_water_percent', '%')}</div>
+    <div class="fr-grid" style="grid-template-columns:9fr 11fr">
     <div class="fr-sec"><h2>Latest measurement</h2><div class="fr-target">${escapeHtml(last.label)}${last.date ? ' · ' + escapeHtml(longDateSafe(last.date)) : ''}</div>
       <table><tr><th>Measure</th><th>Result</th><th>Reference used</th><th>Reading</th></tr>
         ${row('Weight', fmtN(r.weight_kg, ' kg'), '—', '', r.weight_kg)}
@@ -3793,14 +3812,16 @@ function playerReportHtml(id, withNotes, spOverride, lim) {
         ${row('Visceral fat', fmtN(r.visceral_fat), '< 10', c.visceralFat, r.visceral_fat)}
         ${row('Skeletal muscle', smPct != null ? smPct + '% (' + r.skeletal_muscle_mass_kg + ' kg)' : fmtN(r.skeletal_muscle_mass_kg, ' kg'), t.smMin != null ? '≥ ' + t.smMin + '%' : '—', c.smPercent, r.skeletal_muscle_mass_kg)}
       </table></div>
-    <div class="fr-sec"><h2>Evolution</h2><div class="fr-target">Body fat, fat-free mass and hydration by round</div>${chartsHtml(id, 'p-charts')}</div>
     <div class="fr-sec"><h2>All measurements</h2><div class="fr-target">${histAll.length > hist.length ? 'Latest ' + hist.length + ' of ' + histAll.length + ' rounds' : histAll.length + ' round' + (histAll.length === 1 ? '' : 's')}</div>
       <table><tr><th>Round</th><th>Date</th><th>Weight</th><th>Body fat</th><th>Subcut.</th><th>Hydration</th><th>BMI</th><th>FFM</th><th>Visc.</th></tr>
         ${hist.map(x => `<tr><td>${escapeHtml(x.label)}</td><td class="sm">${escapeHtml(x.date || '—')}</td><td>${fmtN(x.r.weight_kg, ' kg')}</td><td>${fmtN(x.r.body_fat_percent, '%')}</td><td>${fmtN(x.r.subcutaneous_fat_percent, '%')}</td><td>${fmtN(x.r.total_body_water_percent, '%')}</td><td>${fmtN(x.r.bmi)}</td><td>${fmtN(x.r.fat_free_mass_kg, ' kg')}</td><td>${fmtN(x.r.visceral_fat)}</td></tr>`).join('')}
       </table></div>
+    </div>
+    <div class="fr-grid" style="grid-template-columns:${notes.length ? '2fr 1fr' : '1fr'}">
+    <div class="fr-sec"><h2>Evolution</h2><div class="fr-target">Body fat, fat-free mass and hydration by round</div>${chartsHtml(id, 'p-charts')}</div>
     ${notes.length ? `<div class="fr-sec"><h2>Health notes</h2><div class="fr-target">Confidential</div>${notes.map(n => `<div class="fr-note">${n.noted_on ? '<strong>' + escapeHtml(n.noted_on) + '</strong> · ' : ''}${escapeHtml(n.note)}</div>`).join('')}</div>` : ''}
+    </div>
     <div class="fr-disc">Confidential: contains health data of a minor; share it only with the player's family or the staff who need it. Bioimpedance values are estimates and the reference values are internal targets for the group, not a medical diagnosis. For any health concern, consult a doctor.</div>
-    <div class="fr-foot"><span>FUTEDU Academy — Player report</span><span>Nutrition Department</span></div>
   </div>`;
 }
 function longDateSafe(iso) { return /^\d{4}-\d{2}-\d{2}$/.test(iso || '') ? longDate(iso) : (iso || ''); }
