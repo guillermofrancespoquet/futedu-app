@@ -288,7 +288,7 @@
     #printArea .p-charts { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
     #printArea .p-charts h3 { font-size:11px; margin-bottom:4px; }
     #printArea .ch-legend { font-size:9px; color:#6a6a6e; }
-    #printArea .p-note { border-left:3px solid #ff5405; padding:4px 10px; margin-bottom:6px; background:#fff; }
+    #printArea .p-note { border-left:3px solid #3a8fd1; padding:4px 10px; margin-bottom:6px; background:#f3f8fc; }
     #printArea .fr { --g:8px; --sp:10px; --spx:16px; --td:4.5px; --bp:16px; display:flex; flex-direction:column; min-height:266mm; min-height:min(100vh, 266mm); }
     #printArea tr, #printArea .fr-pill, #printArea .fr-kpi, #printArea .fr-note, #printArea .fr-line, #printArea .chart-box { break-inside:avoid; page-break-inside:avoid; }
     #printArea .fr-disc, #printArea .fr-foot { break-before:avoid; break-inside:avoid; }
@@ -309,19 +309,18 @@
     #printArea .fr-sec th { font-size:8.5px; letter-spacing:1px; text-transform:uppercase; color:#ff5405; text-align:left; padding:0 8px 5px 0; border-bottom:2px solid #dcdce0; }
     #printArea .fr-sec td { padding:var(--td) 8px var(--td) 0; border-bottom:1px solid #e3e3e6; font-size:11px; }
     #printArea .fr-sec tr:last-child td { border-bottom:none; }
-    #printArea .fr-ok { color:#3a3a3c; font-weight:700; font-size:11.5px; padding:8px 0 4px; }
+    #printArea .fr-ok { color:#1e8c4a; font-weight:700; font-size:11.5px; padding:8px 0 4px; }
     #printArea .fr-kpi small { display:block; margin-top:5px; font-size:8.5px; color:#7a7a7e; letter-spacing:0; text-transform:none; }
-    #printArea .fr-pill { display:inline-block; font-size:9px; font-weight:700; padding:3px 11px; border-radius:20px; letter-spacing:.3px; white-space:nowrap; }
-    #printArea .fr-pill.good { background:#e9e9ed; color:#3a3a3c; }
-    #printArea .fr-pill.good::before { content:'\2713\00a0'; color:#ff5405; font-weight:800; }
-    #printArea .fr-pill.bad { background:#ff5405; color:#fff; }
-    #printArea .fr-pill.watch { background:#ffe3d1; color:#c24400; box-shadow:inset 0 0 0 1px #ffb58a; }
+    #printArea .fr-pill { display:inline-block; font-size:9px; font-weight:700; padding:3px 12px; border-radius:20px; letter-spacing:.2px; white-space:nowrap; }
+    #printArea .fr-pill.good { background:#e3f4ea; color:#1e8c4a; }
+    #printArea .fr-pill.bad { background:#fbe4e1; color:#c0392b; }
+    #printArea .fr-pill.watch { background:#ffeadb; color:#b84300; }
     #printArea .fr-sec td.num { font-weight:700; }
     #printArea .fr-sec td.muted, #printArea .fr-sec td.sm { color:#7a7a7e; }
     #printArea .fr-sec .ch-val { stroke:#f4f4f6; }
     #printArea .fr-sec .p-charts { gap:14px; }
     #printArea .fr-sec .p-charts h3 { font-size:10.5px; color:#4a4a4e; }
-    #printArea .fr-note { border-left:3px solid #ff5405; padding:5px 12px; margin-bottom:6px; background:#fff;  border-radius:0 8px 8px 0; font-size:10.5px; line-height:1.5; }
+    #printArea .fr-note { border-left:3px solid #3a8fd1; padding:5px 12px; margin-bottom:6px; background:#eaf3fa; border-radius:0 8px 8px 0; font-size:10.5px; line-height:1.5; }
     #printArea .fr-disc { margin-top:auto; padding-top:var(--g); font-size:9px; line-height:1.55; color:#8a8a90; }
     #printArea .fr-disc + .fr-foot { margin-top:8px; }
     #printArea .fr-cols { display:grid; grid-template-columns:1fr 1fr; gap:var(--g); }
@@ -343,11 +342,18 @@
     #printArea .fr-land .fr-disc { margin-top:auto; }
     #printArea .fr-land .fr-sec h2 { font-size:14px; }
     #printArea .fr-land .fr-sec td { font-size:12px; }
+    #printArea .fr-land .fr-sec.fr-pills td { padding-top:calc(var(--td) + 4.5px); padding-bottom:calc(var(--td) + 4.5px); }   /* more air between the status pills */
     #printArea .fr-land .fr-sec th { font-size:9px; }
     #printArea .fr-land.fr-an .fr-sec td { font-size:11px; }
     #printArea .fr-land .fr-line { font-size:11px; line-height:1.5; }
     #printArea .fr-land .fr-note { font-size:11px; }
-    #printArea .fr-land .fr-disc { font-size:9.5px; }
+    /* grey blocks: a visible border and a fixed, generous gutter so they read as separate cards, not as one crowded mass */
+    #printArea .fr-land .fr-kpi, #printArea .fr-land .fr-sec { border:1px solid #d9d9df; background:#f7f7f9; border-radius:14px; }
+    #printArea .fr-land .fr-kpis, #printArea .fr-land .fr-grid { gap:14px; margin-bottom:14px; }
+    #printArea .fr-land > .fr-sec { margin-bottom:14px; }
+    #printArea .fr-land .fr-title { margin-bottom:14px; }
+    #printArea .fr-land .fr-sec .ch-val { stroke:#f7f7f9; }
+        #printArea .fr-land .fr-disc { font-size:9.5px; }
     #printArea svg { width:100%; height:auto; }
     #printArea * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   }
@@ -3432,7 +3438,7 @@ function niceStep(raw) {
 }
 function lineChart(points, o) {
   o = o || {};
-  const W = 360, H = 190, L = 46, R = 18, T = 24, B = 36, INSET = 20;
+  const W = 360, H = o.h || 190, L = 46, R = 18, T = 24, B = 36, INSET = 20;
   const pts = points.filter(p => p.v != null);
   if (!pts.length) return '<div class="chart-empty">No data yet</div>';
   const dec = o.decimals != null ? o.decimals : 1;
@@ -3480,9 +3486,9 @@ function lineChart(points, o) {
   const desc = (o.title || 'Chart') + ': ' + pts.map(p => p.label + ' ' + p.v.toFixed(dec) + (o.unit || '')).join(', ');
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeHtml(desc)}">${g}${line}${dots}${valText}${xl}</svg>`;
 }
-function chartsHtml(id, cls) {
+function chartsHtml(id, cls, h) {
   const ser = seriesFor(id);
-  const mk = (title, key, unit, o) => `<div class="chart-box"><h3>${title}</h3>${lineChart(ser.map(x => ({ label: x.label, v: x.r[key] })), { ...o, unit, title })}${o.legend ? `<div class="ch-legend"><i></i>${o.legend}</div>` : ''}</div>`;
+  const mk = (title, key, unit, o) => `<div class="chart-box"><h3>${title}</h3>${lineChart(ser.map(x => ({ label: x.label, v: x.r[key] })), { ...o, unit, title, h })}${o.legend ? `<div class="ch-legend"><i></i>${o.legend}</div>` : ''}</div>`;
   return `<div class="${cls}">
     ${mk('Body fat (%)', 'body_fat_percent', '%', { target: thresholds.bodyFat, legend: 'target ' + thresholds.bodyFat + '%' })}
     ${mk('Fat-free mass (kg)', 'fat_free_mass_kg', ' kg', thresholds.ffmMin != null ? { target: thresholds.ffmMin, legend: 'minimum ' + thresholds.ffmMin + ' kg' } : {})}
@@ -3768,7 +3774,8 @@ function measureReportMm(html, widthMm) {
   return mm;
 }
 function fitPlayerReport(id, withNotes) {
-  const steps = [[P_ROOMY, undefined], [undefined, undefined], [P_TIGHT, undefined], [P_ULTRA, undefined], [P_ULTRA, { hist: 5 }], [P_ULTRA, { hist: 3 }]];
+  // the Latest measurement table (spaced pills) is the tallest block: shrink spacing and chart height first, cut the history only as a last resort
+  const steps = [[P_ROOMY, undefined], [undefined, undefined], [P_TIGHT, { h: 120 }], [P_ULTRA, { h: 110 }], [P_ULTRA, { h: 100 }], [P_ULTRA, { h: 100, hist: 5, wide: true }], [P_ULTRA, { h: 90, hist: 3, wide: true }]];
   let html;
   for (const [sp, lim] of steps) { html = playerReportHtml(id, withNotes, sp, lim); if (measureReportMm(html, LAND_W_MM) <= FIT_LAND_MM) break; }
   return html;
@@ -3802,7 +3809,7 @@ function playerReportHtml(id, withNotes, spOverride, lim) {
       <div class="fr-sub">Bioimpedance report · ${escapeHtml(last.label)}${last.date ? ' · measured ' + escapeHtml(longDateSafe(last.date)) : ''}${p.tags.length ? ' · ' + p.tags.map(escapeHtml).join(', ') : ''} · Report generated ${longDate(todayStr())}</div></div>
     <div class="fr-kpis">${kpi('Weight', 'weight_kg', ' kg')}${kpi('Body fat', 'body_fat_percent', '%')}${kpi('Fat-free mass', 'fat_free_mass_kg', ' kg')}${kpi('Hydration', 'total_body_water_percent', '%')}</div>
     <div class="fr-grid" style="grid-template-columns:9fr 11fr">
-    <div class="fr-sec"><h2>Latest measurement</h2><div class="fr-target">${escapeHtml(last.label)}${last.date ? ' · ' + escapeHtml(longDateSafe(last.date)) : ''}</div>
+    <div class="fr-sec fr-pills"><h2>Latest measurement</h2><div class="fr-target">${escapeHtml(last.label)}${last.date ? ' · ' + escapeHtml(longDateSafe(last.date)) : ''}</div>
       <table><tr><th>Measure</th><th>Result</th><th>Reference used</th><th>Reading</th></tr>
         ${row('Weight', fmtN(r.weight_kg, ' kg'), '—', '', r.weight_kg)}
         ${row('Body fat', fmtN(r.body_fat_percent, '%'), '≤ ' + t.bodyFat + '%', c.bodyFat, r.body_fat_percent)}
@@ -3818,8 +3825,8 @@ function playerReportHtml(id, withNotes, spOverride, lim) {
         ${hist.map(x => `<tr><td>${escapeHtml(x.label)}</td><td class="sm">${escapeHtml(x.date || '—')}</td><td>${fmtN(x.r.weight_kg, ' kg')}</td><td>${fmtN(x.r.body_fat_percent, '%')}</td><td>${fmtN(x.r.subcutaneous_fat_percent, '%')}</td><td>${fmtN(x.r.total_body_water_percent, '%')}</td><td>${fmtN(x.r.bmi)}</td><td>${fmtN(x.r.fat_free_mass_kg, ' kg')}</td><td>${fmtN(x.r.visceral_fat)}</td></tr>`).join('')}
       </table></div>
     </div>
-    <div class="fr-grid" style="grid-template-columns:${notes.length ? '2fr 1fr' : '1fr'}">
-    <div class="fr-sec"><h2>Evolution</h2><div class="fr-target">Body fat, fat-free mass and hydration by round</div>${chartsHtml(id, 'p-charts')}</div>
+    <div class="fr-grid" style="grid-template-columns:${notes.length ? ((lim && lim.wide) ? '1fr 1fr' : '2fr 1fr') : '1fr'}">
+    <div class="fr-sec"><h2>Evolution</h2><div class="fr-target">Body fat, fat-free mass and hydration by round</div>${chartsHtml(id, 'p-charts', (lim && lim.h) || 130)}</div>
     ${notes.length ? `<div class="fr-sec"><h2>Health notes</h2><div class="fr-target">Confidential</div>${notes.map(n => `<div class="fr-note">${n.noted_on ? '<strong>' + escapeHtml(n.noted_on) + '</strong> · ' : ''}${escapeHtml(n.note)}</div>`).join('')}</div>` : ''}
     </div>
     <div class="fr-disc">Confidential: contains health data of a minor; share it only with the player's family or the staff who need it. Bioimpedance values are estimates and the reference values are internal targets for the group, not a medical diagnosis. For any health concern, consult a doctor.</div>
