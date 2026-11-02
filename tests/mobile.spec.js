@@ -29,3 +29,16 @@ test('the scale is fixed and fields are 16 px so phones never zoom in', async ({
   const small = await page.evaluate(() => [...document.querySelectorAll('.modal-overlay input, .modal-overlay select')].filter(e => parseFloat(getComputedStyle(e).fontSize) < 16).map(e => e.id));
   expect(small).toEqual([]);
 });
+
+test('Compare rounds stays inside the screen and its card on a narrow phone, even with a very long player name', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 760 });
+  const rounds = [{ id: 'rS', label: 'September 2026', closed: true, closed_on: '2026-09-30', created_at: '1' }, { id: 'r1', label: 'In progress', closed: false, created_at: '2' }];
+  const m = (r, bf) => ({ round_id: r, player_id: alex, measured_on: '2026-09-10', body_fat_percent: bf, weight_kg: 70 });
+  await openApp(page, { rounds, measurements: [m('rS', 13), m('r1', 12.4)] });
+  await page.evaluate(() => { roster[0].name = 'Zyan Kenichi Kaleihali’aakamu Ha-Ahu'; });
+  await go(page, 'compare');
+  await expect(page.locator('#cmpTable table')).toBeVisible();
+  const r = await page.evaluate(() => ({ page: document.documentElement.scrollWidth - innerWidth, card: document.querySelector('#cmpTable').getBoundingClientRect().right, table: document.querySelector('#cmpTable table').getBoundingClientRect().right }));
+  expect(r.page).toBeLessThanOrEqual(0);
+  expect(r.table).toBeLessThanOrEqual(r.card);
+});

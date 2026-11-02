@@ -428,6 +428,19 @@
   .cmp th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--ink-3); padding:0 10px 8px 0; border-bottom:1px solid var(--line); }
   .cmp td { padding:9px 10px 9px 0; border-bottom:1px solid var(--line); }
   .cmp tr.total td { font-weight:700; background:var(--bg); }
+  .cmp { overflow-x:auto; }
+  .cmp .attn-name { text-align:left; }
+  @media (max-width: 520px) {
+    .cmp.card { padding:16px 14px; }
+    .cmp table { font-size:13px; }
+    .cmp th, .cmp td { padding-right:6px; }
+    .cmp td:first-child { overflow-wrap:anywhere; min-width:80px; }
+    .cmp th:last-child, .cmp td:last-child { padding-right:0; text-align:right; }
+    .cmp th { letter-spacing:.2px; }
+    .cmp .attn-name { white-space:normal; font-size:13px; }
+    .cmp .row > h2 { flex:1 1 100%; }
+    .cmp .row > select { flex:1 1 100%; width:100% !important; }
+  }
   .d-good { color:var(--good); font-weight:700; } .d-bad { color:var(--bad); font-weight:700; } .d-flat { color:var(--ink-3); font-weight:600; }
   .import-list { font-size:12.5px; color:var(--ink-2); margin:8px 0; max-height:140px; overflow:auto; line-height:1.6; }
 
