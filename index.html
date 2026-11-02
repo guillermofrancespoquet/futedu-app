@@ -3775,7 +3775,7 @@ function measureReportMm(html, widthMm) {
 }
 function fitPlayerReport(id, withNotes) {
   // the Latest measurement table (spaced pills) is the tallest block: shrink spacing and chart height first, cut the history only as a last resort
-  const steps = [[P_ROOMY, undefined], [undefined, undefined], [P_TIGHT, { h: 120 }], [P_ULTRA, { h: 110 }], [P_ULTRA, { h: 100 }], [P_ULTRA, { h: 100, hist: 5 }], [P_ULTRA, { h: 90, hist: 3 }]];
+  const steps = [[P_ROOMY, undefined], [undefined, undefined], [P_TIGHT, { h: 120 }], [P_ULTRA, { h: 110 }], [P_ULTRA, { h: 100 }], [P_ULTRA, { h: 100, hist: 5, wide: true }], [P_ULTRA, { h: 90, hist: 3, wide: true }]];
   let html;
   for (const [sp, lim] of steps) { html = playerReportHtml(id, withNotes, sp, lim); if (measureReportMm(html, LAND_W_MM) <= FIT_LAND_MM) break; }
   return html;
@@ -3825,7 +3825,7 @@ function playerReportHtml(id, withNotes, spOverride, lim) {
         ${hist.map(x => `<tr><td>${escapeHtml(x.label)}</td><td class="sm">${escapeHtml(x.date || '—')}</td><td>${fmtN(x.r.weight_kg, ' kg')}</td><td>${fmtN(x.r.body_fat_percent, '%')}</td><td>${fmtN(x.r.subcutaneous_fat_percent, '%')}</td><td>${fmtN(x.r.total_body_water_percent, '%')}</td><td>${fmtN(x.r.bmi)}</td><td>${fmtN(x.r.fat_free_mass_kg, ' kg')}</td><td>${fmtN(x.r.visceral_fat)}</td></tr>`).join('')}
       </table></div>
     </div>
-    <div class="fr-grid" style="grid-template-columns:${notes.length ? '2fr 1fr' : '1fr'}">
+    <div class="fr-grid" style="grid-template-columns:${notes.length ? ((lim && lim.wide) ? '1fr 1fr' : '2fr 1fr') : '1fr'}">
     <div class="fr-sec"><h2>Evolution</h2><div class="fr-target">Body fat, fat-free mass and hydration by round</div>${chartsHtml(id, 'p-charts', (lim && lim.h) || 130)}</div>
     ${notes.length ? `<div class="fr-sec"><h2>Health notes</h2><div class="fr-target">Confidential</div>${notes.map(n => `<div class="fr-note">${n.noted_on ? '<strong>' + escapeHtml(n.noted_on) + '</strong> · ' : ''}${escapeHtml(n.note)}</div>`).join('')}</div>` : ''}
     </div>
