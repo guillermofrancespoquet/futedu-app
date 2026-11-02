@@ -36,8 +36,10 @@ test('new assessment: live preview, Enter moves on, save and next pending player
 test('player page has evolution charts and shows the substantial-change wording', async ({ page }) => {
   await openApp(page, base());
   await go(page, `anthro/${alex}`);
-  await expect(page.locator('#view-anthrop .chart-box')).toHaveCount(3);
-  await expect(page.locator('#view-anthrop .chart-box').first().locator('.ch-dot')).toHaveCount(3);
+  await expect(page.locator('#view-anthrop .charts .chart-box')).toHaveCount(3);
+  await expect(page.locator('#view-anthrop .charts .chart-box').first().locator('.ch-dot')).toHaveCount(3);
+  await expect(page.locator('#view-anthrop h2', { hasText: 'Skinfolds by site' })).toBeVisible();   // bar chart of the skinfolds by site
+  await expect(page.locator('#view-anthrop .sf-cur')).toHaveCount(6);
   await expect(page.locator('#view-anthrop')).toContainText(/substantial change/i);
 });
 
@@ -68,10 +70,11 @@ test('reports are one A4 page', async ({ page }) => {
   await openApp(page, base());
   const pages = async html => {
     await page.evaluate(h => { document.getElementById('printArea').innerHTML = h; }, html);
-    const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' } });
+    const pdf = await page.pdf({ format: 'A4', landscape: true, printBackground: true, margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' } });
     return (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length;
   };
-  expect(await pages(await page.evaluate(id => anthroReportHtml(id, anList(id).slice(-1)[0].id), alex))).toBe(1);
+  await page.setViewportSize({ width: 1047, height: 800 });
+  expect(await pages(await page.evaluate(id => fitAnthroReport(id, anList(id).slice(-1)[0].id), alex))).toBe(1);   // the player report is landscape
   expect(await pages(await page.evaluate(() => anRoundReportHtml()))).toBe(1);
   expect(await pages(await page.evaluate(() => anPendingHtml()))).toBe(1);
 });
@@ -98,4 +101,40 @@ test('a previous anthropometry round can be renamed', async ({ page }) => {
   await page.click('.modal-ok');
   await expect(page.locator('#anHistory')).toContainText('Spring 2026');
   expect((await stored(page, 'anthro_round')).history[0].name).toBe('Spring 2026');
+});
+
+test('Durnin and Womersley: equation, optional extra skinfolds in the form, and results shown only when both are taken', async ({ page }) => {
+  await openApp(page, base());
+  // equation: density = c - m log10(sum4), Siri; checked by hand for a male aged 18 with sum of 4 = 40 mm
+  const d = await page.evaluate(() => [anDurnin(40, 'Male', 18), anDurnin(40, 'Female', 25), anDurnin(40, 'Male', 15), anDurnin(40, 'Male', 31), anDurnin(40, 'Male', 12)]);
+  expect(d[0].density).toBeCloseTo(1.1620 - 0.0630 * Math.log10(40), 6);
+  expect(d[0].pct).toBeCloseTo(16.5, 1);
+  expect(d[1].pct).toBeCloseTo(495 / (1.1599 - 0.0717 * Math.log10(40)) - 450, 6);
+  expect(d[2].density).toBeCloseTo(1.1533 - 0.0643 * Math.log10(40), 6);   // under 17: Durnin and Rahaman constants
+  expect(d[3]).toBeNull();   // 30 and over: not covered
+  expect(d[4]).toBeNull();   // under 13: not covered
+  // an old assessment without the extra sites has no Durnin value and everything else still works
+  await go(page, `anthro/${alex}`);
+  await expect(page.locator('#view-anthrop')).not.toContainText('Fat, Durnin and Womersley');
+  await expect(page.locator('#view-anthrop .kpis')).not.toContainText('Durnin');
+  // the new assessment form has the optional group; entering both sites shows the estimate in the live preview
+  await page.click('#anNew');
+  await expect(page.locator('.as-group h4', { hasText: 'Extra skinfolds' })).toBeVisible();
+  const fill = async (k, v) => page.locator(`.an-field[data-k="${k}"] input[data-i="0"]`).fill(String(v));
+  for (const [k, v] of Object.entries({ mass: 70, sf_triceps: 8, sf_subscapular: 8, sf_supraspinal: 8, sf_abdominal: 8, sf_thigh: 8, sf_calf: 6, gr_armRelaxed: 28, gr_armFlexed: 30, gr_thigh: 52, gr_calf: 36 })) await fill(k, v);
+  await expect(page.locator('#asPreview')).not.toContainText('Durnin');
+  await fill('sf_biceps', 5);
+  await expect(page.locator('#asPreview')).not.toContainText('Durnin');   // both extra sites are needed
+  await fill('sf_iliac', 9);
+  await expect(page.locator('#asPreview')).toContainText('Fat (Durnin)');
+  await page.fill('#asDate', '2026-10-20');
+  await page.click('.modal-ok[data-next="0"]');
+  const saved = (await stored(page, 'anthro_assessments'))[alex].find(a => a.date === '2026-10-20');
+  expect(saved.raw.sf_biceps[0]).toBe(5);
+  expect(saved.raw.sf_iliac[0]).toBe(9);
+  await expect(page.locator('#view-anthrop')).toContainText('Fat, Durnin and Womersley');
+  await expect(page.locator('#view-anthrop .kpis')).toContainText('Fat (Durnin)');   // Durnin is the main fat estimate when available
+  await expect(page.locator('#view-anthrop .kpis')).toContainText('Sum of 8 skinfolds');
+  await expect(page.locator('#view-anthrop .kpis')).toContainText('Yuhasz');
+  await expect(page.locator('#view-anthrop')).toContainText('Sum of 4 skinfolds (Durnin)');
 });

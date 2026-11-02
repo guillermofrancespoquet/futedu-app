@@ -322,6 +322,8 @@
   .ch-grid { stroke:var(--line); } .ch-axis { fill:var(--ink-3); } .ch-val { fill:var(--ink); paint-order:stroke; stroke:var(--card); stroke-width:3.5px; stroke-linejoin:round; } .ch-target { stroke:var(--ink-3); }
   .ch-legend { display:flex; align-items:center; gap:8px; margin-top:2px; font-size:11.5px; color:var(--ink-3); }
   .ch-legend i { display:inline-block; width:20px; border-top:1.5px dashed var(--ink-3); }
+  .sf-cur { fill:var(--orange); } .sf-prev { fill:var(--ink-4); } .sf-pv { fill:var(--ink-3); }
+  .sf-key { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:2px; } .sf-key.cur { background:var(--orange); } .sf-key.prev { background:var(--ink-4); margin-left:10px; }
   .ch-line { stroke:var(--orange); } .ch-dot { fill:var(--card); stroke:var(--orange); }
   .chart-empty { font-size:12.5px; color:var(--ink-3); padding:30px 0; text-align:center; }
   .back { margin-bottom:10px; }
@@ -405,11 +407,16 @@
     #printArea .fr-land .fr-note { font-size:11px; }
     /* grey blocks: a visible border and a fixed, generous gutter so they read as separate cards, not as one crowded mass */
     #printArea .fr-land .fr-kpi, #printArea .fr-land .fr-sec { border:1px solid #d9d9df; background:#f7f7f9; border-radius:14px; }
-    #printArea .fr-land .fr-kpis, #printArea .fr-land .fr-grid { gap:14px; margin-bottom:14px; }
-    #printArea .fr-land > .fr-sec { margin-bottom:14px; }
-    #printArea .fr-land .fr-title { margin-bottom:14px; }
+    #printArea .fr-land { --gut:min(14px, calc(var(--g) + 6px)); }
+    #printArea .fr-land .fr-kpis, #printArea .fr-land .fr-grid { gap:var(--gut); margin-bottom:var(--gut); }
+    #printArea .fr-land > .fr-sec { margin-bottom:var(--gut); }
+    #printArea .fr-land .fr-title { margin-bottom:var(--gut); }
     #printArea .fr-land .fr-sec .ch-val { stroke:#f7f7f9; }
-        #printArea .fr-land .fr-disc { font-size:9.5px; }
+    #printArea .fr-sec .ch-legend { margin-top:4px; }
+    #printArea .fr-sec .sf-cur { fill:#ff5405; } #printArea .fr-sec .sf-prev { fill:#c7c7cc; } #printArea .fr-sec .sf-pv { fill:#8e8e93; }
+    #printArea .fr-sec .sf-key.cur { background:#ff5405; } #printArea .fr-sec .sf-key.prev { background:#c7c7cc; }
+        #printArea .fr-land .fr-disc { font-size:8.5px; line-height:1.45; }
+    #printArea .fr-land.fr-an .fr-line { font-size:10.5px; line-height:1.4; margin-bottom:3px; }
     #printArea svg { width:100%; height:auto; }
     #printArea * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   }
@@ -428,6 +435,19 @@
   .cmp th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--ink-3); padding:0 10px 8px 0; border-bottom:1px solid var(--line); }
   .cmp td { padding:9px 10px 9px 0; border-bottom:1px solid var(--line); }
   .cmp tr.total td { font-weight:700; background:var(--bg); }
+  .cmp { overflow-x:auto; }
+  .cmp .attn-name { text-align:left; }
+  @media (max-width: 520px) {
+    .cmp.card { padding:16px 14px; }
+    .cmp table { font-size:13px; }
+    .cmp th, .cmp td { padding-right:6px; }
+    .cmp td:first-child { overflow-wrap:anywhere; min-width:80px; }
+    .cmp th:last-child, .cmp td:last-child { padding-right:0; text-align:right; }
+    .cmp th { letter-spacing:.2px; }
+    .cmp .attn-name { white-space:normal; font-size:13px; }
+    .cmp .row > h2 { flex:1 1 100%; }
+    .cmp .row > select { flex:1 1 100%; width:100% !important; }
+  }
   .d-good { color:var(--good); font-weight:700; } .d-bad { color:var(--bad); font-weight:700; } .d-flat { color:var(--ink-3); font-weight:600; }
   .import-list { font-size:12.5px; color:var(--ink-2); margin:8px 0; max-height:140px; overflow:auto; line-height:1.6; }
 
@@ -1669,7 +1689,7 @@ document.getElementById('exportAnCsvBtn').addEventListener('click', async () => 
   anthroProfiles = val('anthro_profiles'); anthroData = val('anthro_assessments');   // use what is stored, not what this device had cached
   const esc = v => v == null || v === '' ? '' : '"' + String(v).replace(/"/g, '""') + '"';
   const num = (x, d) => x == null || isNaN(x) ? '' : (Math.round(x * Math.pow(10, d)) / Math.pow(10, d));
-  const keys = AN_KEYS, res = ['sum6', 'yuhaszPct', 'slaughterPct', 'adiposePct', 'muscleKg', 'musclePct', 'residualPct', 'bmi'];
+  const keys = [...AN_KEYS, ...AN_OPT_KEYS], res = ['sum6', 'sum8', 'sum4', 'yuhaszPct', 'durninPct', 'slaughterPct', 'adiposePct', 'muscleKg', 'musclePct', 'residualPct', 'bmi'];
   const lines = [['player', 'date', 'age', 'sex', 'ethnicity', ...keys, ...res].join(',')];
   all.players.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach(pl => {
     anList(pl.id).forEach(a => {
@@ -2840,6 +2860,8 @@ document.getElementById('reportFile').addEventListener('change', e => {
 // ---- anthropometry: measurements and formulas (ISAK repeat-measure rule, Yuhasz, Slaughter, Ross & Kerr, Lee) ----
 const AN_SIZES = [['mass', 'Body mass', 'kg', 0.05], ['height', 'Height', 'cm', 0.1], ['sitting', 'Sitting height', 'cm', 0.1], ['span', 'Arm span', 'cm', 0.1]];
 const AN_FOLDS = [['triceps', 'Triceps'], ['subscapular', 'Subscapular'], ['supraspinal', 'Supraspinal'], ['abdominal', 'Abdominal'], ['thigh', 'Thigh'], ['calf', 'Calf']];
+const AN_EXTRA_FOLDS = [['biceps', 'Biceps'], ['iliac', 'Iliac crest']];   // optional: with them the Durnin and Womersley estimate is calculated
+const AN_OPT_KEYS = AN_EXTRA_FOLDS.map(x => 'sf_' + x[0]);
 const AN_GIRTHS = [['armRelaxed', 'Relaxed arm'], ['armFlexed', 'Flexed and contracted arm'], ['thigh', 'Mid-thigh'], ['calf', 'Calf']];
 const AN_FIXED = [['height', 'Height', 'cm'], ['sitting', 'Sitting height', 'cm'], ['span', 'Arm span', 'cm']];   // fixed per player (profile); an assessment keeps its own copy
 const AN_KEYS = [...AN_SIZES.map(x => x[0]), ...AN_FOLDS.map(x => 'sf_' + x[0]), ...AN_GIRTHS.map(x => 'gr_' + x[0])];
@@ -2859,7 +2881,7 @@ function anTriple(list, tol) {
 }
 function anResolve(raw, fixed) {
   const v = {}, flags = {};
-  AN_KEYS.forEach(k => {
+  [...AN_KEYS, ...AN_OPT_KEYS].forEach(k => {
     if (AN_FIXED.some(f => f[0] === k)) {
       const val = fixed && fixed[k] != null && !isNaN(fixed[k]) ? fixed[k] : null;
       v[k] = val; flags[k] = { value: val, pctDiff: 0, out: false, singleMeasure: true, fixed: true };
@@ -2875,6 +2897,17 @@ function anAge(dateISO, dobISO) {
   if (isNaN(a) || isNaN(b)) return null;
   return Math.abs(a - b) / 86400000 / 365.25;
 }
+// Durnin and Womersley (1974): body density = c - m x log10(sum of biceps, triceps, subscapular and iliac crest skinfolds, mm), then Siri (1961): % fat = 495 / density - 450.
+// Under 17 the constants are those of Durnin and Rahaman (1967); the table is only filled in for the ages the academy works with (under 30).
+const AN_DURNIN = { Male: [[17, 1.1533, 0.0643], [20, 1.1620, 0.0630], [30, 1.1631, 0.0632]], Female: [[17, 1.1369, 0.0598], [20, 1.1549, 0.0678], [30, 1.1599, 0.0717]] };
+function anDurnin(sum4, sex, age) {
+  const rows = AN_DURNIN[sex];
+  if (!rows || sum4 == null || !(sum4 > 0) || age == null || age < 13 || age >= 30) return null;
+  const [, c, m] = rows.find(r => age < r[0]) || [];
+  if (c == null) return null;
+  const density = c - m * Math.log10(sum4);
+  return { density, pct: 495 / density - 450 };
+}
 const AN_ETHNICITY = { Caucasian: 0, Black: 1.1, Asian: -2 };
 // v = resolved values (AN_KEYS); profile = { sex: 'Male' | 'Female', ethnicity }; returns null while any value is missing
 function anCompute(v, profile, age) {
@@ -2884,6 +2917,13 @@ function anCompute(v, profile, age) {
   const sf = k => v['sf_' + k], gr = k => v['gr_' + k];
   const R = { age };
   R.sum6 = AN_FOLDS.reduce((s, f) => s + sf(f[0]), 0);
+  // optional extra skinfolds: Durnin and Womersley
+  if (v.sf_biceps != null && v.sf_iliac != null && !isNaN(v.sf_biceps) && !isNaN(v.sf_iliac)) {
+    R.sum4 = sf('triceps') + v.sf_biceps + sf('subscapular') + v.sf_iliac;
+    R.sum8 = R.sum6 + v.sf_biceps + v.sf_iliac;   // ISAK sum of 8: the six plus biceps and iliac crest
+    const d = anDurnin(R.sum4, profile.sex, age);
+    R.durninPct = d ? d.pct : null;
+  } else { R.sum4 = null; R.sum8 = null; R.durninPct = null; }
   // corrected girths and muscle areas
   R.corrArm = gr('armRelaxed') - Math.PI * sf('triceps') / 10;
   R.corrThigh = gr('thigh') - Math.PI * sf('thigh') / 10;
@@ -2974,10 +3014,37 @@ function anHistoryHtml() {
   }).join('')}</table></div></div>`;
 }
 const shortDateLabel = iso => /^\d{4}-\d{2}-\d{2}$/.test(iso || '') ? MONTHS[+iso.slice(5, 7) - 1].slice(0, 3) + ' ' + iso.slice(2, 4) : (iso || '');
+// bar chart of the skinfolds by site (mm): this assessment against the previous one
+const AN_SITES8 = [['triceps', 'Triceps'], ['biceps', 'Biceps'], ['subscapular', 'Subscapular'], ['iliac', 'Iliac crest'], ['supraspinal', 'Supraspinal'], ['abdominal', 'Abdominal'], ['thigh', 'Thigh'], ['calf', 'Calf']];
+function skinfoldChart(cur, prev, o) {
+  o = o || {};
+  const sites = AN_SITES8.filter(([k]) => cur['sf_' + k] != null);
+  if (!sites.length) return '<div class="chart-empty">No data yet</div>';
+  const W = 540, H = o.h || 210, L = 34, Rm = 8, T = 22, B = 34;
+  const all = sites.flatMap(([k]) => [cur['sf_' + k], prev && prev['sf_' + k]]).filter(x => x != null);
+  const step = niceStep(Math.max(...all) * 1.15 / 4), hi = Math.ceil(Math.max(...all) * 1.12 / step) * step;
+  const y = v => T + (hi - v) / hi * (H - T - B);
+  let g = '';
+  for (let v = 0; v <= hi + 1e-9; v += step) g += `<line x1="${L}" x2="${W - Rm}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="ch-grid" stroke-width="1"/><text class="ch-axis" x="${L - 6}" y="${(y(v) + 3.5).toFixed(1)}" font-size="10" text-anchor="end">${v % 1 ? v.toFixed(1) : v}</text>`;
+  const gw = (W - L - Rm) / sites.length, bw = Math.min(22, gw * 0.3);
+  const bars = sites.map(([k, label], i) => {
+    const cx = L + gw * (i + 0.5), c = cur['sf_' + k], p = prev ? prev['sf_' + k] : null;
+    const bar = (x, v, cls) => `<rect x="${x.toFixed(1)}" y="${y(v).toFixed(1)}" width="${bw.toFixed(1)}" height="${(y(0) - y(v)).toFixed(1)}" rx="3" class="${cls}"/>`;
+    const val = (x, v, cls, fs) => `<text class="${cls}" x="${(x + bw / 2).toFixed(1)}" y="${(y(v) - 5).toFixed(1)}" font-size="${fs}" font-weight="700" text-anchor="middle">${v.toFixed(1)}</text>`;
+    let out = '';
+    if (p != null) out += bar(cx - bw - 1.5, p, 'sf-prev') + val(cx - bw - 1.5, p, 'sf-pv', 9);
+    out += bar(cx + 1.5, c, 'sf-cur') + val(cx + 1.5, c, 'ch-val', 10.5);
+    return out + `<text class="ch-axis" x="${cx.toFixed(1)}" y="${H - 12}" font-size="10" text-anchor="middle">${label}</text>`;
+  }).join('');
+  const desc = 'Skinfolds by site (mm): ' + sites.map(([k, l]) => l + ' ' + cur['sf_' + k].toFixed(1)).join(', ');
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeHtml(desc)}">${g}${bars}</svg>`;
+}
+const skinfoldLegend = (curLabel, prevLabel) => `<div class="ch-legend"><span class="sf-key cur"></span>${escapeHtml(curLabel)}${prevLabel ? `<span class="sf-key prev"></span>${escapeHtml(prevLabel)}` : ''}</div>`;
 function anChartsHtml(pid) {
   const pts = anList(pid).map(a => ({ a, f: anFull(pid, a) })).filter(x => x.f.R);
   const mk = (title, key, unit) => `<div class="chart-box"><h3>${title}</h3>${lineChart(pts.map(x => ({ label: shortDateLabel(x.a.date), v: x.f.R[key] })), { unit, title })}</div>`;
-  return `<div class="charts">${mk('Sum of 6 skinfolds (mm)', 'sum6', ' mm')}${mk('Fat, Yuhasz (%)', 'yuhaszPct', '%')}${mk('Muscle mass, Lee (kg)', 'muscleKg', ' kg')}</div><div class="save-note" style="margin-top:6px;">Estimates: the trend over several assessments says more than a single value.</div>`;
+  const has = k => pts.some(x => x.f.R[k] != null);
+  return `<div class="charts">${mk('Sum of 6 skinfolds (mm)', 'sum6', ' mm')}${has('sum8') ? mk('Sum of 8 skinfolds (mm)', 'sum8', ' mm') : ''}${has('durninPct') ? mk('Fat, Durnin and Womersley (%)', 'durninPct', '%') : ''}${mk('Fat, Yuhasz (%)', 'yuhaszPct', '%')}${mk('Muscle mass, Lee (kg)', 'muscleKg', ' kg')}</div><div class="save-note" style="margin-top:6px;">Estimates: the trend over several assessments says more than a single value.</div>`;
 }
 function anSetRoundStart(start) { return mutateSetting('anthro_round', next => { next.start = start; }).then(v => { if (v) anthroRound = v; return v; }); }
 // fixed measures of an assessment: its own saved copy, else the player's profile (older records may have them among the raw readings)
@@ -3007,6 +3074,9 @@ const AN_VARS = {
   sum6: { label: 'Sum of 6 skinfolds', phrase: 'the sum of 6 skinfolds', unit: ' mm', dec: 1, tol: 0.05 },
   yuhaszPct: { label: 'Fat, Yuhasz (1974) (%)', phrase: 'estimated fat (Yuhasz)', unit: ' %', dec: 1, tol: 0.05 }, yuhaszKg: { label: 'Fat mass, Yuhasz (kg)', unit: ' kg', dec: 1, tol: 0.05 },
   slaughterPct: { label: 'Fat, Slaughter (1988), young people (%)', unit: ' %', dec: 1, tol: 0.05 },
+  sum8: { label: 'Sum of 8 skinfolds', phrase: 'the sum of 8 skinfolds', unit: ' mm', dec: 1, tol: 0.05 },
+  sum4: { label: 'Sum of 4 skinfolds (Durnin)', phrase: 'the sum of 4 skinfolds', unit: ' mm', dec: 1, tol: 0.05 },
+  durninPct: { label: 'Fat, Durnin and Womersley (1974) (%)', phrase: 'estimated fat (Durnin and Womersley)', unit: ' %', dec: 1, tol: 0.05 },
   adiposeKg: { label: 'Adipose tissue, Ross and Kerr (kg)', unit: ' kg', dec: 1, tol: 0.05 }, adiposePct: { label: 'Adipose tissue, Ross and Kerr (%)', unit: ' %', dec: 1, tol: 0.05 },
   muscleKg: { label: 'Muscle mass, Lee (2000) (kg)', phrase: 'estimated muscle mass (Lee)', unit: ' kg', dec: 1, tol: 0.02 }, musclePct: { label: 'Muscle mass, Lee (2000) (% of body mass)', phrase: 'estimated muscle share (Lee)', unit: ' %', dec: 1, tol: 0.02 },
   residualKg: { label: 'Residual mass (kg)', unit: ' kg', dec: 1, tol: 0.05 }, residualPct: { label: 'Residual mass (% of body mass)', unit: ' %', dec: 1, tol: 0.05 },
@@ -3018,6 +3088,9 @@ const AN_VARS = {
   cormic: { label: 'Cormic index', unit: '', dec: 3 }, relSpan: { label: 'Relative arm span', unit: ' %', dec: 1 },
   fatDist: { label: 'Fat distribution index', unit: '', dec: 0 },
 };
+// the main fat estimate: Durnin and Womersley when biceps and iliac crest were taken (and the age is covered), otherwise Yuhasz
+const anMainFat = R => R.durninPct != null ? { key: 'durninPct', name: 'Durnin' } : { key: 'yuhaszPct', name: 'Yuhasz' };
+const anOtherFat = R => [R.durninPct != null ? 'Yuhasz ' + R.yuhaszPct.toFixed(1) + ' %' : '', R.slaughterPct != null ? 'Slaughter ' + R.slaughterPct.toFixed(1) + ' %' : ''].filter(Boolean).join(' · ');
 const anFmt = (k, x) => x == null || isNaN(x) ? '—' : x.toFixed(AN_VARS[k].dec) + AN_VARS[k].unit;
 function anChange(k, cur, prev) {
   if (!prev || prev[k] == null || cur[k] == null) return null;
@@ -3055,25 +3128,32 @@ function anGroupHtml(g, k, R, noRank) {
 // neutral, non-diagnostic summary sentences
 function anConclusions(R, prevR, rows, pid, dateText) {
   const out = [], sentence = [];
-  let s = `Sum of 6 skinfolds is ${anFmt('sum6', R.sum6)}; estimated fat is ${anFmt('yuhaszPct', R.yuhaszPct)} (Yuhasz)`;
-  if (R.slaughterPct != null) s += ` and ${anFmt('slaughterPct', R.slaughterPct)} (Slaughter, an equation for young people)`;
+  const main = anMainFat(R);
+  let s = `Sum of 6 skinfolds is ${anFmt('sum6', R.sum6)}${R.sum8 != null ? ` and of 8 skinfolds ${anFmt('sum8', R.sum8)}` : ''}; `;
+  if (R.durninPct != null) {
+    s += `estimated fat is ${anFmt('durninPct', R.durninPct)} (Durnin and Womersley, the main estimate), ${anFmt('yuhaszPct', R.yuhaszPct)} (Yuhasz)`;
+    if (R.slaughterPct != null) s += ` and ${anFmt('slaughterPct', R.slaughterPct)} (Slaughter, an equation for young people)`;
+  } else {
+    s += `estimated fat is ${anFmt('yuhaszPct', R.yuhaszPct)} (Yuhasz)`;
+    if (R.slaughterPct != null) s += ` and ${anFmt('slaughterPct', R.slaughterPct)} (Slaughter, an equation for young people)`;
+  }
   s += `; estimated muscle mass is ${anFmt('muscleKg', R.muscleKg)} (${anFmt('musclePct', R.musclePct)} of body mass).`;
   out.push('<strong>Body composition.</strong> ' + s);
   out.push(`<strong>Muscle development.</strong> Muscle areas are ${anFmt('areaArm', R.areaArm)} (arm), ${anFmt('areaThigh', R.areaThigh)} (thigh) and ${anFmt('areaCalf', R.areaCalf)} (calf), which make up ${R.shareArm.toFixed(0)} %, ${R.shareThigh.toFixed(0)} % and ${R.shareCalf.toFixed(0)} % of the three areas together.`);
   out.push(`<strong>Proportions.</strong> Cormic index ${R.cormic.toFixed(3)}: ${R.cormicText}; arm span is ${R.relSpan.toFixed(1)} % of height; fat distribution index ${R.fatDist.toFixed(0)} (${R.fatDistText}).`);
   if (prevR) {
-    const parts = ['sum6', 'yuhaszPct', 'muscleKg', 'mass'].map(k => { const c = anChange(k, R, prevR); return c ? `${AN_VARS[k].phrase} ${c.diff > 0 ? '+' : c.diff < 0 ? '−' : '±'}${Math.abs(c.diff).toFixed(AN_VARS[k].dec)}${AN_VARS[k].unit} (${c.beyond ? 'a substantial change' : 'not a substantial change'})` : null; }).filter(Boolean);
+    const parts = ['sum6', ...(R.sum8 != null ? ['sum8'] : []), main.key, 'muscleKg', 'mass'].map(k => { const c = anChange(k, R, prevR); return c ? `${AN_VARS[k].phrase} ${c.diff > 0 ? '+' : c.diff < 0 ? '−' : '±'}${Math.abs(c.diff).toFixed(AN_VARS[k].dec)}${AN_VARS[k].unit} (${c.beyond ? 'a substantial change' : 'not a substantial change'})` : null; }).filter(Boolean);
     out.push(`<strong>Evolution.</strong> Since the previous assessment${dateText ? ' (' + dateText + ')' : ''}: ${parts.join('; ')}.`);
   } else out.push('<strong>Evolution.</strong> This is the first complete assessment, so there is nothing to compare with yet.');
   if (rows.length >= 2) {
     const side = (k) => { const g = anGroupStat(rows, k, pid); return g ? `${AN_VARS[k].phrase} is ${R[k] > g.mean ? 'above' : R[k] < g.mean ? 'below' : 'at'} the group mean (${anFmt(k, g.mean)})` : null; };
-    const parts = ['sum6', 'yuhaszPct', 'musclePct'].map(side).filter(Boolean);
+    const parts = ['sum6', main.key, 'musclePct'].map(side).filter(Boolean);
     if (parts.length) parts[0] = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
     out.push(`<strong>Academy group</strong> (${rows.length} players, latest assessments). ${parts.join('; ')}. These are descriptive comparisons, not targets.`);
   }
   return out;
 }
-const AN_CAVEAT = 'BMI does not tell muscle from fat, which matters in athletes. Fat and muscle percentages come from equations based on skinfolds and girths: they are estimates, so the trend over several assessments says more than a single value. Yuhasz and Ross and Kerr were not developed on teenagers; the Slaughter equation was developed for young people (8 to 18 years). A change is called substantial when it is larger than the usual variation between measurements (1 % for body mass and girths, 2 % for muscle and BMI, 5 % for skinfold-based values); smaller changes may just be measurement noise.';
+const AN_CAVEAT = 'BMI does not tell muscle from fat, which matters in athletes. Fat and muscle percentages come from equations based on skinfolds and girths: they are estimates, so the trend over several assessments says more than a single value. Yuhasz and Ross and Kerr were not developed on teenagers; the Slaughter equation was developed for young people (8 to 18 years); the Durnin and Womersley equation (biceps, triceps, subscapular and iliac crest) comes from 481 men and women aged 16 to 72, with the Durnin and Rahaman constants under 17. A change is called substantial when it is larger than the usual variation between measurements (1 % for body mass and girths, 2 % for muscle and BMI, 5 % for skinfold-based values); smaller changes may just be measurement noise.';
 
 // ---- anthropometry: pages ----
 function anAgeText(pid) { const p = anthroProfiles[pid]; return p && p.dob ? anAge(todayStr(), p.dob) : null; }
@@ -3165,17 +3245,20 @@ function renderAnthroPlayer() {
       const m = anMissing(p.id, a);
       body += `<div class="card"><h2>Results not available yet</h2><div class="note" style="margin-top:0;">Still missing: ${m.map(escapeHtml).join(', ')}.</div></div>`;
     } else {
-      body += `<div class="kpis">${kpi('Sum of 6 skinfolds', 'sum6', pR ? `<div class="k-sub">${anChange('sum6', R, pR).diff > 0 ? '+' : ''}${anChange('sum6', R, pR).diff.toFixed(1)} mm vs previous</div>` : '')}${kpi('Fat (Yuhasz)', 'yuhaszPct', R.slaughterPct != null ? `<div class="k-sub">Slaughter (young people): ${R.slaughterPct.toFixed(1)} %</div>` : '')}${kpi('Muscle (Lee)', 'musclePct', `<div class="k-sub">${R.muscleKg.toFixed(1)} kg</div>`)}${kpi('BMI', 'bmi')}</div>
+      const dsub = k => { const c = pR && R[k] != null ? anChange(k, R, pR) : null; return c ? `<div class="k-sub">${c.diff > 0 ? '+' : ''}${c.diff.toFixed(1)} mm vs previous</div>` : ''; };
+      const mainFat = anMainFat(R), other = anOtherFat(R);
+      body += `<div class="kpis">${kpi('Sum of 6 skinfolds', 'sum6', dsub('sum6'))}${R.sum8 != null ? kpi('Sum of 8 skinfolds', 'sum8', dsub('sum8')) : ''}${kpi('Fat (' + mainFat.name + ')', mainFat.key, other ? `<div class="k-sub">${other}</div>` : '')}${kpi('Muscle (Lee)', 'musclePct', `<div class="k-sub">${R.muscleKg.toFixed(1)} kg${R.sum8 != null ? ' · BMI ' + R.bmi.toFixed(1) : ''}</div>`)}${R.sum8 == null ? kpi('BMI', 'bmi') : ''}</div>
+        <div class="card"><h2>Skinfolds by site</h2><div class="chart-box" style="max-width:720px;">${skinfoldChart(cur.v, prev && prev.v)}${skinfoldLegend(longDateSafe(cur.a.date), prev ? longDateSafe(prev.a.date) : '')}</div></div>
         <div class="card"><h2>Evolution</h2>${anChartsHtml(p.id)}</div>
         <div class="card"><h2>Summary</h2><ul class="an-list">${anConclusions(R, pR, rows, p.id, prev ? longDateSafe(prev.a.date) : '').map(t => `<li>${t}</li>`).join('')}</ul></div>
-        <div class="card"><h2>Body composition</h2>${tbl(['mass', 'sum6', 'yuhaszPct', 'yuhaszKg', 'slaughterPct', 'adiposePct', 'adiposeKg', 'musclePct', 'muscleKg', 'residualPct', 'bmi'])}<div class="note">${AN_CAVEAT}</div></div>
+        <div class="card"><h2>Body composition</h2>${tbl(['mass', 'sum6', 'sum8', 'sum4', 'durninPct', 'yuhaszPct', 'yuhaszKg', 'slaughterPct', 'adiposePct', 'adiposeKg', 'musclePct', 'muscleKg', 'residualPct', 'bmi'])}<div class="note">${AN_CAVEAT}</div></div>
         <div class="card"><h2>Muscle development</h2>${tbl(['corrArm', 'corrThigh', 'corrCalf', 'areaArm', 'areaThigh', 'areaCalf', 'shareArm', 'shareThigh', 'shareCalf', 'flexDiff'])}</div>
         <div class="card"><h2>Proportions</h2>${tbl(['height', 'cormic', 'relSpan', 'fatDist'])}</div>`;
       const unit = k => k.startsWith('sf_') ? 'mm' : k.startsWith('gr_') ? 'cm' : (AN_SIZES.find(s => s[0] === k) || [0, 0, ''])[2];
-      body += `<div class="card"><h2>Measurements used</h2><div class="hist-full"><table><tr><th>Measure</th><th>Value used</th><th>Taken</th><th>Check</th></tr>${AN_KEYS.map(k => { const t = cur.flags[k]; const lbl = k.startsWith('sf_') ? AN_FOLDS.find(f => 'sf_' + f[0] === k)[1] + ' skinfold' : k.startsWith('gr_') ? AN_GIRTHS.find(f => 'gr_' + f[0] === k)[1] + ' girth' : AN_SIZES.find(s => s[0] === k)[1]; return `<tr><td>${lbl}</td><td class="num">${t.value != null ? (Math.round(t.value * 100) / 100) + ' ' + unit(k) : '—'}</td><td>${t.fixed ? 'fixed' : (cur.a.raw[k] || []).filter(x => x !== '' && x != null).length + '×'}</td><td>${t.fixed ? '<span class="muted">from the player\'s profile</span>' : t.singleMeasure ? '<span class="muted">single measure</span>' : t.out ? '<span class="tag-chip">difference above ' + (AN_TOL(k) * 100) + ' %</span>' : '<span class="muted">' + (t.threeReadings ? 'mean of 3' : 'first reading used') + '</span>'}</td></tr>`; }).join('')}</table></div></div>`;
+      body += `<div class="card"><h2>Measurements used</h2><div class="hist-full"><table><tr><th>Measure</th><th>Value used</th><th>Taken</th><th>Check</th></tr>${[...AN_KEYS, ...AN_OPT_KEYS.filter(k => cur.v[k] != null)].map(k => { const t = cur.flags[k]; const lbl = k.startsWith('sf_') ? [...AN_FOLDS, ...AN_EXTRA_FOLDS].find(f => 'sf_' + f[0] === k)[1] + ' skinfold' : k.startsWith('gr_') ? AN_GIRTHS.find(f => 'gr_' + f[0] === k)[1] + ' girth' : AN_SIZES.find(s => s[0] === k)[1]; return `<tr><td>${lbl}</td><td class="num">${t.value != null ? (Math.round(t.value * 100) / 100) + ' ' + unit(k) : '—'}</td><td>${t.fixed ? 'fixed' : (cur.a.raw[k] || []).filter(x => x !== '' && x != null).length + '×'}</td><td>${t.fixed ? '<span class="muted">from the player\'s profile</span>' : t.singleMeasure ? '<span class="muted">single measure</span>' : t.out ? '<span class="tag-chip">difference above ' + (AN_TOL(k) * 100) + ' %</span>' : '<span class="muted">' + (t.threeReadings ? 'mean of 3' : 'first reading used') + '</span>'}</td></tr>`; }).join('')}</table></div></div>`;
     }
     const done = list.map(x => ({ x, f: anFull(p.id, x) })).reverse();
-    body += `<div class="card"><h2>All assessments</h2><div class="hist-full"><table><tr><th>Date</th><th>Age</th><th>Body mass</th><th>Σ6 (mm)</th><th>Fat % (Yuhasz)</th><th>Muscle (kg)</th></tr>${done.map(({ x, f }) => `<tr class="an-row" data-sel="${x.id}"><td>${escapeHtml(longDateSafe(x.date))}</td><td>${f.age != null ? f.age.toFixed(1) : '—'}</td><td>${f.v.mass != null ? f.v.mass + ' kg' : '—'}</td><td>${f.R ? f.R.sum6.toFixed(1) : '—'}</td><td>${f.R ? f.R.yuhaszPct.toFixed(1) : '—'}</td><td>${f.R ? f.R.muscleKg.toFixed(1) : '—'}</td></tr>`).join('')}</table></div></div>`;
+    body += `<div class="card"><h2>All assessments</h2><div class="hist-full"><table><tr><th>Date</th><th>Age</th><th>Body mass</th><th>Σ6 (mm)</th><th>Σ8 (mm)</th><th>Fat % (Durnin)</th><th>Fat % (Yuhasz)</th><th>Muscle (kg)</th></tr>${done.map(({ x, f }) => `<tr class="an-row" data-sel="${x.id}"><td>${escapeHtml(longDateSafe(x.date))}</td><td>${f.age != null ? f.age.toFixed(1) : '—'}</td><td>${f.v.mass != null ? f.v.mass + ' kg' : '—'}</td><td>${f.R ? f.R.sum6.toFixed(1) : '—'}</td><td>${f.R && f.R.sum8 != null ? f.R.sum8.toFixed(1) : '—'}</td><td>${f.R && f.R.durninPct != null ? f.R.durninPct.toFixed(1) : '—'}</td><td>${f.R ? f.R.yuhaszPct.toFixed(1) : '—'}</td><td>${f.R ? f.R.muscleKg.toFixed(1) : '—'}</td></tr>`).join('')}</table></div></div>`;
   }
   el.innerHTML = `<button class="btn sm back" id="anBack">← Anthropometry</button>
     <div class="page-head"><div class="name-row"><span class="avatar lg" aria-hidden="true">${escapeHtml(initials(p.name))}</span><div><h1>${escapeHtml(p.name)}</h1><div class="sub">${profText}</div></div></div>
@@ -3218,7 +3301,7 @@ function anProfileForm(pid) {
 function anAssessmentForm(pid, a, opts) {
   opts = opts || {};
   const p = roster.find(x => x.id === pid), fixedAll = AN_FIXED, fixedNow = anFixedFor(pid, a);
-  const groups = [['Body mass', AN_SIZES.filter(s => s[0] === 'mass').map(s => [s[0], s[1], 'kg'])], ['Skinfolds', AN_FOLDS.map(f => ['sf_' + f[0], f[1], 'mm'])], ['Girths', AN_GIRTHS.map(f => ['gr_' + f[0], f[1], 'cm'])]];
+  const groups = [['Body mass', AN_SIZES.filter(s => s[0] === 'mass').map(s => [s[0], s[1], 'kg'])], ['Skinfolds', AN_FOLDS.map(f => ['sf_' + f[0], f[1], 'mm'])], ['Girths', AN_GIRTHS.map(f => ['gr_' + f[0], f[1], 'cm'])], ['Extra skinfolds (optional)', AN_EXTRA_FOLDS.map(f => ['sf_' + f[0], f[1], 'mm'])]];
   const val = (k, i) => a && a.raw[k] && a.raw[k][i] != null ? a.raw[k][i] : '';
   // previous assessment (before this one) as a reference next to each field
   const before = anList(pid).filter(x => !a || (x.date < a.date && x.id !== a.id));
@@ -3231,7 +3314,7 @@ function anAssessmentForm(pid, a, opts) {
       <div class="imp-grid" style="grid-template-columns:repeat(3,1fr);margin-top:8px;">${fixedAll.map(([k, l, u]) => `<div><label>${l} (${u})</label><input type="number" step="any" inputmode="decimal" id="asFx_${k}" value="${fixedNow[k] != null ? fixedNow[k] : ''}"></div>`).join('')}</div>
       <label class="an-check"><input type="checkbox" id="asFxProfile" ${fixedAll.some(([k]) => (anthroProfiles[pid] || {})[k] == null) ? 'checked' : ''}> Also save these as the player's fixed values</label>
       <div class="save-note">They come from the player's profile; change them only if they were measured again.</div></details>
-    <details class="as-help"><summary>How the readings are used</summary><div class="save-note">Type the first reading and press <strong>Enter</strong> to jump to the next measure. The 2nd and 3rd readings are optional: with three the mean is used, otherwise the first one. A warning shows when the first two differ by more than 1 % (body mass, girths) or 5 % (skinfolds).</div></details>
+    <details class="as-help"><summary>How the readings are used</summary><div class="save-note">Type the first reading and press <strong>Enter</strong> to jump to the next measure. The 2nd and 3rd readings are optional: with three the mean is used, otherwise the first one. A warning shows when the first two differ by more than 1 % (body mass, girths) or 5 % (skinfolds). Biceps and iliac crest are optional: with both, the Durnin and Womersley fat estimate is also calculated.</div></details>
     ${groups.map(([title, items]) => `<div class="as-group"><div class="as-gh"><h4>${title}</h4><span class="as-cols"><span>1st</span><span>2nd</span><span>3rd</span></span></div>${items.map(([k, lbl, unit]) => `<div class="an-field" data-k="${k}"><span class="an-lbl">${lbl} <small>${unit}</small>${prevV[k] != null ? `<span class="as-prev">${Math.round(prevV[k] * 100) / 100}</span>` : ''}</span>${[0, 1, 2].map(i => `<input type="number" step="any" inputmode="decimal" data-i="${i}" aria-label="${escapeHtml(lbl)} reading ${i + 1}" placeholder="${['1st', '2nd', '3rd'][i]}" value="${val(k, i)}">`).join('')}<span class="an-used" aria-live="polite"></span></div>`).join('')}</div>`).join('')}
     <div class="imp-foot as-foot"><span class="save-note" id="asNote"></span><button class="btn modal-cancel">Cancel</button><button class="btn${a || !hasNext ? ' primary' : ''} modal-ok" data-next="0">Save</button>${!a && hasNext ? '<button class="btn primary modal-ok" data-next="1">Save and next pending player</button>' : ''}</div>`);
   const prof = anthroProfiles[pid] || {};
@@ -3257,7 +3340,7 @@ function anAssessmentForm(pid, a, opts) {
     const age = prof.dob && date ? anAge(date, prof.dob) : null, R = anCompute(v, prof, age);
     const pv = (label, x, u) => `<div class="as-pv"><span>${label}</span><strong>${x}<em>${u}</em></strong></div>`;
     o.querySelector('#asPreview').innerHTML = `<div class="as-pv"><span>Measures entered</span><strong>${have}<em> / ${need.length}</em></strong><div class="progress"><span style="width:${Math.round(have / need.length * 100)}%"></span></div></div>` +
-      (R ? pv('Σ6 skinfolds', R.sum6.toFixed(1), ' mm') + pv('Fat (Yuhasz)', R.yuhaszPct.toFixed(1), ' %') + pv('Muscle (Lee)', R.musclePct.toFixed(1), ' %') + pv('BMI', R.bmi.toFixed(1), '') : `<div class="as-pv wide"><span>Results appear when everything is entered${prof.dob && prof.sex && prof.ethnicity ? '' : ' (the profile is incomplete)'}.</span></div>`);
+      (R ? pv('Σ6 skinfolds', R.sum6.toFixed(1), ' mm') + pv('Fat (Yuhasz)', R.yuhaszPct.toFixed(1), ' %') + (R.durninPct != null ? pv('Fat (Durnin)', R.durninPct.toFixed(1), ' %') : '') + pv('Muscle (Lee)', R.musclePct.toFixed(1), ' %') + pv('BMI', R.bmi.toFixed(1), '') : `<div class="as-pv wide"><span>Results appear when everything is entered${prof.dob && prof.sex && prof.ethnicity ? '' : ' (the profile is incomplete)'}.</span></div>`);
   };
   o.addEventListener('input', refresh); refresh();
   // Enter moves on to the next measure's first reading
@@ -3494,24 +3577,31 @@ function anthroReportHtml(pid, aid, spOverride, histMax) {
   const table = keys => `<table><tr><th>Variable</th><th>Value</th><th>Change</th><th>Group mean</th></tr>${keys.map(trow).join('')}</table>`;
   const hist = list.map(x => ({ x, f: anFull(pid, x) })).filter(h => h.f.R).slice(-(histMax || 4)).reverse();
   const concl = anConclusions(R, pR, rows, pid, prev ? longDateSafe(prev.a.date) : '');
-  const comp = ['mass', 'sum6', 'yuhaszPct', 'slaughterPct', 'adiposePct', 'musclePct', 'residualPct', 'bmi'], musc = ['areaArm', 'areaThigh', 'areaCalf', 'shareThigh', 'flexDiff', 'cormic', 'relSpan', 'fatDist'];
+  const comp = ['mass', ...(R.sum8 != null ? [] : ['sum6']), 'durninPct', 'yuhaszPct', 'slaughterPct', 'adiposePct', 'musclePct', 'residualPct', 'bmi'], musc = ['areaArm', 'areaThigh', 'areaCalf', 'shareThigh', 'flexDiff', 'cormic', 'relSpan', 'fatDist'];
   const sp = spOverride || anSpacing(hist.length > 1 ? hist.length : 0);
   const kpi = (label, val, sub) => `<div class="fr-kpi"><b>${val}</b><span>${label}</span><small>${sub || '&nbsp;'}</small></div>`;
+  const hasS8 = R.sum8 != null, mainFat = anMainFat(R), other = anOtherFat(R);
+  const dsub = k => { const c = pR && R[k] != null ? anChange(k, R, pR) : null; return c ? signed(c.diff, ' mm') + ' vs previous' : ''; };
+  const kpis = [kpi('Sum of 6 skinfolds', R.sum6.toFixed(1) + ' mm', dsub('sum6')),
+    hasS8 ? kpi('Sum of 8 skinfolds', R.sum8.toFixed(1) + ' mm', dsub('sum8')) : '',
+    kpi('Fat (' + mainFat.name + ')', R[mainFat.key].toFixed(1) + ' %', other),
+    kpi('Muscle (Lee)', R.musclePct.toFixed(1) + ' %', R.muscleKg.toFixed(1) + ' kg' + (hasS8 ? ' · BMI ' + R.bmi.toFixed(1) : '')),
+    hasS8 ? '' : kpi('BMI', R.bmi.toFixed(1), 'Body mass ' + R.mass.toFixed(1) + ' kg')].join('');
   return `<div class="fr fr-an fr-land" style="--g:${sp.g}px;--sp:${sp.sp}px;--spx:${sp.spx}px;--td:${sp.td}px;--bp:${sp.bp}px">
     <div class="fr-title"><h1>${escapeHtml(p.name)}</h1>
       <div class="fr-sub">Anthropometry assessment · ${escapeHtml(longDateSafe(cur.a.date))} · age ${cur.age.toFixed(1)} · ${escapeHtml(prof.sex)} · Report generated ${longDate(todayStr())}</div></div>
-    <div class="fr-kpis">${kpi('Sum of 6 skinfolds', R.sum6.toFixed(1) + ' mm', pR ? signed(R.sum6 - pR.sum6, ' mm') + ' vs previous' : '')}${kpi('Fat (Yuhasz)', R.yuhaszPct.toFixed(1) + ' %', R.slaughterPct != null ? 'Slaughter ' + R.slaughterPct.toFixed(1) + ' %' : '')}${kpi('Muscle (Lee)', R.musclePct.toFixed(1) + ' %', R.muscleKg.toFixed(1) + ' kg')}${kpi('BMI', R.bmi.toFixed(1), 'Body mass ' + R.mass.toFixed(1) + ' kg')}</div>
+    <div class="fr-kpis">${kpis}</div>
     <div class="fr-grid" style="grid-template-columns:1fr 1fr"><div class="fr-sec"><h2>Body composition</h2><div class="fr-target">Estimates: the trend matters more than one value</div>${table(comp)}</div>
-      <div class="fr-sec"><h2>Muscle and proportions</h2><div class="fr-target">* substantial change (larger than the usual variation between measurements)</div>${table(musc)}</div></div>
-    <div class="fr-grid" style="grid-template-columns:${hist.length > 1 ? '6fr 5fr' : '1fr'}">
-    <div class="fr-sec"><h2>Summary</h2><div class="fr-target">Neutral, descriptive conclusions from the measurements</div>${concl.map(t => `<div class="fr-line">${t}</div>`).join('')}</div>
-    ${hist.length > 1 ? `<div class="fr-sec"><h2>Evolution</h2><div class="fr-target">Latest ${hist.length} assessments</div><table><tr><th>Date</th><th>Body mass</th><th>Σ6 (mm)</th><th>Fat % (Yuhasz)</th><th>Muscle (kg)</th></tr>${hist.map(({ x, f }) => `<tr><td>${escapeHtml(longDateSafe(x.date))}</td><td>${f.v.mass} kg</td><td>${f.R.sum6.toFixed(1)}</td><td>${f.R.yuhaszPct.toFixed(1)}</td><td>${f.R.muscleKg.toFixed(1)}</td></tr>`).join('')}</table></div>` : ''}
-    </div>
+      <div class="fr-sec"><h2>Skinfolds by site</h2><div class="fr-target">Millimetres${prev ? ', this assessment against the previous one' : ''}</div>${skinfoldChart(cur.v, prev && prev.v, { h: 190 })}${skinfoldLegend(longDateSafe(cur.a.date), prev ? longDateSafe(prev.a.date) : '')}</div></div>
+    <div class="fr-grid" style="grid-template-columns:1fr 1.4fr"><div class="fr-sec"><h2>Muscle and proportions</h2><div class="fr-target">* substantial change (larger than the usual variation between measurements)</div>${table(musc)}</div>
+      <div class="fr-sec"><h2>Summary</h2><div class="fr-target">Neutral, descriptive conclusions from the measurements</div>${concl.map(t => `<div class="fr-line">${t}</div>`).join('')}</div></div>
+    ${histMax !== 0 && hist.length > 1 ? `<div class="fr-sec"><h2>Evolution</h2><div class="fr-target">Latest ${hist.length} assessments</div><table><tr><th>Date</th><th>Body mass</th><th>Σ6 (mm)</th>${hasS8 ? '<th>Σ8 (mm)</th>' : ''}<th>Fat % (${mainFat.name})</th><th>Muscle (kg)</th></tr>${hist.map(({ x, f }) => `<tr><td>${escapeHtml(longDateSafe(x.date))}</td><td>${f.v.mass} kg</td><td>${f.R.sum6.toFixed(1)}</td>${hasS8 ? `<td>${f.R.sum8 != null ? f.R.sum8.toFixed(1) : '—'}</td>` : ''}<td>${f.R[mainFat.key] != null ? f.R[mainFat.key].toFixed(1) : '—'}</td><td>${f.R.muscleKg.toFixed(1)}</td></tr>`).join('')}</table></div>` : ''}
     <div class="fr-disc">${AN_CAVEAT} Confidential: contains health data of a minor; share it only with the player's family or the staff who need it. Not a medical diagnosis.</div></div>`;
 }
-// same idea as fitPlayerReport: tighten the spacing, then show fewer past assessments, until it fits one A4 page
+// same idea as fitPlayerReport: tighten the spacing until it fits one A4 page
 function fitAnthroReport(pid, aid) {
-  const steps = [[P_ROOMY, undefined], [undefined, undefined], [P_TIGHT, undefined], [P_ULTRA, undefined], [P_ULTRA, 3], [P_ULTRA, 2]];
+  // the Evolution table is the first thing to go when the page is full; then the spacing is tightened
+  const steps = [[P_ROOMY, undefined], [undefined, undefined], [P_ROOMY, 0], [undefined, 0], [P_TIGHT, 0], [P_ULTRA, 0]];
   let html;
   for (const [sp, max] of steps) { html = anthroReportHtml(pid, aid, sp, max); if (measureReportMm(html, LAND_W_MM) <= FIT_LAND_MM) break; }
   return html;
@@ -3915,7 +4005,7 @@ function playerSpacing(load) {
 }
 // A report must never run onto a second page: before printing, the page is laid out off-screen with the print rules at A4 width,
 // measured, and tightened step by step until it fits with some room to spare (printers and phones add margins of their own).
-const FIT_MM = 252, FIT_LAND_MM = 176, LAND_W_MM = 277;   // portrait: 182 mm wide; landscape: 277 mm wide, 190 mm of height minus some room to spare
+const FIT_MM = 252, FIT_LAND_MM = 178, LAND_W_MM = 277;   // portrait: 182 mm wide; landscape: 277 mm wide, 190 mm of height minus some room to spare
 function ensureFitStyle() {
   let st = document.getElementById('fitStyle');
   if (!st) {
