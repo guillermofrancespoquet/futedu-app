@@ -311,7 +311,7 @@
     #printArea .fr-sec tr:last-child td { border-bottom:none; }
     #printArea .fr-ok { color:#1e8c4a; font-weight:700; font-size:11.5px; padding:8px 0 4px; }
     #printArea .fr-kpi small { display:block; margin-top:5px; font-size:8.5px; color:#7a7a7e; letter-spacing:0; text-transform:none; }
-    #printArea .fr-pill { display:inline-block; font-size:9px; font-weight:700; padding:2px 9px; border-radius:20px; letter-spacing:.2px; white-space:nowrap; }
+    #printArea .fr-pill { display:inline-block; font-size:9px; font-weight:700; padding:3px 12px; border-radius:20px; letter-spacing:.2px; white-space:nowrap; }
     #printArea .fr-pill.good { background:#e3f4ea; color:#1e8c4a; }
     #printArea .fr-pill.bad { background:#fbe4e1; color:#c0392b; }
     #printArea .fr-pill.watch { background:#ffeadb; color:#b84300; }
@@ -342,6 +342,7 @@
     #printArea .fr-land .fr-disc { margin-top:auto; }
     #printArea .fr-land .fr-sec h2 { font-size:14px; }
     #printArea .fr-land .fr-sec td { font-size:12px; }
+    #printArea .fr-land .fr-sec.fr-pills td { padding-top:calc(var(--td) + 2px); padding-bottom:calc(var(--td) + 2px); }   /* more air between the status pills */
     #printArea .fr-land .fr-sec th { font-size:9px; }
     #printArea .fr-land.fr-an .fr-sec td { font-size:11px; }
     #printArea .fr-land .fr-line { font-size:11px; line-height:1.5; }
@@ -3801,7 +3802,7 @@ function playerReportHtml(id, withNotes, spOverride, lim) {
       <div class="fr-sub">Bioimpedance report · ${escapeHtml(last.label)}${last.date ? ' · measured ' + escapeHtml(longDateSafe(last.date)) : ''}${p.tags.length ? ' · ' + p.tags.map(escapeHtml).join(', ') : ''} · Report generated ${longDate(todayStr())}</div></div>
     <div class="fr-kpis">${kpi('Weight', 'weight_kg', ' kg')}${kpi('Body fat', 'body_fat_percent', '%')}${kpi('Fat-free mass', 'fat_free_mass_kg', ' kg')}${kpi('Hydration', 'total_body_water_percent', '%')}</div>
     <div class="fr-grid" style="grid-template-columns:9fr 11fr">
-    <div class="fr-sec"><h2>Latest measurement</h2><div class="fr-target">${escapeHtml(last.label)}${last.date ? ' · ' + escapeHtml(longDateSafe(last.date)) : ''}</div>
+    <div class="fr-sec fr-pills"><h2>Latest measurement</h2><div class="fr-target">${escapeHtml(last.label)}${last.date ? ' · ' + escapeHtml(longDateSafe(last.date)) : ''}</div>
       <table><tr><th>Measure</th><th>Result</th><th>Reference used</th><th>Reading</th></tr>
         ${row('Weight', fmtN(r.weight_kg, ' kg'), '—', '', r.weight_kg)}
         ${row('Body fat', fmtN(r.body_fat_percent, '%'), '≤ ' + t.bodyFat + '%', c.bodyFat, r.body_fat_percent)}
