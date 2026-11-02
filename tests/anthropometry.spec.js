@@ -76,13 +76,13 @@ test('reports are one A4 page', async ({ page }) => {
   expect(await pages(await page.evaluate(() => anPendingHtml()))).toBe(1);
 });
 
-test('the anthropometry player report fits one A4 page even with extra printer margin', async ({ page }) => {
+test('the anthropometry player report is one A4 landscape page, even with extra printer margin', async ({ page }) => {
   const dates = ['2024-10-05', '2025-03-10', '2025-10-05', '2026-03-10', '2026-10-05'];
   await openApp(page, { settings: { anthro_profiles: { [alex]: profile('2010-01-01') }, anthro_assessments: { [alex]: dates.map((d, i) => assessment(d, i)) } } });
-  await page.setViewportSize({ width: 688, height: 1000 });   // A4 content width, as in the bioimpedance report test
+  await page.setViewportSize({ width: 1047, height: 800 });   // A4 landscape content width, as in the bioimpedance report test
   const html = await page.evaluate(([i, a]) => fitAnthroReport(i, a), [alex, 'a2026-10-05']);
   await page.evaluate(h => { document.getElementById('printArea').innerHTML = h; }, html);
-  await page.addStyleTag({ content: '@media print { @page { size:A4; margin:20mm 14mm; } }' });
+  await page.addStyleTag({ content: '@media print { @page { size:A4 landscape; margin:14mm; } }' });
   await page.emulateMedia({ media: 'print' });
   const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
   expect((pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length).toBe(1);
