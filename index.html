@@ -564,16 +564,36 @@
   .an-lbl small { font-weight:500; color:var(--ink-3); }
   .as-prev { display:inline-block; margin-left:6px; font-size:11.5px; font-weight:600; color:var(--ink-3); background:var(--fill); border-radius:6px; padding:1px 6px; }
   .as-foot { position:sticky; bottom:0; padding:10px 0 2px; background:var(--card); }
-  .rc-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:14px; }
-  .rc-card h2 { margin-bottom:2px; }
-  .rc-sub { font-size:12.5px; color:var(--ink-3); margin-bottom:12px; }
-  .rc-sec { font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3); margin:14px 0 6px; }
-  .rc-file { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-top:1px solid var(--line); font-size:13.5px; }
+  .rc-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(330px, 1fr)); gap:16px; align-items:start; }
+  .rc-grid .card { margin-bottom:0; }
+  .rc-head-sec { display:flex; align-items:baseline; gap:8px; font-size:15px; font-weight:700; margin:26px 2px 12px; color:var(--ink); }
+  .rc-head-sec .rc-count { font-size:12.5px; font-weight:600; color:var(--ink-3); }
+  .rc-head-sec:first-child { margin-top:6px; }
+  .rc-top { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  .rc-badge { display:inline-flex; align-items:center; justify-content:center; height:24px; padding:0 10px; border-radius:999px; background:var(--orange-soft); color:var(--orange); font-size:11.5px; font-weight:700; letter-spacing:.2px; }
+  .rc-status { display:inline-flex; align-items:center; gap:5px; height:24px; padding:0 10px; border-radius:999px; background:var(--fill); color:var(--ink-2); font-size:11.5px; font-weight:600; }
+  .rc-status svg { width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
+  .rc-status.next { background:var(--orange); color:var(--on-accent); }
+  .rc-status.idea, .rc-status.reserve { background:transparent; border:1px dashed var(--ink-4); color:var(--ink-3); }
+  .rc-card h2 { font-size:17px; margin-bottom:2px; line-height:1.25; }
+  .rc-sub { font-size:12.5px; color:var(--ink-3); margin-bottom:6px; line-height:1.4; }
+  .rc-sec { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); margin:16px 0 4px; }
+  .rc-file { display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid var(--line); font-size:13.5px; }
   .rc-sec + .rc-file, .rc-card > .rc-file:first-child { border-top:none; }
-  .rc-file .rc-name { font-weight:600; }
+  .rc-file a.btn { text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+  .rc-file .rc-ico { width:34px; height:34px; border-radius:10px; background:var(--fill); color:var(--ink-2); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .rc-file .rc-ico svg { width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .rc-file .rc-name { flex:1; min-width:0; font-weight:600; line-height:1.3; overflow-wrap:anywhere; }
   .rc-file .rc-btns { display:flex; gap:6px; flex-shrink:0; }
   .rc-empty { font-size:12.5px; color:var(--ink-3); padding:6px 0; }
-  .rc-head-sec { font-size:13px; font-weight:700; margin:22px 0 10px; color:var(--ink-2); }
+  .rc-filter { margin-bottom:6px; }
+  @media (max-width: 520px) {
+    .rc-grid { grid-template-columns:1fr; }
+    .rc-file { flex-wrap:wrap; }
+    .rc-file .rc-name { flex-basis:calc(100% - 46px); }
+    .rc-file .rc-btns { flex:1 1 100%; padding-left:44px; }
+    .rc-file .rc-btns .btn { flex:1; height:38px; }
+  }
   .md { font-size:14px; line-height:1.65; color:var(--ink-2); }
   .md h1 { font-size:20px; margin:0 0 4px; color:var(--ink); } .md h2 { font-size:17px; margin:22px 0 6px; color:var(--ink); } .md h3 { font-size:15px; margin:16px 0 4px; color:var(--ink); } .md h4 { font-size:14px; margin:12px 0 4px; color:var(--ink); }
   .md p { margin:8px 0; } .md ul, .md ol { margin:8px 0 8px 22px; } .md li { margin:3px 0; } .md strong { color:var(--ink); }
@@ -897,8 +917,9 @@
 
       <!-- RECIPES -->
       <section id="view-recipes" class="view hidden">
-        <div class="page-head"><div><h1>Recipes</h1><div class="sub">Workshop recipes, session guides and printable handouts.</div></div></div>
-        <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><input type="search" id="rcSearch" placeholder="Search recipes" aria-label="Search recipes"></div></div>
+        <div class="page-head"><div><h1>Recipes</h1><div class="sub">Recipes in workshop order, with their cards, session guides and printable handouts.</div></div></div>
+        <div class="toolbar"><div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><input type="search" id="rcSearch" placeholder="Search recipes" aria-label="Search recipes"></div>
+          <div class="seg rc-filter" id="rcFilter" role="group" aria-label="Recipe status"><button data-f="all" class="on">All</button><button data-f="cooked">Cooked</button><button data-f="coming">Coming up</button><button data-f="ideas">Ideas</button></div></div>
         <div id="rcBody"></div>
       </section>
 
@@ -1565,34 +1586,67 @@ async function openGuide(path, title) {
   o.querySelector('.modal-box').classList.add('md-box');
   try {
     const r = await fetch(path, { cache: 'no-cache' }); if (!r.ok) throw new Error('HTTP ' + r.status);
-    o.querySelector('.modal-box').innerHTML = `<div class="md">${mdToHtml(await r.text())}</div><div class="imp-foot"><a class="btn" href="${escapeHtml(path)}" download>Download .md</a><button class="btn primary modal-cancel">Close</button></div>`;
+    o.querySelector('.modal-box').innerHTML = `<div class="md">${mdToHtml(await r.text())}</div><div class="imp-foot"><button class="btn" data-save-md>Download .md</button><button class="btn primary modal-cancel">Close</button></div>`;
     o.querySelector('.modal-cancel').addEventListener('click', () => o.remove());
+    o.querySelector('[data-save-md]').addEventListener('click', () => saveLibFile(path));
   } catch (e) { o.querySelector('.modal-box').innerHTML = `<div class="note">Could not load the guide: ${escapeHtml(e.message || String(e))}</div><div class="imp-foot"><button class="btn modal-cancel">Close</button></div>`; o.querySelector('.modal-cancel').addEventListener('click', () => o.remove()); }
   o.addEventListener('click', e => { if (e.target === o) o.remove(); });
 }
+// save a library file: on phones through the share sheet (Save to Files, Drive...), elsewhere as a normal download.
+// A plain <a download> is ignored by Safari on iPhone and by installed apps, which is why it did not work on the phone.
+async function saveLibFile(path) {
+  const name = path.split('/').pop();
+  try {
+    const r = await fetch(path); if (!r.ok) throw new Error('HTTP ' + r.status);
+    const blob = await r.blob();
+    const type = blob.type && blob.type !== 'application/octet-stream' ? blob.type : (/\.pdf$/i.test(name) ? 'application/pdf' : /\.md$/i.test(name) ? 'text/markdown' : 'application/octet-stream');
+    const file = new File([blob], name, { type });
+    if (window.matchMedia('(pointer: coarse)').matches && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: name }); return; }
+      catch (e) { if (e && e.name === 'AbortError') return; /* otherwise fall through to the download */ }
+    }
+    const url = URL.createObjectURL(file), a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch (e) { toast('Could not download the file: ' + (e && e.message ? e.message : e), 'error'); }
+}
+const RC_STATUS = { cooked: 'Cooked', next: 'Next up', planned: 'Planned', idea: 'Not cooked yet', reserve: 'Reserve' };
+const RC_ICON = { pdf: '<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>', md: '<svg viewBox="0 0 24 24"><path d="M5 5.5A1.5 1.5 0 0 1 6.5 4H19v14H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3M9 8h6M9 11.5h6"/></svg>' };
+const RC_FILTERS = { all: () => true, cooked: r => r.status === 'cooked', coming: r => r.status === 'next' || r.status === 'planned', ideas: r => r.status === 'idea' || r.status === 'reserve' };
+let rcFilter = 'all';
 async function renderRecipes() {
   const body = document.getElementById('rcBody');
   const lib = await loadLibrary();
   if (lib.error) { body.innerHTML = `<div class="card"><div class="empty-state"><strong>The recipe library could not be loaded</strong>${escapeHtml(lib.error)}</div></div>`; return; }
+  document.querySelectorAll('#rcFilter button').forEach(b => b.classList.toggle('on', b.dataset.f === rcFilter));
   const q = (document.getElementById('rcSearch').value || '').trim().toLowerCase();
   const split = t => { const i = t.indexOf(':'); return i > 0 ? [t.slice(0, i), t.slice(i + 1).trim()] : [t, '']; };
   const fileRow = f => {
     const isMd = f.name.endsWith('.md');
-    return `<div class="rc-file"><span class="rc-name">${escapeHtml(f.label)}</span><span class="rc-btns">${isMd ? `<button class="btn sm" data-guide="${escapeHtml(f.path)}">Read</button>` : `<a class="btn sm" href="${escapeHtml(f.path)}" target="_blank" rel="noopener">Open</a><a class="btn sm" href="${escapeHtml(f.path)}" download>Download</a>`}</span></div>`;
+    const view = isMd ? `<button class="btn sm" data-guide="${escapeHtml(f.path)}">Read</button>` : `<a class="btn sm" href="${escapeHtml(f.path)}" target="_blank" rel="noopener">Open</a>`;
+    return `<div class="rc-file"><span class="rc-ico">${isMd ? RC_ICON.md : RC_ICON.pdf}</span><span class="rc-name">${escapeHtml(f.label)}</span><span class="rc-btns">${view}<button class="btn sm" data-save="${escapeHtml(f.path)}">Download</button></span></div>`;
   };
   const groups = [['card', 'Recipe card'], ['session', 'Session guide'], ['handout', 'Printable handouts'], ['key', 'Facilitator keys'], ['doc', 'Documents'], ['other', 'Other files']];
-  const recipes = lib.recipes.filter(r => !q || r.title.toLowerCase().includes(q) || r.slug.includes(q));
-  const cards = recipes.map(r => {
+  const recipeCard = r => {
     const [t, sub] = split(r.title);
     const secs = groups.map(([k, label]) => { const fs = r.files.filter(f => f.kind === k); return fs.length ? `<div class="rc-sec">${label}</div>${fs.map(fileRow).join('')}` : ''; }).join('');
     const noCard = !r.files.some(f => f.kind === 'card');
-    return `<div class="card rc-card"><h2>${escapeHtml(t)}</h2><div class="rc-sub">${escapeHtml(sub)}</div>${secs || '<div class="rc-empty">No files yet.</div>'}${noCard ? '<div class="rc-sec">Recipe card</div><div class="rc-empty">Not published yet.</div>' : ''}</div>`;
-  }).join('');
-  const sessions = lib.sessions.filter(s => !q || s.label.toLowerCase().includes(q));
+    const st = r.status || 'planned';
+    const check = st === 'cooked' ? '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : '';
+    return `<div class="card rc-card"><div class="rc-top">${r.session ? `<span class="rc-badge">Session ${r.session}</span>` : ''}<span class="rc-status ${st}">${check}${RC_STATUS[st] || st}</span></div>
+      <h2>${escapeHtml(t)}</h2><div class="rc-sub">${escapeHtml(sub)}</div>${secs || '<div class="rc-empty">No files yet.</div>'}${noCard && secs ? '<div class="rc-sec">Recipe card</div><div class="rc-empty">Not published yet.</div>' : ''}</div>`;
+  };
+  const visible = lib.recipes.filter(r => (RC_FILTERS[rcFilter] || RC_FILTERS.all)(r) && (!q || r.title.toLowerCase().includes(q) || r.slug.includes(q)));
+  const section = (title, list) => list.length ? `<div class="rc-head-sec">${title}<span class="rc-count">${list.length}</span></div><div class="rc-grid">${list.map(recipeCard).join('')}</div>` : '';
+  const cooked = visible.filter(r => r.status === 'cooked'), coming = visible.filter(r => r.status === 'next' || r.status === 'planned' || !r.status), ideas = visible.filter(r => r.status === 'idea' || r.status === 'reserve');
+  const sessions = rcFilter === 'all' ? lib.sessions.filter(s => !q || s.label.toLowerCase().includes(q)) : [];
   body.innerHTML = (sessions.length ? `<div class="rc-head-sec">General sessions</div><div class="rc-grid"><div class="card rc-card">${sessions.map(fileRow).join('')}</div></div>` : '') +
-    `<div class="rc-head-sec">Recipes</div>` + (cards ? `<div class="rc-grid">${cards}</div>` : '<div class="card"><div class="empty-state"><strong>No recipes found</strong>Try another search.</div></div>');
+    section('Coming up', coming) + section('Cooked in the workshops', cooked) + section('Not cooked yet', ideas) +
+    (visible.length || sessions.length ? '' : '<div class="card"><div class="empty-state"><strong>No recipes found</strong>Try another search or filter.</div></div>');
   body.querySelectorAll('[data-guide]').forEach(b => b.addEventListener('click', () => openGuide(b.dataset.guide)));
+  body.querySelectorAll('[data-save]').forEach(b => b.addEventListener('click', () => saveLibFile(b.dataset.save)));
 }
+document.querySelectorAll('#rcFilter button').forEach(b => b.addEventListener('click', () => { rcFilter = b.dataset.f; renderRecipes(); }));
 document.getElementById('rcSearch').addEventListener('input', renderRecipes);
 
 const VIEWS = ['dashboard', 'summary', 'compare', 'anthro', 'anthrop', 'recipes', 'players', 'player', 'settings'];
