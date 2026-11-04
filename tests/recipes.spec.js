@@ -6,7 +6,7 @@ const LIB = {
   sessions: [{ name: 'kickoff.md', kind: 'session', kindLabel: 'Session guide', label: 'Kickoff session', path: 'library/sessions/kickoff.md' }],
   recipes: [
     { slug: 'oats', title: 'Overnight Oats: Pre-Workout Breakfast', session: 1, status: 'cooked', files: [f('oats', 'card', 'Recipe card', 'oats.pdf'), f('oats', 'session', 'Session guide', 'oats-session.md')] },
-    { slug: 'granola', title: 'Granola: Batch Snack', session: 2, status: 'cooked', files: [f('granola', 'card', 'Recipe card', 'granola.pdf')] },
+    { slug: 'granola', title: 'Granola: Batch Snack', session: 2, status: 'cooked', files: [f('granola', 'card', 'Recipe card', 'granola.pdf'), f('granola', 'handout', 'Scenario cards', 'sc.pdf'), f('granola', 'key', 'Scenario key', 'key.pdf'), f('granola', 'card', 'Recipe card: variant', 'g2.pdf')] },
     { slug: 'bark', title: 'Frozen Yogurt Bark: Snack', session: 5, status: 'next', files: [f('bark', 'card', 'Recipe card', 'bark.pdf')] },
     { slug: 'bowl', title: 'Chickpea Bowl: Lunch', session: null, status: 'idea', files: [f('bowl', 'card', 'Recipe card', 'bowl.pdf')] },
   ],
@@ -24,7 +24,8 @@ const setup = async page => {
 
 test('recipes appear in workshop order, grouped by status, with a filter', async ({ page }) => {
   await setup(page);
-  expect(await page.locator('#rcBody .rc-head-sec').allTextContents()).toEqual(['General sessions', 'Coming up1', 'Cooked in the workshops2', 'Not cooked yet1']);
+  expect(await page.locator('#rcBody .rc-head-sec').allTextContents()).toEqual(['Coming up1', 'Cooked in the workshops2', 'Not cooked yet1']);
+  await expect(page.locator('.rc-general')).toContainText('Kickoff session');
   expect(await page.locator('#rcBody .rc-card h2').allTextContents()).toEqual(['Frozen Yogurt Bark', 'Overnight Oats', 'Granola', 'Chickpea Bowl']);   // coming up, then cooked in session order, then ideas
   await expect(page.locator('.rc-badge').first()).toHaveText('Session 5');
   await expect(page.locator('.rc-status.next')).toHaveText('Next up');
@@ -39,7 +40,7 @@ test('recipes appear in workshop order, grouped by status, with a filter', async
 
 test('Download saves the file (a normal download on a computer)', async ({ page }) => {
   await setup(page);
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('.rc-file', { hasText: 'Recipe card' }).first().locator('[data-save]').click()]);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('.rc-slot', { hasText: 'Recipe card' }).first().locator('[data-save]').click()]);
   expect(dl.suggestedFilename()).toMatch(/\.pdf$/);
 });
 
@@ -51,12 +52,12 @@ test.describe('on a phone', () => {
       navigator.canShare = () => true;
       navigator.share = async data => { window.__saved.push(data.files[0].name + ':' + data.files[0].type); };
     });
-    await page.locator('.rc-file', { hasText: 'Recipe card' }).first().locator('[data-save]').click();
+    await page.locator('.rc-slot', { hasText: 'Recipe card' }).first().locator('[data-save]').click();
     await expect.poll(() => page.evaluate(() => window.__saved)).toEqual(['bark.pdf:application/pdf']);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
     // cancelling the share sheet is not an error
     await page.evaluate(() => { navigator.share = async () => { const e = new Error('cancel'); e.name = 'AbortError'; throw e; }; });
-    await page.locator('.rc-file', { hasText: 'Recipe card' }).first().locator('[data-save]').click();
+    await page.locator('.rc-slot', { hasText: 'Recipe card' }).first().locator('[data-save]').click();
     await expect(page.locator('.toast.error, .toast.err')).toHaveCount(0);
   });
 });
@@ -68,4 +69,20 @@ test('the session guide opens in a reader with a working Download .md', async ({
   await expect(page.locator('.md h1')).toHaveText('Title');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-save-md]')]);
   expect(dl.suggestedFilename()).toMatch(/\.md$/);
+});
+
+test('cards are uniform: same parts, same height in a row, extra files fold into a list', async ({ page }) => {
+  await setup(page);
+  // every card has the three rows: recipe card, session guide, handouts
+  const rows = await page.locator('#rcBody .rc-card').evaluateAll(cs => cs.map(c => [...c.querySelectorAll('.rc-slots > .rc-slot, .rc-slots > details > summary')].map(x => x.querySelector('.rc-lab').textContent.replace(/\d+$/, '').trim())));
+  rows.forEach(r => expect(r).toEqual(['Recipe card', 'Session guide', 'Handouts']));
+  // cards of the same section sit in one row with identical height, whatever they hold
+  const h = await page.locator('#rcBody .rc-card').evaluateAll(cs => cs.map(c => Math.round(c.getBoundingClientRect().height)));
+  const tops = await page.locator('#rcBody .rc-card').evaluateAll(cs => cs.map(c => Math.round(c.getBoundingClientRect().top)));
+  tops.forEach((t, i) => tops.forEach((u, j) => { if (Math.abs(t - u) < 2) expect(Math.abs(h[i] - h[j])).toBeLessThanOrEqual(1); }));
+  // granola has two cards and two handouts: both fold into lists that open
+  const g = page.locator('.rc-card', { hasText: 'Granola' });
+  await expect(g.locator('details')).toHaveCount(2);
+  await g.locator('details').first().locator('summary').click();
+  await expect(g.locator('details').first().locator('.rc-file')).toHaveCount(2);
 });

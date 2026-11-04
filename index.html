@@ -564,29 +564,55 @@
   .an-lbl small { font-weight:500; color:var(--ink-3); }
   .as-prev { display:inline-block; margin-left:6px; font-size:11.5px; font-weight:600; color:var(--ink-3); background:var(--fill); border-radius:6px; padding:1px 6px; }
   .as-foot { position:sticky; bottom:0; padding:10px 0 2px; background:var(--card); }
-  .rc-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(330px, 1fr)); gap:16px; align-items:start; }
+  .rc-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(360px, 1fr)); gap:16px; align-items:start; }
   .rc-grid .card { margin-bottom:0; }
-  .rc-head-sec { display:flex; align-items:baseline; gap:8px; font-size:15px; font-weight:700; margin:26px 2px 12px; color:var(--ink); }
+  .rc-head-sec { display:flex; align-items:baseline; gap:8px; font-size:15px; font-weight:700; margin:28px 2px 12px; color:var(--ink); }
   .rc-head-sec .rc-count { font-size:12.5px; font-weight:600; color:var(--ink-3); }
   .rc-head-sec:first-child { margin-top:6px; }
-  .rc-top { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
-  .rc-badge { display:inline-flex; align-items:center; justify-content:center; height:24px; padding:0 10px; border-radius:999px; background:var(--orange-soft); color:var(--orange); font-size:11.5px; font-weight:700; letter-spacing:.2px; }
+  .rc-general { display:flex; align-items:center; gap:12px; padding:14px 18px; }
+  .rc-general .rc-gt { flex:1; min-width:0; font-weight:700; font-size:14px; }
+  .rc-general .rc-gs { font-size:12px; color:var(--ink-3); font-weight:500; margin-top:1px; }
+  /* every recipe card has the same parts in the same order: session and status, title, subtitle, then three fixed rows (card, guide, handouts) */
+  .rc-card { padding:0; overflow:hidden; display:flex; flex-direction:column; }
+  .rc-card.next { border-color:var(--orange); }
+  .rc-head { padding:16px 18px 12px; }
+  .rc-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+  .rc-badge { display:inline-flex; align-items:center; height:24px; padding:0 10px; border-radius:999px; background:var(--orange-soft); color:var(--orange); font-size:11.5px; font-weight:700; }
+  .rc-badge.none { background:var(--fill); color:var(--ink-3); }
   .rc-status { display:inline-flex; align-items:center; gap:5px; height:24px; padding:0 10px; border-radius:999px; background:var(--fill); color:var(--ink-2); font-size:11.5px; font-weight:600; }
   .rc-status svg { width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
   .rc-status.next { background:var(--orange); color:var(--on-accent); }
   .rc-status.idea, .rc-status.reserve { background:transparent; border:1px dashed var(--ink-4); color:var(--ink-3); }
-  .rc-card h2 { font-size:17px; margin-bottom:2px; line-height:1.25; }
-  .rc-sub { font-size:12.5px; color:var(--ink-3); margin-bottom:6px; line-height:1.4; }
-  .rc-sec { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); margin:16px 0 4px; }
-  .rc-file { display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid var(--line); font-size:13.5px; }
-  .rc-sec + .rc-file, .rc-card > .rc-file:first-child { border-top:none; }
-  .rc-file a.btn { text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
-  .rc-file .rc-ico { width:34px; height:34px; border-radius:10px; background:var(--fill); color:var(--ink-2); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .rc-file .rc-ico svg { width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .rc-card h2 { font-size:17px; line-height:1.25; margin:0 0 3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rc-sub { font-size:12.5px; line-height:1.4; color:var(--ink-3); height:35px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .rc-slots { margin-top:auto; border-top:1px solid var(--line); }
+  .rc-slot { display:flex; align-items:center; gap:10px; min-height:54px; padding:8px 18px; border-bottom:1px solid var(--line); font-size:13.5px; list-style:none; cursor:default; }
+  .rc-slots > :last-child, .rc-slots > details:last-child > summary:last-child { border-bottom:none; }
+  .rc-ico { width:32px; height:32px; border-radius:10px; background:var(--fill); color:var(--ink-2); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .rc-ico svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .rc-lab { flex:1; min-width:0; font-weight:600; line-height:1.25; white-space:nowrap; }
+  .rc-lab small { margin-left:6px; font-weight:600; font-size:11.5px; color:var(--ink-3); }
+  .rc-none .rc-lab, .rc-none .rc-ico { opacity:.5; }
+  .rc-note { font-size:12px; color:var(--ink-3); }
+  .rc-btns { display:flex; gap:6px; flex-shrink:0; }
+  .rc-btns .btn { min-width:72px; }
+  .rc-btns a.btn { text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+  .rc-det > summary { cursor:pointer; }
+  .rc-det > summary::-webkit-details-marker { display:none; }
+  .rc-det > summary .rc-chev { width:16px; height:16px; stroke:var(--ink-3); fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; transition:transform .15s; flex-shrink:0; }
+  .rc-det[open] > summary .rc-chev { transform:rotate(180deg); }
+  .rc-files { background:var(--fill); padding:2px 18px; border-bottom:1px solid var(--line); }
+  .rc-file { display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid var(--line); font-size:13px; }
+  .rc-file:first-child { border-top:none; }
   .rc-file .rc-name { flex:1; min-width:0; font-weight:600; line-height:1.3; overflow-wrap:anywhere; }
-  .rc-file .rc-btns { display:flex; gap:6px; flex-shrink:0; }
-  .rc-empty { font-size:12.5px; color:var(--ink-3); padding:6px 0; }
   .rc-filter { margin-bottom:6px; }
+  @media (max-width: 520px) {
+    .rc-grid { grid-template-columns:1fr; }
+    .rc-slot { padding:8px 14px; }
+    .rc-head { padding:14px 14px 10px; }
+    .rc-files { padding:2px 14px; }
+    .rc-btns .btn { min-width:0; padding:0 12px; }
+  }
   @media (max-width: 520px) {
     .rc-grid { grid-template-columns:1fr; }
     .rc-file { flex-wrap:wrap; }
@@ -1621,26 +1647,31 @@ async function renderRecipes() {
   document.querySelectorAll('#rcFilter button').forEach(b => b.classList.toggle('on', b.dataset.f === rcFilter));
   const q = (document.getElementById('rcSearch').value || '').trim().toLowerCase();
   const split = t => { const i = t.indexOf(':'); return i > 0 ? [t.slice(0, i), t.slice(i + 1).trim()] : [t, '']; };
-  const fileRow = f => {
-    const isMd = f.name.endsWith('.md');
-    const view = isMd ? `<button class="btn sm" data-guide="${escapeHtml(f.path)}">Read</button>` : `<a class="btn sm" href="${escapeHtml(f.path)}" target="_blank" rel="noopener">Open</a>`;
-    return `<div class="rc-file"><span class="rc-ico">${isMd ? RC_ICON.md : RC_ICON.pdf}</span><span class="rc-name">${escapeHtml(f.label)}</span><span class="rc-btns">${view}<button class="btn sm" data-save="${escapeHtml(f.path)}">Download</button></span></div>`;
+  const chev = '<svg class="rc-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
+  const btns = f => (f.name.endsWith('.md') ? `<button class="btn sm" data-guide="${escapeHtml(f.path)}">Read</button>` : `<a class="btn sm" href="${escapeHtml(f.path)}" target="_blank" rel="noopener">Open</a>`) + `<button class="btn sm" data-save="${escapeHtml(f.path)}">Download</button>`;
+  const fileName = f => f.label.replace(/^[^:]+:\s*/, '').replace(/^./, c => c.toUpperCase());
+  // one row per kind of file: a single file has its buttons, several files fold into a list, none shows a quiet placeholder
+  const slot = (label, icon, files, none) => {
+    if (!files.length) return `<div class="rc-slot rc-none"><span class="rc-ico">${icon}</span><span class="rc-lab">${label}</span><span class="rc-note">${none}</span></div>`;
+    if (files.length === 1) return `<div class="rc-slot"><span class="rc-ico">${icon}</span><span class="rc-lab">${label}</span><span class="rc-btns">${btns(files[0])}</span></div>`;
+    return `<details class="rc-det"><summary class="rc-slot"><span class="rc-ico">${icon}</span><span class="rc-lab">${label}<small>${files.length}</small></span>${chev}</summary><div class="rc-files">${files.map(f => `<div class="rc-file"><span class="rc-name">${escapeHtml(fileName(f))}</span><span class="rc-btns">${btns(f)}</span></div>`).join('')}</div></details>`;
   };
-  const groups = [['card', 'Recipe card'], ['session', 'Session guide'], ['handout', 'Printable handouts'], ['key', 'Facilitator keys'], ['doc', 'Documents'], ['other', 'Other files']];
+  const ICON_PRINT = '<svg viewBox="0 0 24 24"><path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="8" rx="2"/><path d="M7 14h10v6H7z"/></svg>';
   const recipeCard = r => {
     const [t, sub] = split(r.title);
-    const secs = groups.map(([k, label]) => { const fs = r.files.filter(f => f.kind === k); return fs.length ? `<div class="rc-sec">${label}</div>${fs.map(fileRow).join('')}` : ''; }).join('');
-    const noCard = !r.files.some(f => f.kind === 'card');
     const st = r.status || 'planned';
     const check = st === 'cooked' ? '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' : '';
-    return `<div class="card rc-card"><div class="rc-top">${r.session ? `<span class="rc-badge">Session ${r.session}</span>` : ''}<span class="rc-status ${st}">${check}${RC_STATUS[st] || st}</span></div>
-      <h2>${escapeHtml(t)}</h2><div class="rc-sub">${escapeHtml(sub)}</div>${secs || '<div class="rc-empty">No files yet.</div>'}${noCard && secs ? '<div class="rc-sec">Recipe card</div><div class="rc-empty">Not published yet.</div>' : ''}</div>`;
+    const of = k => r.files.filter(f => f.kind === k);
+    const extras = r.files.filter(f => ['handout', 'key', 'doc', 'other'].includes(f.kind));
+    return `<div class="card rc-card ${st}"><div class="rc-head"><div class="rc-top">${r.session ? `<span class="rc-badge">Session ${r.session}</span>` : '<span class="rc-badge none">No session yet</span>'}<span class="rc-status ${st}">${check}${RC_STATUS[st] || st}</span></div>
+      <h2 title="${escapeHtml(t)}">${escapeHtml(t)}</h2><div class="rc-sub">${escapeHtml(sub)}</div></div>
+      <div class="rc-slots">${slot('Recipe card', RC_ICON.pdf, of('card'), 'Not published yet')}${slot('Session guide', RC_ICON.md, of('session'), 'Not written yet')}${slot('Handouts', ICON_PRINT, extras, 'None')}</div></div>`;
   };
   const visible = lib.recipes.filter(r => (RC_FILTERS[rcFilter] || RC_FILTERS.all)(r) && (!q || r.title.toLowerCase().includes(q) || r.slug.includes(q)));
   const section = (title, list) => list.length ? `<div class="rc-head-sec">${title}<span class="rc-count">${list.length}</span></div><div class="rc-grid">${list.map(recipeCard).join('')}</div>` : '';
   const cooked = visible.filter(r => r.status === 'cooked'), coming = visible.filter(r => r.status === 'next' || r.status === 'planned' || !r.status), ideas = visible.filter(r => r.status === 'idea' || r.status === 'reserve');
   const sessions = rcFilter === 'all' ? lib.sessions.filter(s => !q || s.label.toLowerCase().includes(q)) : [];
-  body.innerHTML = (sessions.length ? `<div class="rc-head-sec">General sessions</div><div class="rc-grid"><div class="card rc-card">${sessions.map(fileRow).join('')}</div></div>` : '') +
+  body.innerHTML = sessions.map(x => `<div class="card rc-general"><span class="rc-ico">${RC_ICON.md}</span><div class="rc-gt">${escapeHtml(x.label)}<div class="rc-gs">General session</div></div><span class="rc-btns">${btns(x)}</span></div>`).join('') +
     section('Coming up', coming) + section('Cooked in the workshops', cooked) + section('Not cooked yet', ideas) +
     (visible.length || sessions.length ? '' : '<div class="card"><div class="empty-state"><strong>No recipes found</strong>Try another search or filter.</div></div>');
   body.querySelectorAll('[data-guide]').forEach(b => b.addEventListener('click', () => openGuide(b.dataset.guide)));
