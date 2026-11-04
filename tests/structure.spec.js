@@ -75,3 +75,32 @@ test('sidebar: collapses to icons and remembers it, and finds a player by name',
   await expect(page.locator('#view-player')).toBeVisible();
   await expect(page.locator('#sideSearch')).toHaveValue('');
 });
+
+test('account row in the sidebar opens a menu: email, backup status, Settings, backup and Sign out', async ({ page }) => {
+  await openApp(page, data());
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const menu = page.locator('#userMenu');
+  await expect(menu).toBeHidden();
+  await page.click('#userBtn');
+  await expect(menu).toBeVisible();
+  await expect(page.locator('#umEmail')).toHaveText('test@example.com');
+  await expect(page.locator('#umBackup')).toContainText('No backup from this device yet');
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  await page.click('#userBtn');
+  await page.click('.um-item[data-um="settings"]');
+  await expect(page.locator('#view-settings')).toBeVisible();
+  await expect(menu).toBeHidden();
+  await page.click('#userBtn');
+  await page.click('body', { position: { x: 600, y: 300 } });
+  await expect(menu).toBeHidden();
+  // the backup item runs the same export as Settings, and the status then says today
+  await page.click('#userBtn');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('.um-item[data-um="backup"]')]);
+  expect(dl.suggestedFilename()).toMatch(/^futedu-backup-.*\.json$/);
+  await page.click('#userBtn');
+  await expect(page.locator('#umBackup')).toContainText('Last backup: today');
+  // sign out
+  await page.click('#logoutBtn');
+  await expect(page.locator('#app')).toBeHidden();
+});
