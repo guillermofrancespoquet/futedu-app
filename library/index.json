@@ -224,6 +224,13 @@
           "path": "library/recipes/dips/futedu-dips-card-guacamole.pdf"
         },
         {
+          "name": "futedu-dips-card-vegan-sobrasada.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card: vegan sobrasada",
+          "path": "library/recipes/dips/futedu-dips-card-vegan-sobrasada.pdf"
+        },
+        {
           "name": "futedu-dips-card-white-bean.pdf",
           "kind": "card",
           "kindLabel": "Recipe card",
@@ -243,6 +250,21 @@
           "kindLabel": "Printable handout",
           "label": "Judge card",
           "path": "library/recipes/dips/futedu-dips-judge-card.pdf"
+        }
+      ]
+    },
+    {
+      "slug": "egg-white-protein-bread",
+      "title": "Egg white protein bread",
+      "session": null,
+      "status": "idea",
+      "files": [
+        {
+          "name": "futedu-egg-white-protein-bread.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card",
+          "path": "library/recipes/egg-white-protein-bread/futedu-egg-white-protein-bread.pdf"
         }
       ]
     },
