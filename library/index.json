@@ -124,6 +124,151 @@
       ]
     },
     {
+      "slug": "chia-pudding",
+      "title": "Chia Pudding: Tomorrow's Breakfast, Made Today (3 flavours)",
+      "session": 5,
+      "status": "next",
+      "files": [
+        {
+          "name": "futedu-chia-pudding.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card",
+          "path": "library/recipes/chia-pudding/futedu-chia-pudding.pdf"
+        },
+        {
+          "name": "futedu-chia-pudding-workshop-session.md",
+          "kind": "session",
+          "kindLabel": "Session guide",
+          "label": "Session guide",
+          "path": "library/recipes/chia-pudding/futedu-chia-pudding-workshop-session.md"
+        },
+        {
+          "name": "futedu-chia-pudding-breakfast-match.pdf",
+          "kind": "handout",
+          "kindLabel": "Printable handout",
+          "label": "Breakfast match",
+          "path": "library/recipes/chia-pudding/futedu-chia-pudding-breakfast-match.pdf"
+        }
+      ]
+    },
+    {
+      "slug": "rice-cake-bar",
+      "title": "Rice Cake Bar: Six Breakfasts and Snacks, One Base",
+      "session": 6,
+      "status": "planned",
+      "files": [
+        {
+          "name": "futedu-rice-cake-bar.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card",
+          "path": "library/recipes/rice-cake-bar/futedu-rice-cake-bar.pdf"
+        },
+        {
+          "name": "futedu-rice-cake-bar-workshop-session.md",
+          "kind": "session",
+          "kindLabel": "Session guide",
+          "label": "Session guide",
+          "path": "library/recipes/rice-cake-bar/futedu-rice-cake-bar-workshop-session.md"
+        },
+        {
+          "name": "futedu-rice-cake-bar-topping-menu.pdf",
+          "kind": "handout",
+          "kindLabel": "Printable handout",
+          "label": "Topping menu",
+          "path": "library/recipes/rice-cake-bar/futedu-rice-cake-bar-topping-menu.pdf"
+        }
+      ]
+    },
+    {
+      "slug": "frozen-yogurt-bark",
+      "title": "Frozen Yogurt Bark: A Snack Ready for Tomorrow",
+      "session": 7,
+      "status": "planned",
+      "files": [
+        {
+          "name": "futedu-frozen-yogurt-bark.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card",
+          "path": "library/recipes/frozen-yogurt-bark/futedu-frozen-yogurt-bark.pdf"
+        },
+        {
+          "name": "futedu-frozen-yogurt-bark-workshop-session.md",
+          "kind": "session",
+          "kindLabel": "Session guide",
+          "label": "Session guide",
+          "path": "library/recipes/frozen-yogurt-bark/futedu-frozen-yogurt-bark-workshop-session.md"
+        },
+        {
+          "name": "futedu-frozen-yogurt-bark-yogurt-lineup.pdf",
+          "kind": "handout",
+          "kindLabel": "Printable handout",
+          "label": "Yogurt lineup",
+          "path": "library/recipes/frozen-yogurt-bark/futedu-frozen-yogurt-bark-yogurt-lineup.pdf"
+        }
+      ]
+    },
+    {
+      "slug": "dips",
+      "title": "Dips: One Starter, Three Ways (no blender)",
+      "session": 8,
+      "status": "planned",
+      "files": [
+        {
+          "name": "futedu-dips-card-guacamole.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card: guacamole",
+          "path": "library/recipes/dips/futedu-dips-card-guacamole.pdf"
+        },
+        {
+          "name": "futedu-dips-card-vegan-sobrasada.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card: vegan sobrasada",
+          "path": "library/recipes/dips/futedu-dips-card-vegan-sobrasada.pdf"
+        },
+        {
+          "name": "futedu-dips-card-white-bean.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card: white bean",
+          "path": "library/recipes/dips/futedu-dips-card-white-bean.pdf"
+        },
+        {
+          "name": "futedu-dips-workshop-session.md",
+          "kind": "session",
+          "kindLabel": "Session guide",
+          "label": "Session guide",
+          "path": "library/recipes/dips/futedu-dips-workshop-session.md"
+        },
+        {
+          "name": "futedu-dips-judge-card.pdf",
+          "kind": "handout",
+          "kindLabel": "Printable handout",
+          "label": "Judge card",
+          "path": "library/recipes/dips/futedu-dips-judge-card.pdf"
+        }
+      ]
+    },
+    {
+      "slug": "egg-white-protein-bread",
+      "title": "Egg white protein bread",
+      "session": null,
+      "status": "idea",
+      "files": [
+        {
+          "name": "futedu-egg-white-protein-bread.pdf",
+          "kind": "card",
+          "kindLabel": "Recipe card",
+          "label": "Recipe card",
+          "path": "library/recipes/egg-white-protein-bread/futedu-egg-white-protein-bread.pdf"
+        }
+      ]
+    },
+    {
       "slug": "smoky-chickpea-sweet-potato-bowl",
       "title": "Smoky chickpea sweet potato bowl",
       "session": null,
