@@ -104,3 +104,11 @@ test('account row in the sidebar opens a menu: email, backup status, Settings, b
   await page.click('#logoutBtn');
   await expect(page.locator('#app')).toBeHidden();
 });
+
+test('the browser tab and the installed app are called FUTEDU Nutrition', async ({ page }) => {
+  await openApp(page, data());
+  await expect(page).toHaveTitle('FUTEDU — Nutrition');
+  const m = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', 'manifest.webmanifest'), 'utf8'));
+  expect(m.name).toBe('FUTEDU Nutrition');
+  expect(m.short_name).toBe('FUTEDU');
+});

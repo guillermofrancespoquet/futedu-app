@@ -1,7 +1,7 @@
 {
-  "name": "FUTEDU Bioimpedance",
+  "name": "FUTEDU Nutrition",
   "short_name": "FUTEDU",
-  "description": "FUTEDU Academy bioimpedance tracker",
+  "description": "FUTEDU Academy nutrition tracker: bioimpedance, anthropometry and recipes",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",

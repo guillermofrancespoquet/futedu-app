@@ -1,4 +1,4 @@
-# FUTEDU Bioimpedance Tracker
+# FUTEDU Nutrition Tracker
 
 Single-file web app (`index.html`) backed by Supabase. **No player data lives in this folder**: the app only holds the (public by design) Supabase URL and anon key. Access is controlled by login + Row Level Security, so without signing in the database returns nothing.
 
