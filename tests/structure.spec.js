@@ -105,10 +105,11 @@ test('account row in the sidebar opens a menu: email, backup status, Settings, b
   await expect(page.locator('#app')).toBeHidden();
 });
 
-test('the browser tab and the installed app are called FUTEDU Nutrition', async ({ page }) => {
+test('the browser tab, the installed app and the home-screen name are all FUTEDU Nutrition', async ({ page }) => {
   await openApp(page, data());
-  await expect(page).toHaveTitle('FUTEDU — Nutrition');
+  await expect(page).toHaveTitle('FUTEDU Nutrition');
+  expect(await page.locator('meta[name="apple-mobile-web-app-title"]').getAttribute('content')).toBe('FUTEDU Nutrition');
   const m = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', 'manifest.webmanifest'), 'utf8'));
   expect(m.name).toBe('FUTEDU Nutrition');
-  expect(m.short_name).toBe('FUTEDU');
+  expect(m.short_name).toBe('FUTEDU Nutrition');
 });

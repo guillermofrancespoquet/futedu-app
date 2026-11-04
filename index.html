@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>FUTEDU — Nutrition</title>
+<title>FUTEDU Nutrition</title>
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -23,7 +23,7 @@
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="FUTEDU">
+<meta name="apple-mobile-web-app-title" content="FUTEDU Nutrition">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
   :root {
@@ -767,7 +767,7 @@
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <img class="logo-img" alt="FUTEDU Team">
-      <img class="brand-mark" src="icons/icon-96.png" alt="FUTEDU">
+      <img class="brand-mark" src="icons/icon-96.png" alt="FUTEDU Nutrition">
       <div class="brand-sub">Nutrition</div>
       <button class="collapse-btn" id="collapseBtn" aria-label="Collapse the menu" title="Collapse the menu"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
     </div>
@@ -1011,7 +1011,7 @@
         <h3 class="section-label">This device</h3>
         <div class="card install-card">
           <h2>Install the app</h2>
-          <div class="row"><span class="save-note" id="installStatus"></span><button class="btn primary hidden" id="installBtn2">Install FUTEDU</button></div>
+          <div class="row"><span class="save-note" id="installStatus"></span><button class="btn primary hidden" id="installBtn2">Install FUTEDU Nutrition</button></div>
           <div class="note" id="installHelp"></div>
         </div>
       </section>
@@ -4402,13 +4402,13 @@ function renderInstall() {
   document.getElementById('installBtn2').classList.toggle('hidden', standalone || !ev);
   const ua = navigator.userAgent || '';
   const status = document.getElementById('installStatus'), help = document.getElementById('installHelp');
-  if (standalone) { status.textContent = 'FUTEDU is installed on this device and you are using the app.'; help.textContent = ''; return; }
-  if (ev) { status.textContent = 'Install FUTEDU as an app: its own window, a desktop or home-screen icon and a faster start.'; help.textContent = ''; return; }
+  if (standalone) { status.textContent = 'FUTEDU Nutrition is installed on this device and you are using the app.'; help.textContent = ''; return; }
+  if (ev) { status.textContent = 'Install FUTEDU Nutrition as an app: its own window, a desktop or home-screen icon and a faster start.'; help.textContent = ''; return; }
   status.textContent = 'Not installed on this device.';
   help.textContent = /Windows/.test(ua) ? 'On Windows use Edge or Chrome: click the install icon at the right end of the address bar, or open the menu (…) > Apps > Install FUTEDU. If you already installed it, open it from the Start menu.'
     : /iPhone|iPad|iPod/.test(ua) ? 'On iPhone or iPad open this page in Safari, tap Share and choose Add to Home Screen.'
     : /Android/.test(ua) ? 'In Chrome open the menu (⋮) and choose Install app or Add to Home screen.'
-    : 'In Chrome or Edge, look for the install icon in the address bar or choose Install FUTEDU from the browser menu.';
+    : 'In Chrome or Edge, look for the install icon in the address bar or choose Install FUTEDU Nutrition from the browser menu.';
 }
 async function doInstall() {
   const ev = window.__installEvt;
@@ -4421,7 +4421,7 @@ async function doInstall() {
 document.getElementById('installBtn').addEventListener('click', doInstall);
 document.getElementById('installBtn2').addEventListener('click', doInstall);
 window.addEventListener('futedu-installable', renderInstall);
-window.addEventListener('appinstalled', () => { window.__installEvt = null; toast('FUTEDU installed'); renderInstall(); });
+window.addEventListener('appinstalled', () => { window.__installEvt = null; toast('FUTEDU Nutrition installed'); renderInstall(); });
 renderInstall();
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
 
