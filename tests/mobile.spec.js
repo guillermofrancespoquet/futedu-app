@@ -42,3 +42,32 @@ test('Compare rounds stays inside the screen and its card on a narrow phone, eve
   expect(r.page).toBeLessThanOrEqual(0);
   expect(r.table).toBeLessThanOrEqual(r.card);
 });
+
+// a real touch swipe through the browser's input pipeline
+async function swipe(page, x0, x1, y = 400, y1 = y) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y }] });
+  for (let i = 1; i <= 8; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + (x1 - x0) * i / 8, y: y + (y1 - y) * i / 8 }] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await page.waitForTimeout(350);
+}
+
+test('swipe right from the left edge opens the menu, swipe left closes it; other gestures do nothing', async ({ page }) => {
+  await openApp(page, data());
+  const open = () => page.evaluate(() => document.getElementById('sidebar').classList.contains('open'));
+  await swipe(page, 4, 40);              // too short
+  expect(await open()).toBe(false);
+  await swipe(page, 150, 330);           // does not start at the edge
+  expect(await open()).toBe(false);
+  await swipe(page, 4, 40, 300, 560);    // mostly vertical: it is a scroll
+  expect(await open()).toBe(false);
+  await swipe(page, 4, 230);             // the real one
+  expect(await open()).toBe(true);
+  await expect(page.locator('#scrim')).toHaveClass(/open/);
+  await swipe(page, 240, 205);           // short drag left: stays open
+  expect(await open()).toBe(true);
+  await swipe(page, 250, 20);            // swipe left closes
+  expect(await open()).toBe(false);
+  await expect(page.locator('#scrim')).not.toHaveClass(/open/);
+  expect(await page.evaluate(() => document.getElementById('sidebar').style.transform)).toBe('');   // no leftover inline position
+});
