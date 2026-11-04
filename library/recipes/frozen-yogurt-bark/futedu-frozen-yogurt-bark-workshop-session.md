@@ -39,7 +39,7 @@ A frozen yogurt bark is a **snack that fits the recovery window**: yogurt brings
 
 **Framing for the group:** a **snack made today and eaten tomorrow**, ideal after training. Compare it with the energy balls (Session 3, before training: quick carbs) and the brownie (Session 4, a treat): this one is about **protein plus carbs, after**. It is a light snack, not a meal: two pieces are about 150 kcal.
 
-**Talking point:** what is a "plant-based yogurt"? It leads straight into the activity: **not all plant-based yogurts have the same protein**. Soy yogurt is usually the highest of the plant options; coconut or oat yogurts are often much lower.
+**Talking point:** plant-based is usually a good starting point, so the question is *which* plant-based yogurt. It leads straight into the activity: the tubs differ in **protein, in sugar and in saturated fat**. Soy yogurt is usually the highest in protein of the plant options and low in saturated fat; coconut-based ones are often lower in protein and higher in saturated fat (coconut fat); check the real labels.
 
 **Honest notes:** the nutrition depends heavily on the yogurt chosen, so always check the label. Bark is a snack, not a protein source on its own.
 
@@ -77,30 +77,30 @@ Choose them in the shop by reading the labels: the point is that they differ.
 ## 4. Activity — Yogurt Lineup (about 10 min + share-back)
 
 ### The context: why this activity
-Players hear "plant-based" and assume "healthy" or "high in protein". It is not necessarily true: some plant yogurts (soy) have protein close to dairy, others (coconut, oat) have very little, and flavoured ones can carry as much sugar as a dessert. The skill we want them to leave with is simple: **read the nutrition table (per 100 g) and the first three ingredients before choosing**, and do one small calculation with it.
+Players usually think "plant-based" means healthier, and as a rule it is a good start. The point of the activity is the next step: **among plant-based yogurts there are real differences**. Some (soy) have protein close to dairy, others (coconut, oat) have very little; flavoured ones can carry as much sugar as a dessert; and the **type of fat** changes too: soy yogurts have little saturated fat, while coconut-based ones can have a lot because coconut fat is high in saturated fat (and dairy yogurts have saturated fat as well). The skill we want them to leave with is simple: **read the nutrition table (per 100 g) and the first three ingredients before choosing**, and do one small calculation with it.
 
 ### What the players actually do
 1. They get four real tubs (A–D) and one sheet per table.
-2. For each tub they copy **four things** from the label into the table: the type of yogurt, **protein per 100 g**, **sugars per 100 g**, and the **first three ingredients**.
-3. They answer four questions: which has the most and the least protein; which has the most sugar and whether any is added (is there sugar or syrup in the ingredients?); which tub they would put on the bark and why; and how many grams of their tub give 10 g of protein (a division).
+2. For each tub they copy **five things** from the label into the table: the type of yogurt, **protein per 100 g**, **sugars per 100 g**, **saturated fat per 100 g** (the line under "fat") and the **first three ingredients**.
+3. They answer four questions: which has the most and the least protein; which has the most sugar and whether any is added (is there sugar or syrup in the ingredients?); which has the most **saturated fat** and where it comes from; which tub they would put on the bark and why; and how many grams of their tub give 10 g of protein (a division).
 4. At the end they hear the answer to the guess from the start of the session.
 
 ### Step by step
 | Min | What you do |
 |---|---|
-| 0–4 | Take tub A and show on it: (1) the **nutrition table**, always read the column "per 100 g"; (2) the **ingredients list**, the first ones weigh the most; (3) the difference between "sugars" and **added sugar** (look for sugar, syrup, fruit puree). Do the sum once on the board with the worked example on the sheet. |
+| 0–4 | Take tub A and show on it: (1) the **nutrition table**, always read the column "per 100 g"; (2) the **ingredients list**, the first ones weigh the most; (3) the difference between "sugars" and **added sugar** (look for sugar, syrup, fruit puree). Show the line **"of which saturates"** under the fat. Do the sum once on the board with the worked example on the sheet. |
 | 4–14 | Tables fill in the table (the four tubs travel from table to table) and answer the questions. Circulate: help with reading, not with the answers. |
 | 14–22 | **Share-back:** one table per question. Ask "who disagrees?" and check against your own notes of the labels. Reveal the guess from minute 0. |
 
 ### Example of a filled sheet (invented numbers, only to show what it can look like)
-| Tub | Type | Protein per 100 g | Sugars per 100 g | First 3 ingredients |
-|---|---|---|---|---|
-| A | Soy, plain | 4.5 g | 0.5 g | soy base, ferments, calcium |
-| B | Soy, flavoured | 3.5 g | 11 g | soy base, **sugar**, fruit puree |
-| C | Coconut | 1.0 g | 4 g | coconut base, starch, ferments |
-| D | Dairy, plain | 4.5 g | 4 g | milk, ferments |
+| Tub | Type | Protein per 100 g | Sugars per 100 g | Saturated fat per 100 g | First 3 ingredients |
+|---|---|---|---|---|---|
+| A | Soy, plain | 4.5 g | 0.5 g | 0.4 g | soy base, ferments, calcium |
+| B | Soy, flavoured | 3.5 g | 11 g | 0.4 g | soy base, **sugar**, fruit puree |
+| C | Coconut | 1.0 g | 4 g | 4.5 g | coconut base, starch, ferments |
+| D | Dairy, plain | 4.5 g | 4 g | 2.5 g | milk, ferments |
 
-Questions: most protein = A (and D); least = C. Most sugar = B, and the sugar is added (it is listed second). On the bark = A. 10 g of protein from A = 10 ÷ 4.5 × 100 ≈ 220 g. **Use the real numbers from your own four tubs, not these.**
+Questions: most protein = A (and D); least = C. Most sugar = B, and the sugar is added (it is listed second). Most saturated fat = C (coconut fat), then D. On the bark = A. 10 g of protein from A = 10 ÷ 4.5 × 100 ≈ 220 g. **Use the real numbers from your own four tubs, not these.**
 
 **Facilitator key:**
 
@@ -108,10 +108,11 @@ Questions: most protein = A (and D); least = C. Most sugar = B, and the sugar is
 |---|---|
 | Most and least protein | Soy is usually the highest of the plant options; coconut or oat the lowest. The numbers vary by brand: check yours. |
 | Most sugar, and added? | Flavoured or sweetened tubs have far more sugar. If sugar, syrup or fruit puree is listed near the top, part of it is added. |
-| Which on the bark | A high-protein, low-sugar tub; the sweetness comes from the banana and the berries. |
+| Most saturated fat | Compare the "of which saturates" line. Coconut-based yogurts are often the highest (coconut fat is mostly saturated); dairy has saturated fat too; soy is usually low. Use the real numbers. |
+| Which on the bark | A high-protein, low-sugar, low-saturated-fat tub; the sweetness comes from the banana and the berries. |
 | 10 g of protein | Grams = 10 ÷ (protein per 100 g) × 100. A tub with 4 g per 100 g needs 250 g. It shows why a bark piece is a snack, not a protein hit. |
 
-**Wrap-up line:** *"'Plant-based' does not tell you the protein or the sugar. The label does: compare per 100 g and read the first three ingredients."*
+**Wrap-up line:** *"Plant-based is a good start, but the tubs are not all the same. The label tells you the protein, the sugar and the saturated fat: compare per 100 g and read the first three ingredients."*
 
 ---
 

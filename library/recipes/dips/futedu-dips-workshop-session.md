@@ -11,8 +11,8 @@
 ## 1. Session Dynamic
 
 - Each table makes **one dip**. At the end every dip goes on a **shared plate** in the middle of the tables and everyone tastes all three with vegetable sticks and pita, like a starter. The quantities are for sharing (about a tablespoon of each dip per person), not for a full portion.
-- **No blender.** The guacamole and the white bean dip are made with a **fork or potato masher** in a bowl. The **vegan sobrasada** is the rustic, no-blender version: the sweet potato is cooked in the **microwave** and mashed with a fork; the **garlic and the sun-dried tomatoes are chopped very finely** and mixed in with the paprika, the oregano, the salt and the **extra virgin olive oil**; the mushrooms are sautéed by the facilitator (with the table helping a little).
-- The sweet potato and the mushrooms are the only things that need heat, so the facilitator **starts the sobrasada table first**: sweet potato into the microwave and mushrooms into the pan right after the demo, while the other tables begin.
+- **No blender.** The guacamole and the white bean dip are made with a **fork or potato masher** in a bowl. The **vegan sobrasada** is the rustic, no-blender version: the sweet potato is cooked whole in the **microwave**, **peeled** once it has cooled a little and mashed with a fork; the **sun-dried tomatoes are chopped very finely** and mixed in with the **sweet paprika, garlic powder, oregano, salt** and the **extra virgin olive oil**; the mushrooms are sautéed by the facilitator (with the table helping a little).
+- The sweet potato and the mushrooms are the only things that need heat, so the facilitator **starts the sobrasada table first**: the whole pricked sweet potato into the microwave (6–8 min) and the mushrooms into the pan right after the demo, while the other tables begin.
 - Players tasted dips last year (yogurt sauce, hummus and vegan sobrasada): ask what they remember, then explain that today's three are different dips, except the sobrasada.
 - The activity (**Dip Judge**) happens at the tasting.
 
@@ -21,7 +21,7 @@
 | Min | What happens | Who |
 |---|---|---|
 | 0–5 | **Hook:** "If you only had crisps, or a dip with vegetables, which keeps you full until dinner, and why?" Mention last year's dips. | Facilitator |
-| 5–10 | **Assign dips and demo.** One minute on each dip: what goes in and the one rule ("mash with the fork, don't chase a smooth texture"). Start the sobrasada table first: sweet potato diced into the microwave (6–8 min), mushrooms into the pan (5–7 min). | Facilitator |
+| 5–10 | **Assign dips and demo.** One minute on each dip: what goes in and the one rule ("mash with the fork, don't chase a smooth texture"). Start the sobrasada table first: pricked sweet potato into the microwave (6–8 min), mushrooms into the pan (5–7 min). | Facilitator |
 | 10–25 | **Make the dips (15 min).** Two players per table also cut the dippers (carrots, cucumber, pepper, pita triangles). | Tables |
 | 25–30 | **Shared plates:** each table puts its dip on a plate in the centre with a spoon; dippers on the side. | Tables |
 | 30–42 | **Tasting and Dip Judge** (12 min): each table scores the three dips and builds its snack plate. | Tables |
@@ -29,7 +29,7 @@
 | 50–55 | Clean-up. | Everyone |
 | 55–60 | **Wrap-up line.** | Facilitator |
 
-**Before the players arrive (~25 min):** wash and prepare the vegetables whole (the players cut them); dice the sweet potato and put it in a microwave-safe dish with a lid and a splash of water; chop the mushrooms; set the pan on the stove; set out for each table the bowl or container, a fork or masher, a chopping board and knife, and the ingredients for its dip; print three Dip Judge scorecards.
+**Before the players arrive (~25 min):** wash and prepare the vegetables whole (the players cut them); prick the sweet potato with a fork and have it ready for the microwave (on a microwave-safe plate); chop the mushrooms; set the pan on the stove; set out for each table the bowl or container, a fork or masher, a chopping board and knife, and the ingredients for its dip; print three Dip Judge scorecards.
 
 ---
 
@@ -56,23 +56,23 @@ Dips are a simple way to turn **vegetables and wholemeal bread** into something 
 | Fresh coriander or parsley | 1 handful | 1 bunch (shared with the white bean dip) |
 | **White bean & lemon dip:** cooked white beans, drained | ~480 g | 2 jars |
 | Lemon, zest and juice | 1 | 2 |
-| Garlic | 1 clove | (1 head for all the dips) |
+| Garlic | 1 clove | 1 head (only this dip uses fresh garlic) |
 | Extra virgin olive oil | 3 tbsp | pantry |
 | **Vegan sobrasada:** sweet potato | 300 g | 1 large |
 | Mushrooms | 150 g | 1 tray (~250 g) |
 | Sun-dried tomatoes, drained | 40 g | 1 small jar or bag |
-| Garlic | 2 cloves | (same head) |
+| Garlic powder | ½ tsp | pantry |
 | Extra virgin olive oil | 3 tbsp | pantry |
-| Paprika (smoked or sweet), dried oregano, salt | 2 tsp, 1 tsp, a pinch | pantry |
+| Sweet paprika, dried oregano, salt | 2 tsp, 1 tsp, a pinch | pantry |
 | **Dippers (for all):** carrots | ~500 g | 500 g |
 | Cucumbers | 2 | 2 |
 | Red or yellow peppers | 2 | 2 |
 | Wholemeal pita bread (cut into triangles) | ~18 | 3 packs of 6 |
 | Salt and pepper | | pantry |
 
-**Combined totals to buy:** 4 avocados · 2 limes · 2 lemons · 2 tomatoes · 1 small red onion · 2 jars white beans · 1 head garlic · 1 bunch coriander or parsley · 1 large sweet potato · 1 tray mushrooms · 1 small jar sun-dried tomatoes · 500 g carrots · 2 cucumbers · 2 peppers · 3 packs wholemeal pita · olive oil, salt, pepper, paprika and oregano (pantry).
+**Combined totals to buy:** 4 avocados · 2 limes · 2 lemons · 2 tomatoes · 1 small red onion · 2 jars white beans · 1 head garlic (for the white bean dip) · 1 bunch coriander or parsley · 1 large sweet potato · 1 tray mushrooms · 1 small jar sun-dried tomatoes · 500 g carrots · 2 cucumbers · 2 peppers · 3 packs wholemeal pita · olive oil, salt, pepper, sweet paprika, garlic powder and oregano (pantry).
 
-**Supplies:** 3 bowls or disposable containers for making the dips · 3 shared plates or platters with serving spoons · 3 potato mashers or forks · 3 chopping boards and knives · a microwave-safe dish with a lid · a frying pan for the mushrooms · paper plates (30) · napkins · 3 printed **Dip Judge** scorecards · pens.
+**Supplies:** 3 bowls or disposable containers for making the dips · 3 shared plates or platters with serving spoons · 3 potato mashers or forks · 3 chopping boards and knives · a microwave-safe plate · a frying pan for the mushrooms · paper plates (30) · napkins · 3 printed **Dip Judge** scorecards · pens.
 
 **Allergy note:** avocado and legumes can be allergens; ask the group. Wholemeal pita contains **gluten**: offer rice cakes or extra vegetables as an alternative. The vegan sobrasada has no common allergens in this recipe (check the label of the sun-dried tomatoes, which can contain sulphites).
 
