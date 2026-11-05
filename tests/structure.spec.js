@@ -6,7 +6,7 @@ const data = () => ({ settings: { anthro_profiles: { [alex]: profile('2010-03-01
 test('the sidebar is grouped and Compare comes after Anthropometry', async ({ page }) => {
   await openApp(page, data());
   expect(await page.locator('.sidebar .nav > *').allTextContents().then(a => a.map(t => t.replace(/\s+/g, ' ').trim()).filter(Boolean)))
-    .toEqual(['Overview', 'Dashboard', 'Measurements', 'Bioimpedance 4', 'Anthropometry', 'Compare', 'Library', 'Recipes', 'Admin', 'Players', 'Settings']);
+    .toEqual(['Overview', 'Dashboard', 'Measurements', 'Bioimpedance 4', 'Anthropometry', 'Compare', 'Library', 'Recipes', 'Admin', 'Players', 'Contract', 'Settings']);
   await expect(page.locator('.brand-sub')).toHaveText('Nutrition');
   await page.click('.nav-item[data-view="players"]');
   await expect(page.locator('#view-players')).toBeVisible();
