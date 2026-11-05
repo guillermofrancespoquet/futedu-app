@@ -62,3 +62,13 @@ test('slots and documents can be added and removed', async ({ page }) => {
   await page.click('[data-ct-del="schedule"] >> nth=0');
   expect((await stored(page, 'contract')).schedule).toHaveLength(11);
 });
+
+test('payments received are logged and totalled', async ({ page }) => {
+  await openApp(page, data());
+  await go(page, 'contract');
+  await page.click('#ctAddPay');
+  await page.fill('[data-ct-f="payments"][data-f="net"]', '76.17');
+  await page.dispatchEvent('[data-ct-f="payments"][data-f="net"]', 'change');
+  await expect(page.locator('#contractRoot')).toContainText('Total received: 76.17 € net');
+  expect((await stored(page, 'contract')).payments[0].net).toBe('76.17');
+});

@@ -3217,7 +3217,7 @@ function ctMonthHours(ym, type) {
 }
 function ctDrivingFor(ym) { const mo = (contractData.months || {})[ym] || {}; return mo.drivingH != null ? mo.drivingH : ctMonthHours(ym, 'driving'); }
 function ctSet(mutate) {
-  return mutateSetting('contract', v => { ['schedule', 'agreed', 'keyDates', 'docs'].forEach(k => { if (!Array.isArray(v[k])) v[k] = []; }); ['summary', 'checklist', 'months'].forEach(k => { if (!v[k] || typeof v[k] !== 'object') v[k] = {}; }); mutate(v); })
+  return mutateSetting('contract', v => { ['schedule', 'agreed', 'keyDates', 'docs', 'payments'].forEach(k => { if (!Array.isArray(v[k])) v[k] = []; }); ['summary', 'checklist', 'months'].forEach(k => { if (!v[k] || typeof v[k] !== 'object') v[k] = {}; }); mutate(v); })
     .then(next => { if (next) { contractData = next; renderContract(); renderContractBanners(); } return next; });
 }
 function ctKeyDates() { return (contractData.keyDates || []).filter(k => k.date).slice().sort((a, b) => a.date.localeCompare(b.date)); }
@@ -3293,6 +3293,11 @@ function renderContract() {
       ${months.map(ym => { const m = c.months[ym], h = ctDrivingFor(ym); return `<tr><td><a href="#contract" data-ct-pick="${ym}">${ym}</a></td><td>${ctHours(h)}</td><td>${rate != null ? ctEur(h * rate) : '—'}</td><td>${ctEur(fixed)}</td><td>${m.fixedPaid ? 'Fixed paid' : 'Fixed pending'} · ${m.drivingPaid ? 'driving paid' : 'driving pending'}</td></tr>`; }).join('') || '<tr><td colspan="5" class="note">Saved months appear here.</td></tr>'}
     </tbody></table></div>
 
+    <h3 class="section-label">Payments received</h3>
+    <div class="card hist-full"><table style="min-width:0"><thead><tr><th>Date</th><th>Concept</th><th>Gross (€)</th><th>Net (€)</th><th>Note</th><th></th></tr></thead><tbody>
+      ${(c.payments || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(p => `<tr data-ct-row="${p.id}"><td><input type="date" data-ct-f="payments" data-f="date" value="${escapeHtml(p.date || '')}" aria-label="Date"></td><td><input type="text" data-ct-f="payments" data-f="concept" value="${escapeHtml(p.concept || '')}" placeholder="e.g. Payslip October" aria-label="Concept"></td><td><input type="number" step="any" inputmode="decimal" data-ct-f="payments" data-f="gross" value="${escapeHtml(p.gross == null ? '' : String(p.gross))}" aria-label="Gross"></td><td><input type="number" step="any" inputmode="decimal" data-ct-f="payments" data-f="net" value="${escapeHtml(p.net == null ? '' : String(p.net))}" aria-label="Net"></td><td><input type="text" data-ct-f="payments" data-f="note" value="${escapeHtml(p.note || '')}" aria-label="Note"></td><td><button class="btn sm" data-ct-del="payments" data-id="${p.id}" aria-label="Remove">Remove</button></td></tr>`).join('') || '<tr><td colspan="6" class="note">Nothing yet. Add each payment when it arrives.</td></tr>'}
+    </tbody></table><div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><button class="btn sm" id="ctAddPay">Add payment</button><span class="save-note">Total received: <b>${ctEur((c.payments || []).reduce((t, p) => t + (ctNum(p.net) || 0), 0))}</b> net · ${ctEur((c.payments || []).reduce((t, p) => t + (ctNum(p.gross) || 0), 0))} gross</span></div></div>
+
     <h3 class="section-label">Key dates</h3>
     <div class="card hist-full"><table style="min-width:0"><thead><tr><th>What</th><th>Date</th><th>Left</th><th>Note</th><th></th></tr></thead><tbody>
       ${(c.keyDates || []).map(k => { const left = k.date ? -daysSince(k.date) : null; return `<tr data-ct-row="${k.id}"><td><input type="text" data-ct-f="keyDates" data-f="label" value="${escapeHtml(k.label || '')}" aria-label="What"></td><td><input type="date" data-ct-f="keyDates" data-f="date" value="${escapeHtml(k.date || '')}" aria-label="Date"></td><td>${left == null ? '—' : left < 0 ? 'passed' : left + ' d'}</td><td><input type="text" data-ct-f="keyDates" data-f="note" value="${escapeHtml(k.note || '')}" aria-label="Note"></td><td><button class="btn sm" data-ct-del="keyDates" data-id="${k.id}" aria-label="Remove">Remove</button></td></tr>`; }).join('') || '<tr><td colspan="5" class="note">Nothing yet. Start date, end of trial, renewal, notice deadlines, holidays to request…</td></tr>'}
@@ -3316,6 +3321,7 @@ function renderContract() {
     if (t.dataset.ctDel) { ctSet(v => { v[t.dataset.ctDel] = v[t.dataset.ctDel].filter(x => x.id !== t.dataset.id); }); return; }
     if (t.id === 'ctAddAgreed') add('agreed', { item: '', agreed: '', contract: '', status: 'pending' });
     else if (t.id === 'ctAddSlot') add('schedule', { day: 'Monday', start: '09:30', end: '10:30', type: 'driving' });
+    else if (t.id === 'ctAddPay') add('payments', { date: todayStr(), concept: '', gross: '', net: '', note: '' });
     else if (t.id === 'ctAddDate') add('keyDates', { label: '', date: '', note: '' });
     else if (t.id === 'ctAddDoc') add('docs', { name: '', date: '', where: 'Private repo futedu/admin/contract/', url: '' });
     else if (t.id === 'ctDatesFromSummary') {
