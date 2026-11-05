@@ -3,8 +3,8 @@ const { PLAYER_IDS: [alex], assessment, profile, openApp, go } = require('./help
 
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
-const data = () => ({ settings: { anthro_profiles: { [alex]: profile('2008-01-01') }, anthro_assessments: { [alex]: [assessment('2026-09-10')] }, anthro_round: { start: '2026-09-01' } } });
-const VIEWS = ['dashboard', 'summary', 'compare', 'anthro', `anthro/${alex}`, 'recipes', 'players', 'settings', `player/${alex}`];
+const data = () => ({ settings: { anthro_profiles: { [alex]: profile('2008-01-01') }, anthro_assessments: { [alex]: [assessment('2026-09-10')] }, anthro_round: { start: '2026-09-01' }, contract: { schedule: [{ id: 's1', day: 'Monday', start: '09:30', end: '10:30', type: 'driving' }], docs: [{ id: 'd1', name: 'Contract (signed copy)', where: 'Private repo futedu/admin/contract/', url: 'https://example.com/a/very/long/link/to/a/document.pdf' }] } } });
+const VIEWS = ['dashboard', 'summary', 'compare', 'anthro', `anthro/${alex}`, 'recipes', 'players', 'contract', 'settings', `player/${alex}`];
 
 test('no horizontal overflow in any view', async ({ page }) => {
   await openApp(page, data());
