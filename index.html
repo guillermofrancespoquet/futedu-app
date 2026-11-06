@@ -343,19 +343,15 @@
   .ch-line { stroke:var(--orange); } .ch-dot { fill:var(--card); stroke:var(--orange); }
   .chart-empty { font-size:12.5px; color:var(--ink-3); padding:30px 0; text-align:center; }
   .back { margin-bottom:10px; }
-  #contractRoot .imp-grid { grid-template-columns:repeat(4, 1fr); }
-  #contractRoot input, #contractRoot select { height:34px; font-size:13px; padding:0 10px; min-width:0; max-width:100%; }
+  #contractRoot input { height:34px; font-size:13px; padding:0 10px; min-width:0; max-width:100%; width:100%; }
   #contractRoot .hist-full td { padding-right:8px; vertical-align:middle; }
-  #contractRoot .hist-full td input[type=text], #contractRoot .hist-full td input[type=url] { width:100%; }
-  #contractRoot label { display:block; font-size:11.5px; color:var(--ink-3); font-weight:600; margin-bottom:3px; }
   #contractRoot .hist-full { margin-bottom:12px; }
   @media (max-width:860px) {
-    #contractRoot .imp-grid { grid-template-columns:1fr 1fr; }
     #contractRoot .hist-full table, #contractRoot .hist-full tbody, #contractRoot .hist-full tr, #contractRoot .hist-full td { display:block; width:100% !important; }
     #contractRoot .hist-full thead { display:none; }
     #contractRoot .hist-full tr { padding:8px 0; border-bottom:1px solid var(--line); }
     #contractRoot .hist-full td { border:none; padding:3px 0; }
-    #contractRoot input, #contractRoot select { font-size:16px; width:100%; }
+    #contractRoot input { font-size:16px; }
   }
   .hist-full { overflow-x:auto; }
   .hist-full table { width:100%; border-collapse:collapse; font-size:13px; min-width:620px; }
@@ -968,7 +964,7 @@
 
       <!-- CONTRACT -->
       <section id="view-contract" class="view hidden">
-        <div class="page-head"><div><h1>Contract</h1><div class="sub">Review, hours and pay, key dates and documents.</div></div></div>
+        <div class="page-head"><div><h1>Contract</h1><div class="sub">Your contracts and the payments you receive.</div></div></div>
         <div id="contractRoot"></div>
       </section>
 
@@ -2029,9 +2025,8 @@ function renderDashboard() {
   const lb = lastBackup();
   const banners = [];
   if (!lb || daysSince(lb) > 30) banners.push(`<div class="banner">${lb ? 'Last backup was ' + daysSince(lb) + ' days ago.' : 'No backup exported from this device yet.'} Export a copy of your data and keep it somewhere private.<button class="btn sm primary" data-goto-settings>Go to export</button></div>`);
-  document.getElementById('dashBanners').innerHTML = banners.join('') + ctDashBanners();
+  document.getElementById('dashBanners').innerHTML = banners.join('');
   document.querySelectorAll('[data-goto-settings]').forEach(b => b.addEventListener('click', () => navigate('settings')));
-  document.querySelectorAll('[data-goto-contract]').forEach(b => b.addEventListener('click', () => navigate('contract')));
 
   const tagList = allTags();
   document.getElementById('groupCard').classList.toggle('hidden', !tagList.length);
@@ -3154,192 +3149,48 @@ function anCompute(v, profile, age) {
   return R;
 }
 
-// ---- Contract (personal employment paperwork; data only in the settings table, key "contract") ----
+// ---- Contract: a minimal log of contracts and payments (personal data, only in the settings table, key "contract") ----
 let contractData = {};
-const CT_STATUS = { pending: 'To review', ok: 'OK', ask: 'Ask', negotiate: 'Negotiate' };
-// Orientative review points, not legal advice: a labour adviser should confirm the final text
-const CT_CHECKLIST = [
-  ['Parties and type', [
-    ['employer', 'Employer is identified correctly (legal name, tax ID, address) and is who actually pays the payslip'],
-    ['kind', 'Contract type (indefinite / fixed-term / training / part-time) matches what was agreed, and fixed-term has a stated reason and end date'],
-    ['category', 'Job category and tasks describe the real work (nutrition workshops and driving)'],
-    ['start', 'Start date is correct and the contract is signed before or on the first working day']]],
-  ['Hours and schedule', [
-    ['hours', 'Weekly hours in the contract match the agreed schedule (driving plus nutrition work)'],
-    ['schedule', 'Weekly schedule or how it is set and changed is written down; part-time contracts state hours per day, week or month'],
-    ['extra', 'Extra hours: how they are asked for, paid or compensated'],
-    ['travel', 'Travel time and waiting time between sessions: is it counted as working time?']]],
-  ['Pay', [
-    ['salary', 'Gross pay (monthly or per hour) is stated and matches the agreed amounts; it is not below the applicable minimum or agreement table, pro rata to hours'],
-    ['payments', 'Pay date, number of payments (extra payments prorated or not) and payslip every month'],
-    ['expenses', 'Fuel, vehicle, tolls, parking, mileage and phone: who pays or reimburses and how'],
-    ['holidays', 'Holidays (30 calendar days a year as a general rule), paid public holidays and how holiday is chosen']]],
-  ['Duration and exit', [
-    ['trial', 'Trial period length is allowed for the contract type and written down'],
-    ['notice', 'Notice period to leave and what happens at the end of a fixed-term contract'],
-    ['agreement', 'Which collective agreement applies (if any) and where to read it']]],
-  ['Other clauses', [
-    ['exclusive', 'Non-compete or exclusivity clauses: compatible with other work (football club, own clients, talks, studies)'],
-    ['ip', 'Who owns the materials created (recipes, session guides, handouts, the app)'],
-    ['data', 'Data protection and confidentiality: handling of minors’ data and images'],
-    ['minors', 'Working with minors: certificate of no sexual offences, safeguarding rules, insurance for driving players'],
-    ['vehicle', 'Driving: whose vehicle, licence category, insurance cover for passengers and for accidents at work']]],
-  ['Paperwork to do', [
-    ['modelo145', 'Fill in the income tax withholding form (Modelo 145) for the employer'],
-    ['ss', 'Registration in Social Security before the start (ask for the “alta” proof)'],
-    ['copy', 'Signed copy of the contract and of the registration kept in Documents'],
-    ['bank', 'Bank account details given to the employer (keep them out of the app)'],
-    ['other', 'Tell other payers or the tax office if the new income changes anything']]],
-];
-const CT_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const CT_TYPES = { driving: 'Driving', nutrition: 'Nutrition', other: 'Other' };
-const CT_KINDS = ['', 'Indefinite', 'Fixed-term', 'Part-time indefinite', 'Part-time fixed-term', 'Training', 'Other'];
-const CT_STATES = { waiting: 'Waiting for the contract', reviewing: 'Reviewing', signed: 'Signed' };
 const ctId = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const ctNum = v => { const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? null : n; };
-const ctMin = t => { const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
-const ctEur = n => n == null ? '—' : n.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' €';
-function ctHours(n) { return n == null ? '—' : (Math.round(n * 100) / 100) + ' h'; }
-function ctSlotHours(s) { const a = ctMin(s.start), b = ctMin(s.end); return a != null && b != null && b > a ? (b - a) / 60 : 0; }
-function ctWeekHours(type) { return (contractData.schedule || []).filter(s => !type || s.type === type).reduce((t, s) => t + ctSlotHours(s), 0); }
-// Expected hours of one type in a month: schedule for each weekday, minus the days off listed for that month
-function ctMonthHours(ym, type) {
-  const off = new Set(((contractData.months || {})[ym] || {}).off || []);
-  const [y, m] = ym.split('-').map(Number), n = new Date(y, m, 0).getDate();
-  let total = 0;
-  for (let d = 1; d <= n; d++) {
-    const iso = ym + '-' + String(d).padStart(2, '0');
-    if (off.has(iso)) continue;
-    const wd = (new Date(y, m - 1, d).getDay() + 6) % 7;
-    total += (contractData.schedule || []).filter(s => s.type === type && CT_DAYS.indexOf(s.day) === wd).reduce((t, s) => t + ctSlotHours(s), 0);
-  }
-  return total;
-}
-function ctDrivingFor(ym) { const mo = (contractData.months || {})[ym] || {}; return mo.drivingH != null ? mo.drivingH : ctMonthHours(ym, 'driving'); }
+const ctEur = n => n.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' €';
 function ctSet(mutate) {
-  return mutateSetting('contract', v => { ['schedule', 'agreed', 'keyDates', 'docs', 'payments'].forEach(k => { if (!Array.isArray(v[k])) v[k] = []; }); ['summary', 'checklist', 'months'].forEach(k => { if (!v[k] || typeof v[k] !== 'object') v[k] = {}; }); mutate(v); })
-    .then(next => { if (next) { contractData = next; renderContract(); renderContractBanners(); } return next; });
-}
-function ctKeyDates() { return (contractData.keyDates || []).filter(k => k.date).slice().sort((a, b) => a.date.localeCompare(b.date)); }
-function renderContractBanners() { if (ui.view === 'dashboard') renderDashboard(); }
-function ctDashBanners() {
-  const out = [];
-  ctKeyDates().forEach(k => {
-    const left = -daysSince(k.date);
-    if (left >= 0 && left <= 14) out.push(`<div class="banner warn">Contract: <b>${escapeHtml(k.label || 'Key date')}</b> ${left === 0 ? 'is today' : left === 1 ? 'is tomorrow' : 'in ' + left + ' days'} (${escapeHtml(longDateSafe(k.date))}).<button class="btn sm" data-goto-contract>Open</button></div>`);
-  });
-  return out.join('');
+  return mutateSetting('contract', v => { ['contracts', 'payments'].forEach(k => { if (!Array.isArray(v[k])) v[k] = []; }); mutate(v); })
+    .then(next => { if (next) { contractData = next; renderContract(); } return next; });
 }
 function renderContract() {
   const root = document.getElementById('contractRoot');
   if (!root) return;
-  const c = contractData, s = c.summary || {}, cl = c.checklist || {};
-  const opt = (obj, cur) => Object.entries(obj).map(([k, v]) => `<option value="${k}"${cur === k ? ' selected' : ''}>${escapeHtml(v)}</option>`).join('');
-  const field = (key, label, type, ph) => `<div><label for="ct_${key}">${label}</label><input type="${type || 'text'}" id="ct_${key}" data-ct-sum="${key}" value="${escapeHtml(s[key] == null ? '' : String(s[key]))}"${ph ? ` placeholder="${escapeHtml(ph)}"` : ''}${type === 'number' ? ' step="any" inputmode="decimal"' : ''}></div>`;
-  const items = CT_CHECKLIST.flatMap(g => g[1]);
-  const done = items.filter(([id]) => (cl[id] || {}).status === 'ok').length;
-  const open = items.filter(([id]) => ['ask', 'negotiate'].includes((cl[id] || {}).status)).length;
-  const months = Object.keys(c.months || {}).sort();
-  const curYm = ui.ctMonth || todayStr().slice(0, 7);
-  const mo = (c.months || {})[curYm] || {};
-  const rate = ctNum(s.rate), fixed = ctNum(s.fixed);
-  const expH = ctMonthHours(curYm, 'driving'), realH = mo.drivingH != null ? mo.drivingH : expH;
-  const tot = months.reduce((t, ym) => { const m = c.months[ym], h = ctDrivingFor(ym); t.h += h; t.fixedDue += m.fixedPaid ? 0 : (fixed || 0); t.drvDue += (m.drivingPaid || rate == null) ? 0 : h * rate; return t; }, { h: 0, fixedDue: 0, drvDue: 0 });
+  const cs = contractData.contracts || [], ps = (contractData.payments || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const inp = (k, f, val, type, label, ph) => `<td><input type="${type}" data-ct-f="${k}" data-f="${f}" value="${escapeHtml(val == null ? '' : String(val))}"${type === 'number' ? ' step="any" inputmode="decimal"' : ''}${ph ? ` placeholder="${escapeHtml(ph)}"` : ''} aria-label="${label}"></td>`;
+  const net = ps.reduce((t, p) => t + (ctNum(p.net) || 0), 0), gross = ps.reduce((t, p) => t + (ctNum(p.gross) || 0), 0);
   root.innerHTML = `
-    <div class="banner warn">Orientative checklist, not legal advice. Have the final text checked by a labour adviser before signing. Keep ID numbers, bank details and the Social Security number out of this page.</div>
-
-    <h3 class="section-label">Summary</h3>
-    <div class="card"><div class="imp-grid">
-      ${field('employer', 'Employer')}${field('role', 'Role')}
-      <div><label for="ct_kind">Contract type</label><select id="ct_kind" data-ct-sum="kind">${CT_KINDS.map(k => `<option value="${escapeHtml(k)}"${s.kind === k ? ' selected' : ''}>${escapeHtml(k || '—')}</option>`).join('')}</select></div>
-      <div><label for="ct_status">Status</label><select id="ct_status" data-ct-sum="status">${opt(CT_STATES, s.status || 'waiting')}</select></div>
-      ${field('start', 'Start date', 'date')}${field('end', 'End date (if fixed-term)', 'date')}
-      ${field('trialEnd', 'Trial period ends', 'date')}${field('noticeDays', 'Notice (days)', 'number')}
-      ${field('weeklyHours', 'Contract hours per week', 'number')}${field('fixed', 'Fixed monthly gross (€)', 'number')}
-      ${field('rate', 'Driving rate (€ per hour)', 'number')}${field('convenio', 'Collective agreement')}
-    </div>
-    <div class="save-note" style="margin-top:10px;">Scheduled this week: ${ctHours(ctWeekHours())} (driving ${ctHours(ctWeekHours('driving'))}, nutrition ${ctHours(ctWeekHours('nutrition'))})${s.weeklyHours != null && s.weeklyHours !== '' && ctNum(s.weeklyHours) != null && Math.abs(ctNum(s.weeklyHours) - ctWeekHours()) > 0.01 ? ' · <b>differs from the contract hours</b>' : ''}.</div></div>
-
-    <h3 class="section-label">Review checklist · ${done} of ${items.length} OK${open ? ' · ' + open + ' to ask or negotiate' : ''}</h3>
-    ${CT_CHECKLIST.map(([g, rows]) => `<div class="card hist-full"><div style="font-weight:700;margin-bottom:8px;">${g}</div><table style="min-width:0"><tbody>${rows.map(([id, text]) => { const r = cl[id] || {}; return `<tr><td style="width:46%;">${escapeHtml(text)}</td><td style="width:130px;"><select data-ct-check="${id}" aria-label="Status">${opt(CT_STATUS, r.status || 'pending')}</select></td><td><input type="text" data-ct-note="${id}" value="${escapeHtml(r.note || '')}" placeholder="Note" aria-label="Note"></td></tr>`; }).join('')}</tbody></table></div>`).join('')}
-
-    <h3 class="section-label">Agreed vs written in the contract</h3>
-    <div class="card hist-full"><table style="min-width:0"><thead><tr><th>Point</th><th>Agreed</th><th>In the contract</th><th>Status</th><th></th></tr></thead><tbody>
-      ${(c.agreed || []).map(a => `<tr data-ct-row="${a.id}"><td><input type="text" data-ct-f="agreed" data-f="item" value="${escapeHtml(a.item || '')}" aria-label="Point"></td><td><input type="text" data-ct-f="agreed" data-f="agreed" value="${escapeHtml(a.agreed || '')}" aria-label="Agreed"></td><td><input type="text" data-ct-f="agreed" data-f="contract" value="${escapeHtml(a.contract || '')}" aria-label="In the contract"></td><td><select data-ct-f="agreed" data-f="status" aria-label="Status">${opt({ pending: 'To compare', ok: 'Matches', diff: 'Differs' }, a.status || 'pending')}</select></td><td><button class="btn sm" data-ct-del="agreed" data-id="${a.id}" aria-label="Remove">Remove</button></td></tr>`).join('') || '<tr><td colspan="5" class="note">Nothing yet. Add what was agreed verbally (pay, hours, expenses…) and compare it with the text.</td></tr>'}
-    </tbody></table><div style="margin-top:10px;"><button class="btn sm" id="ctAddAgreed">Add point</button></div></div>
-
-    <h3 class="section-label">Hours and pay</h3>
-    <div class="card hist-full"><div style="font-weight:700;margin-bottom:8px;">Weekly schedule</div><table style="min-width:0"><thead><tr><th>Day</th><th>From</th><th>To</th><th>Type</th><th>Hours</th><th></th></tr></thead><tbody>
-      ${(c.schedule || []).map(x => `<tr data-ct-row="${x.id}"><td><select data-ct-f="schedule" data-f="day" aria-label="Day">${CT_DAYS.map(d => `<option${x.day === d ? ' selected' : ''}>${d}</option>`).join('')}</select></td><td><input type="time" data-ct-f="schedule" data-f="start" value="${escapeHtml(x.start || '')}" aria-label="From"></td><td><input type="time" data-ct-f="schedule" data-f="end" value="${escapeHtml(x.end || '')}" aria-label="To"></td><td><select data-ct-f="schedule" data-f="type" aria-label="Type">${opt(CT_TYPES, x.type || 'driving')}</select></td><td>${ctHours(ctSlotHours(x))}</td><td><button class="btn sm" data-ct-del="schedule" data-id="${x.id}" aria-label="Remove">Remove</button></td></tr>`).join('') || '<tr><td colspan="6" class="note">No slots yet. Add the agreed driving and nutrition hours.</td></tr>'}
-    </tbody></table><div style="margin-top:10px;"><button class="btn sm" id="ctAddSlot">Add slot</button></div></div>
-
-    <div class="card"><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:12px;">
-      <div><label for="ctMonth">Month</label><input type="month" id="ctMonth" value="${curYm}"></div>
-      <div class="save-note" style="flex:1;min-width:200px;">Expected driving this month: <b>${ctHours(expH)}</b> from the schedule, minus the days off you list.</div></div>
-      <div class="imp-grid">
-        <div style="grid-column:1/-1;"><label for="ctOff">Days off or no-driving days (YYYY-MM-DD, comma separated)</label><input type="text" id="ctOff" value="${escapeHtml((mo.off || []).join(', '))}" placeholder="2026-12-08, 2026-12-25"></div>
-        <div><label for="ctH">Driving hours done</label><input type="number" id="ctH" step="any" inputmode="decimal" value="${mo.drivingH != null ? mo.drivingH : ''}" placeholder="${expH}"></div>
-        <div><label for="ctNut">Nutrition hours</label><input type="number" id="ctNut" step="any" inputmode="decimal" value="${mo.nutritionH != null ? mo.nutritionH : ''}" placeholder="${Math.round(ctMonthHours(curYm, 'nutrition') * 100) / 100}"></div>
-        <div><label for="ctFixedPaid">Fixed pay</label><select id="ctFixedPaid"><option value="">Pending</option><option value="1"${mo.fixedPaid ? ' selected' : ''}>Paid</option></select></div>
-        <div><label for="ctDrvPaid">Driving pay</label><select id="ctDrvPaid"><option value="">Pending</option><option value="1"${mo.drivingPaid ? ' selected' : ''}>Paid</option></select></div>
-        <div style="grid-column:1/-1;"><label for="ctMNote">Note</label><input type="text" id="ctMNote" value="${escapeHtml(mo.note || '')}"></div>
-      </div>
-      <div class="kpis" style="margin-top:14px;">
-        <div class="kpi"><div class="k-label">Driving this month</div><div class="k-value">${ctHours(realH)}</div><div class="k-sub">${rate != null ? ctEur(realH * rate) + ' at ' + ctEur(rate) + '/h' : 'Set the driving rate'}</div></div>
-        <div class="kpi"><div class="k-label">Fixed this month</div><div class="k-value">${ctEur(fixed)}</div><div class="k-sub">${mo.fixedPaid ? 'Paid' : 'Pending'}</div></div>
-        <div class="kpi"><div class="k-label">Still to receive</div><div class="k-value">${ctEur(tot.fixedDue + tot.drvDue)}</div><div class="k-sub">Months you have saved here</div></div>
-      </div></div>
-    <div class="card hist-full"><table style="min-width:0"><thead><tr><th>Month</th><th>Driving h</th><th>Driving</th><th>Fixed</th><th>Status</th></tr></thead><tbody>
-      ${months.map(ym => { const m = c.months[ym], h = ctDrivingFor(ym); return `<tr><td><a href="#contract" data-ct-pick="${ym}">${ym}</a></td><td>${ctHours(h)}</td><td>${rate != null ? ctEur(h * rate) : '—'}</td><td>${ctEur(fixed)}</td><td>${m.fixedPaid ? 'Fixed paid' : 'Fixed pending'} · ${m.drivingPaid ? 'driving paid' : 'driving pending'}</td></tr>`; }).join('') || '<tr><td colspan="5" class="note">Saved months appear here.</td></tr>'}
-    </tbody></table></div>
+    <h3 class="section-label">Contracts</h3>
+    <div class="card hist-full"><table style="min-width:0"><thead><tr><th>Employer</th><th>From</th><th>To</th><th>Hours / week</th><th>Pay</th><th>Note</th><th></th></tr></thead><tbody>
+      ${cs.map(c => `<tr data-ct-row="${c.id}">${inp('contracts', 'employer', c.employer, 'text', 'Employer')}${inp('contracts', 'start', c.start, 'date', 'From')}${inp('contracts', 'end', c.end, 'date', 'To')}${inp('contracts', 'hours', c.hours, 'number', 'Hours per week')}${inp('contracts', 'pay', c.pay, 'text', 'Pay', 'e.g. 240 € + driving per hour')}${inp('contracts', 'note', c.note, 'text', 'Note')}<td><button class="btn sm" data-ct-del="contracts" data-id="${c.id}" aria-label="Remove">Remove</button></td></tr>`).join('') || '<tr><td colspan="7" class="note">No contracts yet.</td></tr>'}
+    </tbody></table><div style="margin-top:10px;"><button class="btn sm" id="ctAddContract">Add contract</button></div></div>
 
     <h3 class="section-label">Payments received</h3>
     <div class="card hist-full"><table style="min-width:0"><thead><tr><th>Date</th><th>Concept</th><th>Gross (€)</th><th>Net (€)</th><th>Note</th><th></th></tr></thead><tbody>
-      ${(c.payments || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(p => `<tr data-ct-row="${p.id}"><td><input type="date" data-ct-f="payments" data-f="date" value="${escapeHtml(p.date || '')}" aria-label="Date"></td><td><input type="text" data-ct-f="payments" data-f="concept" value="${escapeHtml(p.concept || '')}" placeholder="e.g. Payslip October" aria-label="Concept"></td><td><input type="number" step="any" inputmode="decimal" data-ct-f="payments" data-f="gross" value="${escapeHtml(p.gross == null ? '' : String(p.gross))}" aria-label="Gross"></td><td><input type="number" step="any" inputmode="decimal" data-ct-f="payments" data-f="net" value="${escapeHtml(p.net == null ? '' : String(p.net))}" aria-label="Net"></td><td><input type="text" data-ct-f="payments" data-f="note" value="${escapeHtml(p.note || '')}" aria-label="Note"></td><td><button class="btn sm" data-ct-del="payments" data-id="${p.id}" aria-label="Remove">Remove</button></td></tr>`).join('') || '<tr><td colspan="6" class="note">Nothing yet. Add each payment when it arrives.</td></tr>'}
-    </tbody></table><div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><button class="btn sm" id="ctAddPay">Add payment</button><span class="save-note">Total received: <b>${ctEur((c.payments || []).reduce((t, p) => t + (ctNum(p.net) || 0), 0))}</b> net · ${ctEur((c.payments || []).reduce((t, p) => t + (ctNum(p.gross) || 0), 0))} gross</span></div></div>
-
-    <h3 class="section-label">Key dates</h3>
-    <div class="card hist-full"><table style="min-width:0"><thead><tr><th>What</th><th>Date</th><th>Left</th><th>Note</th><th></th></tr></thead><tbody>
-      ${(c.keyDates || []).map(k => { const left = k.date ? -daysSince(k.date) : null; return `<tr data-ct-row="${k.id}"><td><input type="text" data-ct-f="keyDates" data-f="label" value="${escapeHtml(k.label || '')}" aria-label="What"></td><td><input type="date" data-ct-f="keyDates" data-f="date" value="${escapeHtml(k.date || '')}" aria-label="Date"></td><td>${left == null ? '—' : left < 0 ? 'passed' : left + ' d'}</td><td><input type="text" data-ct-f="keyDates" data-f="note" value="${escapeHtml(k.note || '')}" aria-label="Note"></td><td><button class="btn sm" data-ct-del="keyDates" data-id="${k.id}" aria-label="Remove">Remove</button></td></tr>`; }).join('') || '<tr><td colspan="5" class="note">Nothing yet. Start date, end of trial, renewal, notice deadlines, holidays to request…</td></tr>'}
-    </tbody></table><div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn sm" id="ctAddDate">Add date</button><button class="btn sm" id="ctDatesFromSummary">Fill from summary</button></div>
-    <div class="save-note" style="margin-top:8px;">Dates within 14 days also show on the Dashboard.</div></div>
-
-    <h3 class="section-label">Documents</h3>
-    <div class="card hist-full"><table style="min-width:0"><thead><tr><th>Document</th><th>Date</th><th>Where it is kept</th><th>Link</th><th></th></tr></thead><tbody>
-      ${(c.docs || []).map(d => `<tr data-ct-row="${d.id}"><td><input type="text" data-ct-f="docs" data-f="name" value="${escapeHtml(d.name || '')}" aria-label="Document"></td><td><input type="date" data-ct-f="docs" data-f="date" value="${escapeHtml(d.date || '')}" aria-label="Date"></td><td><input type="text" data-ct-f="docs" data-f="where" value="${escapeHtml(d.where || '')}" aria-label="Where"></td><td><input type="url" data-ct-f="docs" data-f="url" value="${escapeHtml(d.url || '')}" placeholder="optional" aria-label="Link">${/^https:\/\//.test(d.url || '') ? ` <a href="${escapeHtml(d.url)}" target="_blank" rel="noopener">Open</a>` : ''}</td><td><button class="btn sm" data-ct-del="docs" data-id="${d.id}" aria-label="Remove">Remove</button></td></tr>`).join('') || '<tr><td colspan="5" class="note">Nothing yet.</td></tr>'}
-    </tbody></table><div style="margin-top:10px;"><button class="btn sm" id="ctAddDoc">Add document</button></div>
-    <div class="save-note" style="margin-top:8px;">Keep the PDFs in the private repository (admin/contract/), never in this public app. Only list their name and place here.</div></div>`;
+      ${ps.map(p => `<tr data-ct-row="${p.id}">${inp('payments', 'date', p.date, 'date', 'Date')}${inp('payments', 'concept', p.concept, 'text', 'Concept', 'e.g. Payslip October')}${inp('payments', 'gross', p.gross, 'number', 'Gross')}${inp('payments', 'net', p.net, 'number', 'Net')}${inp('payments', 'note', p.note, 'text', 'Note')}<td><button class="btn sm" data-ct-del="payments" data-id="${p.id}" aria-label="Remove">Remove</button></td></tr>`).join('') || '<tr><td colspan="6" class="note">Nothing yet. Add each payment when it arrives.</td></tr>'}
+    </tbody></table><div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><button class="btn sm" id="ctAddPay">Add payment</button><span class="save-note">Total received: <b>${ctEur(net)}</b> net · ${ctEur(gross)} gross</span></div></div>
+    <div class="save-note">Keep ID numbers and bank details out of this page. Contract PDFs go in the private repository, never here.</div>`;
 }
 (function wireContract() {
   const root = document.getElementById('contractRoot');
   if (!root) return;
-  const add = (k, row) => ctSet(v => { v[k].push({ id: ctId(), ...row }); });
   root.addEventListener('click', e => {
-    const t = e.target.closest('button, a[data-ct-pick]');
+    const t = e.target.closest('button');
     if (!t) return;
-    if (t.dataset.ctPick) { e.preventDefault(); ui.ctMonth = t.dataset.ctPick; renderContract(); return; }
-    if (t.dataset.ctDel) { ctSet(v => { v[t.dataset.ctDel] = v[t.dataset.ctDel].filter(x => x.id !== t.dataset.id); }); return; }
-    if (t.id === 'ctAddAgreed') add('agreed', { item: '', agreed: '', contract: '', status: 'pending' });
-    else if (t.id === 'ctAddSlot') add('schedule', { day: 'Monday', start: '09:30', end: '10:30', type: 'driving' });
-    else if (t.id === 'ctAddPay') add('payments', { date: todayStr(), concept: '', gross: '', net: '', note: '' });
-    else if (t.id === 'ctAddDate') add('keyDates', { label: '', date: '', note: '' });
-    else if (t.id === 'ctAddDoc') add('docs', { name: '', date: '', where: 'Private repo futedu/admin/contract/', url: '' });
-    else if (t.id === 'ctDatesFromSummary') {
-      const s = contractData.summary || {};
-      const rows = [['Contract start', s.start], ['End of trial period', s.trialEnd], ['Contract end', s.end]].filter(r => r[1] && !(contractData.keyDates || []).some(k => k.label === r[0] && k.date === r[1]));
-      if (!rows.length) { toast('Nothing new to add from the summary'); return; }
-      ctSet(v => { rows.forEach(r => v.keyDates.push({ id: ctId(), label: r[0], date: r[1], note: '' })); });
-    }
+    if (t.dataset.ctDel) ctSet(v => { v[t.dataset.ctDel] = v[t.dataset.ctDel].filter(x => x.id !== t.dataset.id); });
+    else if (t.id === 'ctAddContract') ctSet(v => { v.contracts.push({ id: ctId(), employer: 'FUTEDU', start: '', end: '', hours: '', pay: '', note: '' }); });
+    else if (t.id === 'ctAddPay') ctSet(v => { v.payments.push({ id: ctId(), date: todayStr(), concept: '', gross: '', net: '', note: '' }); });
   });
   root.addEventListener('change', e => {
-    const t = e.target, ym = (document.getElementById('ctMonth') || {}).value || ui.ctMonth || todayStr().slice(0, 7);
-    if (t.id === 'ctMonth') { ui.ctMonth = t.value || ym; renderContract(); return; }
-    if (t.dataset.ctSum) { const k = t.dataset.ctSum; ctSet(v => { v.summary[k] = t.type === 'number' ? (ctNum(t.value) == null ? '' : ctNum(t.value)) : t.value; }); return; }
-    if (t.dataset.ctCheck) { ctSet(v => { (v.checklist[t.dataset.ctCheck] = v.checklist[t.dataset.ctCheck] || {}).status = t.value; }); return; }
-    if (t.dataset.ctNote) { ctSet(v => { (v.checklist[t.dataset.ctNote] = v.checklist[t.dataset.ctNote] || {}).note = t.value; }); return; }
-    if (t.dataset.ctF) { const id = t.closest('[data-ct-row]').dataset.ctRow, f = t.dataset.f, k = t.dataset.ctF; ctSet(v => { const r = v[k].find(x => x.id === id); if (r) r[f] = t.value; }); return; }
-    const monthFields = { ctOff: m => { m.off = t.value.split(/[,\s]+/).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x)); }, ctH: m => { m.drivingH = ctNum(t.value); }, ctNut: m => { m.nutritionH = ctNum(t.value); }, ctFixedPaid: m => { m.fixedPaid = !!t.value; }, ctDrvPaid: m => { m.drivingPaid = !!t.value; }, ctMNote: m => { m.note = t.value; } };
-    if (monthFields[t.id]) { ui.ctMonth = ym; ctSet(v => { monthFields[t.id](v.months[ym] = v.months[ym] || {}); }); }
+    const t = e.target;
+    if (!t.dataset.ctF) return;
+    const id = t.closest('[data-ct-row]').dataset.ctRow, f = t.dataset.f, k = t.dataset.ctF;
+    ctSet(v => { const r = v[k].find(x => x.id === id); if (r) r[f] = t.value; });
   });
 })();
 
