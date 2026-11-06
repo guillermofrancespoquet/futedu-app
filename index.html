@@ -3149,6 +3149,49 @@ function anCompute(v, profile, age) {
   return R;
 }
 
+// Payslip import: reads the text layer of a digital payslip PDF in the browser (nothing is uploaded or stored; ID and Social Security numbers are never read)
+const ES_MONTHS = { enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6, julio: 7, agosto: 8, septiembre: 9, setiembre: 9, octubre: 10, noviembre: 11, diciembre: 12 };
+const esNum = t => { const n = parseFloat(String(t).replace(/\./g, '').replace(',', '.')); return isNaN(n) ? null : n; };
+function parsePayslipLines(lines) {
+  const out = { date: '', concept: '', gross: null, net: null };
+  const pad = n => String(n).padStart(2, '0');
+  for (const l of lines) {
+    const m = /(\d{1,2})\s+de\s+([a-záéíóú]+)(?:\s+de\s+\d{4})?\s+a\s+(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})/i.exec(l);
+    if (m && ES_MONTHS[m[4].toLowerCase()]) {
+      const mo = ES_MONTHS[m[4].toLowerCase()];
+      out.date = m[5] + '-' + pad(mo) + '-' + pad(m[3]);
+      out.concept = 'Payslip ' + new Date(+m[5], mo - 1, 1).toLocaleString('en-GB', { month: 'long' }) + ' ' + m[5];
+      break;
+    }
+  }
+  const nums = l => (l.match(/\d{1,3}(?:\.\d{3})*,\d{2}/g) || []).map(esNum);
+  const hi = lines.findIndex(l => /REMUNERACI[ÓO]N/i.test(l) && /DEDUCCIONES/i.test(l));
+  if (hi >= 0) {
+    const row = lines.slice(hi + 1, hi + 3).map(nums).find(a => a.length >= 3);
+    if (row) { out.gross = row[row.length - 2]; out.net = Math.round((row[row.length - 2] - row[row.length - 1]) * 100) / 100; }
+  }
+  const li = lines.findIndex(l => /L[ÍI]QUIDO\s+A\s+PERCIBIR/i.test(l));
+  if (li >= 0) {
+    const same = nums(lines[li]);
+    const v = same.length ? same[same.length - 1] : lines.slice(li + 1, li + 4).map(nums).find(a => a.length);
+    if (v != null) out.net = Array.isArray(v) ? v[v.length - 1] : v;
+  }
+  return out;
+}
+async function payslipPdfToLines(file) {
+  await loadScript(OCR_LIBS.pdfjs);
+  pdfjsLib.GlobalWorkerOptions.workerSrc = OCR_LIBS.pdfWorker;
+  const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+  const page = await pdf.getPage(1), tc = await page.getTextContent();
+  const rows = [];
+  tc.items.filter(i => i.str.trim()).forEach(i => {
+    const y = Math.round(i.transform[5] / 3);
+    const row = rows.find(r => Math.abs(r.y - y) <= 1) || rows[rows.push({ y, items: [] }) - 1];
+    row.items.push({ x: i.transform[4], t: i.str.trim() });
+  });
+  return rows.sort((a, b) => b.y - a.y).map(r => r.items.sort((a, b) => a.x - b.x).map(i => i.t).join(' '));
+}
+
 // ---- Contract: a minimal log of contracts and payments (personal data, only in the settings table, key "contract") ----
 let contractData = {};
 const ctId = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -3173,7 +3216,7 @@ function renderContract() {
     <h3 class="section-label">Payments received</h3>
     <div class="card hist-full"><table style="min-width:0"><thead><tr><th>Date</th><th>Concept</th><th>Gross (€)</th><th>Net (€)</th><th>Note</th><th></th></tr></thead><tbody>
       ${ps.map(p => `<tr data-ct-row="${p.id}">${inp('payments', 'date', p.date, 'date', 'Date')}${inp('payments', 'concept', p.concept, 'text', 'Concept', 'e.g. Payslip October')}${inp('payments', 'gross', p.gross, 'number', 'Gross')}${inp('payments', 'net', p.net, 'number', 'Net')}${inp('payments', 'note', p.note, 'text', 'Note')}<td><button class="btn sm" data-ct-del="payments" data-id="${p.id}" aria-label="Remove">Remove</button></td></tr>`).join('') || '<tr><td colspan="6" class="note">Nothing yet. Add each payment when it arrives.</td></tr>'}
-    </tbody></table><div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><button class="btn sm" id="ctAddPay">Add payment</button><span class="save-note">Total received: <b>${ctEur(net)}</b> net · ${ctEur(gross)} gross</span></div></div>
+    </tbody></table><div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><button class="btn sm" id="ctAddPay">Add payment</button><button class="btn sm" id="ctImportPay">Import payslip (PDF)</button><input type="file" id="ctPayFile" accept="application/pdf,.pdf" class="hidden"><span class="save-note">Total received: <b>${ctEur(net)}</b> net · ${ctEur(gross)} gross</span></div></div>
     <div class="save-note">Keep ID numbers and bank details out of this page. Contract PDFs go in the private repository, never here.</div>`;
 }
 (function wireContract() {
@@ -3184,10 +3227,21 @@ function renderContract() {
     if (!t) return;
     if (t.dataset.ctDel) ctSet(v => { v[t.dataset.ctDel] = v[t.dataset.ctDel].filter(x => x.id !== t.dataset.id); });
     else if (t.id === 'ctAddContract') ctSet(v => { v.contracts.push({ id: ctId(), employer: 'FUTEDU', start: '', end: '', hours: '', pay: '', note: '' }); });
+    else if (t.id === 'ctImportPay') document.getElementById('ctPayFile').click();
     else if (t.id === 'ctAddPay') ctSet(v => { v.payments.push({ id: ctId(), date: todayStr(), concept: '', gross: '', net: '', note: '' }); });
   });
-  root.addEventListener('change', e => {
+  root.addEventListener('change', async e => {
     const t = e.target;
+    if (t.id === 'ctPayFile' && t.files[0]) {
+      const f = t.files[0]; t.value = '';
+      try {
+        const r = parsePayslipLines(await payslipPdfToLines(f));
+        if (r.gross == null && r.net == null && !r.date) { toast('Could not read this payslip. Add the payment by hand.', 'err'); return; }
+        await ctSet(v => { v.payments.push({ id: ctId(), date: r.date || todayStr(), concept: r.concept || 'Payslip', gross: r.gross == null ? '' : r.gross, net: r.net == null ? '' : r.net, note: 'Imported, check the figures' }); });
+        toast('Payslip added: check the figures');
+      } catch (err) { toast('Could not read this PDF: ' + (err.message || err), 'err'); }
+      return;
+    }
     if (!t.dataset.ctF) return;
     const id = t.closest('[data-ct-row]').dataset.ctRow, f = t.dataset.f, k = t.dataset.ctF;
     ctSet(v => { const r = v[k].find(x => x.id === id); if (r) r[f] = t.value; });
