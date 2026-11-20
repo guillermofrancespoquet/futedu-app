@@ -124,10 +124,46 @@
       ]
     },
     {
-      "slug": "chia-pudding",
-      "title": "Chia Pudding: Tomorrow's Breakfast, Made Today (3 flavours)",
+      "slug": "thanksgiving",
+      "title": "Thanksgiving MasterChef: Two-Day Plan (Gratitude)",
       "session": 5,
       "status": "next",
+      "files": [
+        {
+          "name": "futedu-thanksgiving-workshop-session.md",
+          "kind": "session",
+          "kindLabel": "Session guide",
+          "label": "Session guide",
+          "path": "library/recipes/thanksgiving/futedu-thanksgiving-workshop-session.md"
+        },
+        {
+          "name": "futedu-thanksgiving-jury-scorecard.pdf",
+          "kind": "handout",
+          "kindLabel": "Printable handout",
+          "label": "Jury scorecard",
+          "path": "library/recipes/thanksgiving/futedu-thanksgiving-jury-scorecard.pdf"
+        },
+        {
+          "name": "futedu-thanksgiving-team-pack.pdf",
+          "kind": "handout",
+          "kindLabel": "Printable handout",
+          "label": "Team pack",
+          "path": "library/recipes/thanksgiving/futedu-thanksgiving-team-pack.pdf"
+        },
+        {
+          "name": "futedu-thanksgiving-wednesday-planning-slides.pdf",
+          "kind": "handout",
+          "kindLabel": "Printable handout",
+          "label": "Wednesday planning slides",
+          "path": "library/recipes/thanksgiving/futedu-thanksgiving-wednesday-planning-slides.pdf"
+        }
+      ]
+    },
+    {
+      "slug": "chia-pudding",
+      "title": "Chia Pudding: Tomorrow's Breakfast, Made Today (3 flavours)",
+      "session": 6,
+      "status": "planned",
       "files": [
         {
           "name": "futedu-chia-pudding.pdf",
@@ -155,7 +191,7 @@
     {
       "slug": "rice-cake-bar",
       "title": "Rice Cake Bar: Six Breakfasts and Snacks, One Base",
-      "session": 6,
+      "session": 7,
       "status": "planned",
       "files": [
         {
@@ -184,7 +220,7 @@
     {
       "slug": "frozen-yogurt-bark",
       "title": "Frozen Yogurt Bark: A Snack Ready for Tomorrow",
-      "session": 7,
+      "session": 8,
       "status": "planned",
       "files": [
         {
@@ -213,7 +249,7 @@
     {
       "slug": "dips",
       "title": "Dips: One Starter, Three Ways (no blender)",
-      "session": 8,
+      "session": 9,
       "status": "planned",
       "files": [
         {
