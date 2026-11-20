@@ -137,6 +137,13 @@
           "path": "library/recipes/thanksgiving/futedu-thanksgiving-workshop-session.md"
         },
         {
+          "name": "futedu-thanksgiving-harvest-families-cards.pdf",
+          "kind": "handout",
+          "kindLabel": "Printable handout",
+          "label": "Harvest families cards",
+          "path": "library/recipes/thanksgiving/futedu-thanksgiving-harvest-families-cards.pdf"
+        },
+        {
           "name": "futedu-thanksgiving-jury-scorecard.pdf",
           "kind": "handout",
           "kindLabel": "Printable handout",
