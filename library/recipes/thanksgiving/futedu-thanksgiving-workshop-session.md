@@ -13,6 +13,7 @@
 
 **Materials (in this folder):**
 - `futedu-thanksgiving-wednesday-planning-slides.pdf` — slides for the Wednesday planning session (18 slides)
+- `futedu-thanksgiving-run-sheet.pdf` — run sheets for both days (Wednesday 16:30–17:30, Thursday from 11:15)
 - `futedu-thanksgiving-team-pack.pdf` — one per team (summary, recipe, roles, budget & shopping, checklists, self-evaluation)
 - `futedu-thanksgiving-jury-scorecard.pdf` — one per judge
 - `futedu-thanksgiving-harvest-families-cards.pdf` — 40 cards (5 families × 8) with a gratitude mission each + staff assignment sheet
@@ -48,18 +49,18 @@ Be creative and original. Nutrition **checks and approves each recipe on Wednesd
 
 ---
 
-## 3. WEDNESDAY — Planning Session (less playful, 60 min)
+## 3. WEDNESDAY — Planning Session (less playful, 60 min: 16:30–17:30)
 
 | Time | Block | Who leads |
 |---|---|---|
-| 0:00 | **1. Welcome + group game "Harvest Families"** (12 min) | Psychology |
-| 0:12 | **2. Gratitude opening in teams** (8 min) | Psychology |
-| 0:20 | **3. Present the activity + recipe rules + quick-cook note** (7 min) | Nutrition |
-| 0:27 | **4. Teams invent their recipe** (12 min, nutrition checks) | Nutrition |
-| 0:39 | **5. Budget + where to buy (Mercadona / Consum)** (8 min) | Nutrition |
-| 0:47 | **6. Reflection: sustainable shopping, no food waste** (6 min) | Psychology |
-| 0:53 | **7. Assign roles** (5 min) | Psychology |
-| 0:58 | **8. Closing** (2 min) | Both |
+| 16:30 | **1. Welcome + group game "Harvest Families"** (12 min) | Psychology |
+| 16:42 | **2. Gratitude opening in teams** (8 min) | Psychology |
+| 16:50 | **3. Present the activity + recipe rules + quick-cook note** (7 min) | Nutrition |
+| 16:57 | **4. Teams invent their recipe** (12 min, nutrition checks) | Nutrition |
+| 17:09 | **5. Budget + where to buy (Mercadona / Consum)** (8 min) | Nutrition |
+| 17:17 | **6. Reflection: sustainable shopping, no food waste** (6 min) | Psychology |
+| 17:23 | **7. Assign roles** (5 min) | Psychology |
+| 17:28 | **8. Closing** (2 min) | Both |
 
 *It is a tight hour: keep each block strict, and have the shopping logistics decided by staff in advance.*
 
@@ -85,7 +86,7 @@ What happens Thursday, how the two days connect, the 4 recipe rules and the quic
 Using page 2 of the Team Pack. Each team decides dish, idea and ingredients with quantities for its size. **Nutrition checks each recipe** against the 4 rules and the clock, and signs the box.
 
 ### 5. Budget + where to buy (8 min)
-- **Budget per team:** [TO CONFIRM, still to negotiate], written on page 4 of the Team Pack.
+- **Budget per team:** **€100**, written on page 4 of the Team Pack.
 - Teams choose **Mercadona or Consum**, check prices on the website/app and fit the list to the budget.
 - **Shopping is on Thursday morning:** each team goes **together, as a team**, to buy what it needs. Supervising adults accompany the teams.
 - The **treasurer** keeps the total and the receipt.
@@ -118,20 +119,20 @@ Quick round: *"One thing I'm grateful for from today."* Recap of Thursday: meeti
 
 ---
 
-## 4. THURSDAY — Shopping + Thanksgiving MasterChef Lunch (~3 h for the lunch session) [TO CONFIRM exact times]
+## 4. THURSDAY — Shopping + Thanksgiving MasterChef Lunch (~3 h for the lunch session)
 
 | Time | Block | Who leads |
 |---|---|---|
 | Morning | **SHOPPING** at Mercadona / Consum: each team goes together with an adult. Receipts handed in on return [TO CONFIRM departure time and duration] | Staff + teams |
-| 0:00 | **Arrival and table set-up** (15 min) | Staff |
-| 0:15 | **Gratitude warm-up** (15 min) | Psychology |
-| 0:30 | **Brief: the two rules** (10 min) | Both |
-| 0:40 | **COOKING: 35 minutes** (includes cleaning your own area). Alarm at minute 35 | Both |
-| 1:15 | **RESCUE TIME: 10 minutes** (teams that are done help the others) | Psychology observes |
-| 1:25 | **Minute 45: all dishes on the table → presentations + staff tasting** (30 min) | Nutrition |
-| 1:55 | **Verdict and awards** (10 min) | Jury |
-| 2:05 | **Thanksgiving lunch together** (30 min): teams eat their own dishes | Both |
-| 2:35 | **Final clean-up and goodbye** (10 min) | Staff |
+| 11:15 | **Arrival and table set-up** (15 min) | Staff |
+| 11:30 | **Gratitude warm-up** (15 min) | Psychology |
+| 11:45 | **Brief: the two rules** (10 min) | Both |
+| 11:55 | **COOKING: 35 minutes** (includes cleaning your own area). Alarm at minute 35 | Both |
+| 12:30 | **RESCUE TIME: 10 minutes** (teams that are done help the others) | Psychology observes |
+| 12:40 | **Minute 45: all dishes on the table → presentations + staff tasting** (30 min) | Nutrition |
+| 13:10 | **Verdict and awards** (10 min) | Jury |
+| 13:20 | **Thanksgiving lunch together** (30 min): teams eat their own dishes | Both |
+| 13:50 | **Final clean-up and goodbye** (10 min) | Staff |
 
 ### The two rules (also written on page 5 of the Team Pack)
 
@@ -193,9 +194,9 @@ Each table holds **one type of resource** in abundance and nothing else:
 
 ## 7. Open Questions / To Prepare
 
-- [ ] **Budget** per team (still to negotiate).
+- [x] **Budget** per team: €100.
 - [ ] Thursday shopping: departure time and duration, how many adults accompany each team, and **how the teams pay** (staff card, cash envelope or their own money, reimbursed).
-- [ ] Exact times for both days (Wednesday 1 h, Thursday ~3 h).
+- [x] Exact times: Wednesday 16:30–17:30, Thursday lunch session from 11:15 (see the run sheet).
 - [ ] How to combine the judges' scores.
 - [ ] Rule 1 and basics: teams buy their own basics, so on Thursday staff collect them and place them unevenly on the tables (e.g. all the oil and spices on one table). Confirm this is how you want it.
 - [ ] Print: 5 team packs, jury scorecards (one per judge), and the Harvest Families cards (and fill the staff sheet).
