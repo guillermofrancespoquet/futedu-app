@@ -151,6 +151,13 @@
           "path": "library/recipes/thanksgiving/futedu-thanksgiving-jury-scorecard.pdf"
         },
         {
+          "name": "futedu-thanksgiving-run-sheet.pdf",
+          "kind": "handout",
+          "kindLabel": "Printable handout",
+          "label": "Run sheet",
+          "path": "library/recipes/thanksgiving/futedu-thanksgiving-run-sheet.pdf"
+        },
+        {
           "name": "futedu-thanksgiving-team-pack.pdf",
           "kind": "handout",
           "kindLabel": "Printable handout",
