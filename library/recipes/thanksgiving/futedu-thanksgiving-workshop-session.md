@@ -85,7 +85,7 @@ What happens Thursday, how the two days connect, the 4 recipe rules and the quic
 Using page 2 of the Team Pack. Each team decides dish, idea and ingredients with quantities for its size. **Nutrition checks each recipe** against the 4 rules and the clock, and signs the box.
 
 ### 5. Budget + where to buy (8 min)
-- **Budget per team:** [TO CONFIRM, still to negotiate], written on page 4 of the Team Pack.
+- **Budget per team: 100 €**, already printed on page 4 of the Team Pack. It covers the whole shopping, basics included.
 - Teams choose **Mercadona or Consum**, check prices on the website/app and fit the list to the budget.
 - **Shopping is on Thursday morning:** each team goes **together, as a team**, to buy what it needs. Supervising adults accompany the teams.
 - The **treasurer** keeps the total and the receipt.
@@ -193,7 +193,6 @@ Each table holds **one type of resource** in abundance and nothing else:
 
 ## 7. Open Questions / To Prepare
 
-- [ ] **Budget** per team (still to negotiate).
 - [ ] Thursday shopping: departure time and duration, how many adults accompany each team, and **how the teams pay** (staff card, cash envelope or their own money, reimbursed).
 - [ ] Exact times for both days (Wednesday 1 h, Thursday ~3 h).
 - [ ] How to combine the judges' scores.
