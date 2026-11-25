@@ -11,21 +11,24 @@
           "kind": "card",
           "kindLabel": "Recipe card",
           "label": "Recipe card: blackberry walnut",
-          "path": "library/recipes/overnight-oats/futedu-overnight-oats-card-blackberry-walnut.pdf"
+          "path": "library/recipes/overnight-oats/futedu-overnight-oats-card-blackberry-walnut.pdf",
+          "v": "c8017e7e"
         },
         {
           "name": "futedu-overnight-oats-card-blueberry-almond-pb.pdf",
           "kind": "card",
           "kindLabel": "Recipe card",
           "label": "Recipe card: blueberry almond pb",
-          "path": "library/recipes/overnight-oats/futedu-overnight-oats-card-blueberry-almond-pb.pdf"
+          "path": "library/recipes/overnight-oats/futedu-overnight-oats-card-blueberry-almond-pb.pdf",
+          "v": "d91b8d70"
         },
         {
           "name": "futedu-overnight-oats-workshop-session.md",
           "kind": "session",
           "kindLabel": "Session guide",
           "label": "Session guide",
-          "path": "library/recipes/overnight-oats/futedu-overnight-oats-workshop-session.md"
+          "path": "library/recipes/overnight-oats/futedu-overnight-oats-workshop-session.md",
+          "v": "2e2a8e63"
         }
       ]
     },
@@ -40,28 +43,32 @@
           "kind": "card",
           "kindLabel": "Recipe card",
           "label": "Recipe card",
-          "path": "library/recipes/granola/futedu-granola.pdf"
+          "path": "library/recipes/granola/futedu-granola.pdf",
+          "v": "d60dd861"
         },
         {
           "name": "futedu-granola-workshop-session.md",
           "kind": "session",
           "kindLabel": "Session guide",
           "label": "Session guide",
-          "path": "library/recipes/granola/futedu-granola-workshop-session.md"
+          "path": "library/recipes/granola/futedu-granola-workshop-session.md",
+          "v": "ec9e74c9"
         },
         {
           "name": "futedu-granola-scenario-cards.pdf",
           "kind": "handout",
           "kindLabel": "Printable handout",
           "label": "Scenario cards",
-          "path": "library/recipes/granola/futedu-granola-scenario-cards.pdf"
+          "path": "library/recipes/granola/futedu-granola-scenario-cards.pdf",
+          "v": "5e35d9b2"
         },
         {
           "name": "futedu-granola-scenario-facilitator-key.pdf",
           "kind": "key",
           "kindLabel": "Facilitator key",
           "label": "Scenario facilitator key",
-          "path": "library/recipes/granola/futedu-granola-scenario-facilitator-key.pdf"
+          "path": "library/recipes/granola/futedu-granola-scenario-facilitator-key.pdf",
+          "v": "b1fcbd18"
         }
       ]
     },
@@ -76,21 +83,24 @@
           "kind": "card",
           "kindLabel": "Recipe card",
           "label": "Recipe card",
-          "path": "library/recipes/energy-balls/futedu-energy-balls.pdf"
+          "path": "library/recipes/energy-balls/futedu-energy-balls.pdf",
+          "v": "2383dd2f"
         },
         {
           "name": "futedu-energy-balls-workshop-session.md",
           "kind": "session",
           "kindLabel": "Session guide",
           "label": "Session guide",
-          "path": "library/recipes/energy-balls/futedu-energy-balls-workshop-session.md"
+          "path": "library/recipes/energy-balls/futedu-energy-balls-workshop-session.md",
+          "v": "228b6509"
         },
         {
           "name": "futedu-energy-balls-swap-menu.pdf",
           "kind": "handout",
           "kindLabel": "Printable handout",
           "label": "Swap menu",
-          "path": "library/recipes/energy-balls/futedu-energy-balls-swap-menu.pdf"
+          "path": "library/recipes/energy-balls/futedu-energy-balls-swap-menu.pdf",
+          "v": "54b6b9d4"
         }
       ]
     },
@@ -105,21 +115,24 @@
           "kind": "card",
           "kindLabel": "Recipe card",
           "label": "Recipe card",
-          "path": "library/recipes/banana-oat-brownies/futedu-banana-oat-brownies.pdf"
+          "path": "library/recipes/banana-oat-brownies/futedu-banana-oat-brownies.pdf",
+          "v": "d3b64762"
         },
         {
           "name": "futedu-banana-oat-brownies-workshop-session.md",
           "kind": "session",
           "kindLabel": "Session guide",
           "label": "Session guide",
-          "path": "library/recipes/banana-oat-brownies/futedu-banana-oat-brownies-workshop-session.md"
+          "path": "library/recipes/banana-oat-brownies/futedu-banana-oat-brownies-workshop-session.md",
+          "v": "fe8c72d5"
         },
         {
           "name": "futedu-brownies-label-detective.pdf",
           "kind": "handout",
           "kindLabel": "Printable handout",
           "label": "Brownies label detective",
-          "path": "library/recipes/banana-oat-brownies/futedu-brownies-label-detective.pdf"
+          "path": "library/recipes/banana-oat-brownies/futedu-brownies-label-detective.pdf",
+          "v": "e95c7b7a"
         }
       ]
     },
@@ -134,42 +147,48 @@
           "kind": "session",
           "kindLabel": "Session guide",
           "label": "Session guide",
-          "path": "library/recipes/thanksgiving/futedu-thanksgiving-workshop-session.md"
+          "path": "library/recipes/thanksgiving/futedu-thanksgiving-workshop-session.md",
+          "v": "9947e287"
         },
         {
           "name": "futedu-thanksgiving-harvest-families-cards.pdf",
           "kind": "handout",
           "kindLabel": "Printable handout",
           "label": "Harvest families cards",
-          "path": "library/recipes/thanksgiving/futedu-thanksgiving-harvest-families-cards.pdf"
+          "path": "library/recipes/thanksgiving/futedu-thanksgiving-harvest-families-cards.pdf",
+          "v": "b407668e"
         },
         {
           "name": "futedu-thanksgiving-jury-scorecard.pdf",
           "kind": "handout",
           "kindLabel": "Printable handout",
           "label": "Jury scorecard",
-          "path": "library/recipes/thanksgiving/futedu-thanksgiving-jury-scorecard.pdf"
+          "path": "library/recipes/thanksgiving/futedu-thanksgiving-jury-scorecard.pdf",
+          "v": "efecf762"
         },
         {
           "name": "futedu-thanksgiving-run-sheet.pdf",
           "kind": "handout",
           "kindLabel": "Printable handout",
           "label": "Run sheet",
-          "path": "library/recipes/thanksgiving/futedu-thanksgiving-run-sheet.pdf"
+          "path": "library/recipes/thanksgiving/futedu-thanksgiving-run-sheet.pdf",
+          "v": "6142d4d7"
         },
         {
           "name": "futedu-thanksgiving-team-pack.pdf",
           "kind": "handout",
           "kindLabel": "Printable handout",
           "label": "Team pack",
-          "path": "library/recipes/thanksgiving/futedu-thanksgiving-team-pack.pdf"
+          "path": "library/recipes/thanksgiving/futedu-thanksgiving-team-pack.pdf",
+          "v": "de35cedc"
         },
         {
           "name": "futedu-thanksgiving-wednesday-planning-slides.pdf",
           "kind": "handout",
           "kindLabel": "Printable handout",
           "label": "Wednesday planning slides",
-          "path": "library/recipes/thanksgiving/futedu-thanksgiving-wednesday-planning-slides.pdf"
+          "path": "library/recipes/thanksgiving/futedu-thanksgiving-wednesday-planning-slides.pdf",
+          "v": "30c5f72a"
         }
       ]
     },
@@ -184,21 +203,24 @@
           "kind": "card",
           "kindLabel": "Recipe card",
           "label": "Recipe card",
-          "path": "library/recipes/chia-pudding/futedu-chia-pudding.pdf"
+          "path": "library/recipes/chia-pudding/futedu-chia-pudding.pdf",
+          "v": "a186e5f5"
         },
         {
           "name": "futedu-chia-pudding-workshop-session.md",
           "kind": "session",
           "kindLabel": "Session guide",
           "label": "Session guide",
-          "path": "library/recipes/chia-pudding/futedu-chia-pudding-workshop-session.md"
+          "path": "library/recipes/chia-pudding/futedu-chia-pudding-workshop-session.md",
+          "v": "68a47f5a"
         },
         {
           "name": "futedu-chia-pudding-breakfast-match.pdf",
           "kind": "handout",
           "kindLabel": "Printable handout",
           "label": "Breakfast match",
-          "path": "library/recipes/chia-pudding/futedu-chia-pudding-breakfast-match.pdf"
+          "path": "library/recipes/chia-pudding/futedu-chia-pudding-breakfast-match.pdf",
+          "v": "b3db5ede"
         }
       ]
     },
@@ -213,21 +235,24 @@
           "kind": "card",
           "kindLabel": "Recipe card",
           "label": "Recipe card",
-          "path": "library/recipes/rice-cake-bar/futedu-rice-cake-bar.pdf"
+          "path": "library/recipes/rice-cake-bar/futedu-rice-cake-bar.pdf",
+          "v": "7e0ec10e"
         },
         {
           "name": "futedu-rice-cake-bar-workshop-session.md",
           "kind": "session",
           "kindLabel": "Session guide",
           "label": "Session guide",
-          "path": "library/recipes/rice-cake-bar/futedu-rice-cake-bar-workshop-session.md"
+          "path": "library/recipes/rice-cake-bar/futedu-rice-cake-bar-workshop-session.md",
+          "v": "216f7732"
         },
         {
           "name": "futedu-rice-cake-bar-topping-menu.pdf",
           "kind": "handout",
           "kindLabel": "Printable handout",
           "label": "Topping menu",
-          "path": "library/recipes/rice-cake-bar/futedu-rice-cake-bar-topping-menu.pdf"
+          "path": "library/recipes/rice-cake-bar/futedu-rice-cake-bar-topping-menu.pdf",
+          "v": "1b2847bb"
         }
       ]
     },
@@ -242,21 +267,24 @@
           "kind": "card",
           "kindLabel": "Recipe card",
           "label": "Recipe card",
-          "path": "library/recipes/frozen-yogurt-bark/futedu-frozen-yogurt-bark.pdf"
+          "path": "library/recipes/frozen-yogurt-bark/futedu-frozen-yogurt-bark.pdf",
+          "v": "92c15a25"
         },
         {
           "name": "futedu-frozen-yogurt-bark-workshop-session.md",
           "kind": "session",
           "kindLabel": "Session guide",
           "label": "Session guide",
-          "path": "library/recipes/frozen-yogurt-bark/futedu-frozen-yogurt-bark-workshop-session.md"
+          "path": "library/recipes/frozen-yogurt-bark/futedu-frozen-yogurt-bark-workshop-session.md",
+          "v": "60991de7"
         },
         {
           "name": "futedu-frozen-yogurt-bark-yogurt-lineup.pdf",
           "kind": "handout",
           "kindLabel": "Printable handout",
           "label": "Yogurt lineup",
-          "path": "library/recipes/frozen-yogurt-bark/futedu-frozen-yogurt-bark-yogurt-lineup.pdf"
+          "path": "library/recipes/frozen-yogurt-bark/futedu-frozen-yogurt-bark-yogurt-lineup.pdf",
+          "v": "29b77238"
         }
       ]
     },
@@ -271,35 +299,40 @@
           "kind": "card",
           "kindLabel": "Recipe card",
           "label": "Recipe card: guacamole",
-          "path": "library/recipes/dips/futedu-dips-card-guacamole.pdf"
+          "path": "library/recipes/dips/futedu-dips-card-guacamole.pdf",
+          "v": "5a990534"
         },
         {
           "name": "futedu-dips-card-vegan-sobrasada.pdf",
           "kind": "card",
           "kindLabel": "Recipe card",
           "label": "Recipe card: vegan sobrasada",
-          "path": "library/recipes/dips/futedu-dips-card-vegan-sobrasada.pdf"
+          "path": "library/recipes/dips/futedu-dips-card-vegan-sobrasada.pdf",
+          "v": "db30d8d0"
         },
         {
           "name": "futedu-dips-card-white-bean.pdf",
           "kind": "card",
           "kindLabel": "Recipe card",
           "label": "Recipe card: white bean",
-          "path": "library/recipes/dips/futedu-dips-card-white-bean.pdf"
+          "path": "library/recipes/dips/futedu-dips-card-white-bean.pdf",
+          "v": "6f315c27"
         },
         {
           "name": "futedu-dips-workshop-session.md",
           "kind": "session",
           "kindLabel": "Session guide",
           "label": "Session guide",
-          "path": "library/recipes/dips/futedu-dips-workshop-session.md"
+          "path": "library/recipes/dips/futedu-dips-workshop-session.md",
+          "v": "f2c01357"
         },
         {
           "name": "futedu-dips-judge-card.pdf",
           "kind": "handout",
           "kindLabel": "Printable handout",
           "label": "Judge card",
-          "path": "library/recipes/dips/futedu-dips-judge-card.pdf"
+          "path": "library/recipes/dips/futedu-dips-judge-card.pdf",
+          "v": "d5fa7fbe"
         }
       ]
     },
@@ -314,7 +347,8 @@
           "kind": "card",
           "kindLabel": "Recipe card",
           "label": "Recipe card",
-          "path": "library/recipes/egg-white-protein-bread/futedu-egg-white-protein-bread.pdf"
+          "path": "library/recipes/egg-white-protein-bread/futedu-egg-white-protein-bread.pdf",
+          "v": "6f96da51"
         }
       ]
     },
@@ -329,7 +363,8 @@
           "kind": "card",
           "kindLabel": "Recipe card",
           "label": "Recipe card",
-          "path": "library/recipes/smoky-chickpea-sweet-potato-bowl/futedu-smoky-chickpea-sweet-potato-bowl.pdf"
+          "path": "library/recipes/smoky-chickpea-sweet-potato-bowl/futedu-smoky-chickpea-sweet-potato-bowl.pdf",
+          "v": "f1c659ed"
         }
       ]
     }
@@ -340,7 +375,8 @@
       "kind": "session",
       "kindLabel": "Session guide",
       "label": "FUTEDU – Nutrition Kickoff Session (60 min)",
-      "path": "library/sessions/futedu-nutrition-kickoff-session.md"
+      "path": "library/sessions/futedu-nutrition-kickoff-session.md",
+      "v": "c83894ee"
     }
   ]
 }
