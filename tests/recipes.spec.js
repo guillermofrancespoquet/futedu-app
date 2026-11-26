@@ -86,3 +86,13 @@ test('cards are uniform: same parts, same height in a row, extra files fold into
   await g.locator('details').first().locator('summary').click();
   await expect(g.locator('details').first().locator('.rc-file')).toHaveCount(2);
 });
+
+test('library links carry the content hash so a replaced file is never shown stale', async ({ page }) => {
+  await openApp(page, {});
+  const lib = { sessions: [], recipes: [{ slug: 'bark', title: 'Frozen Yogurt Bark: Snack', session: 5, status: 'next', files: [{ ...f('bark', 'card', 'Recipe card', 'bark.pdf'), v: 'abc12345' }] }] };
+  await page.evaluate(l => { rcData = l; window.__urls = []; const real = window.fetch; window.fetch = (u, o) => { window.__urls.push(String(u)); return Promise.resolve(new Response(new Blob(['%PDF-1.4 test'], { type: 'application/pdf' }))); }; }, lib);
+  await go(page, 'recipes');
+  await expect(page.locator('#rcBody a:has-text("Open")').first()).toHaveAttribute('href', 'library/recipes/bark/bark.pdf?v=abc12345');
+  await page.locator('#rcBody button:has-text("Download")').first().click();
+  await expect.poll(() => page.evaluate(() => window.__urls.some(u => u === 'library/recipes/bark/bark.pdf?v=abc12345'))).toBe(true);
+});

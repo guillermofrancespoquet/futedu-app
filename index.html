@@ -1641,9 +1641,9 @@ async function openGuide(path, title) {
 // save a library file: on phones through the share sheet (Save to Files, Drive...), elsewhere as a normal download.
 // A plain <a download> is ignored by Safari on iPhone and by installed apps, which is why it did not work on the phone.
 async function saveLibFile(path) {
-  const name = path.split('/').pop();
+  const name = path.split('?')[0].split('/').pop();
   try {
-    const r = await fetch(path); if (!r.ok) throw new Error('HTTP ' + r.status);
+    const r = await fetch(path, { cache: 'no-cache' }); if (!r.ok) throw new Error('HTTP ' + r.status);
     const blob = await r.blob();
     const type = blob.type && blob.type !== 'application/octet-stream' ? blob.type : (/\.pdf$/i.test(name) ? 'application/pdf' : /\.md$/i.test(name) ? 'text/markdown' : 'application/octet-stream');
     const file = new File([blob], name, { type });
@@ -1668,7 +1668,8 @@ async function renderRecipes() {
   const q = (document.getElementById('rcSearch').value || '').trim().toLowerCase();
   const split = t => { const i = t.indexOf(':'); return i > 0 ? [t.slice(0, i), t.slice(i + 1).trim()] : [t, '']; };
   const chev = '<svg class="rc-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
-  const btns = f => (f.name.endsWith('.md') ? `<button class="btn sm" data-guide="${escapeHtml(f.path)}">Read</button>` : `<a class="btn sm" href="${escapeHtml(f.path)}" target="_blank" rel="noopener">Open</a>`) + `<button class="btn sm" data-save="${escapeHtml(f.path)}">Download</button>`;
+  // the content hash in the URL makes browsers fetch a file again when it changes (a replaced PDF never shows up stale)
+  const btns = f => { const u = f.path + (f.v ? '?v=' + f.v : ''); return (f.name.endsWith('.md') ? `<button class="btn sm" data-guide="${escapeHtml(u)}">Read</button>` : `<a class="btn sm" href="${escapeHtml(u)}" target="_blank" rel="noopener">Open</a>`) + `<button class="btn sm" data-save="${escapeHtml(u)}">Download</button>`; };
   const fileName = f => f.label.replace(/^[^:]+:\s*/, '').replace(/^./, c => c.toUpperCase());
   // one row per kind of file: a single file has its buttons, several files fold into a list, none shows a quiet placeholder
   const slot = (label, icon, files, none) => {
